@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Compass } from 'lucide-react';
+import { ArrowLeft, Compass } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import { CATEGORIES } from '@/lib/data/categories';
@@ -21,10 +21,17 @@ export default function NotFound() {
 
         <div className="relative">
           <p className="font-mono text-7xl font-semibold leading-none tabular text-gradient-gold sm:text-8xl">404</p>
-          <h1 className="mt-5 text-2xl font-semibold text-white sm:text-3xl">This agent is not indexed</h1>
+          <h1 className="mt-5 text-2xl font-semibold text-white sm:text-3xl">This page does not exist on Bazar</h1>
           <p className="mx-auto mt-3 max-w-md text-sm text-slate-400 sm:text-base">
-            The page you requested does not exist on Bazar. The link may be off by a block, or the agent has been
-            unregistered from the ERC-8004 Identity Registry.
+            The address may be mistyped. If you were opening an agent: a Bazar agent URL is the identity token itself,
+            written <span className="font-mono text-slate-300">/agents/56-49637</span> for chain 56, token 49637. A URL
+            lands here when it cannot name a BNB Chain identity at all - a different shape, or a chain other than 56 and
+            97, which Bazar does not index and will not dress in BscScan links.
+          </p>
+          <p className="mx-auto mt-3 max-w-md text-xs leading-relaxed text-slate-500">
+            A well-formed BNB Chain slug that the index simply cannot resolve does not land here. That page answers 200
+            and says the identity was not resolvable, because &quot;we could not look it up&quot; and &quot;it does not
+            exist&quot; are different claims.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

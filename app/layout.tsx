@@ -13,9 +13,9 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
-const DEFAULT_TITLE = 'Bazar — Dual-Layer ERC-8004 AI Agent Marketplace for BNB Chain';
+const DEFAULT_TITLE = 'Bazar - Dual-Layer ERC-8004 AI Agent Marketplace for BNB Chain';
 const DESCRIPTION =
-  'Discover, compare and hire 200,000+ ERC-8004 AI agents on BNB Smart Chain. Bazar pairs a human storefront with an agent-to-agent (A2A) MCP router, 1-click BNB / USDT escrow checkout and SLA-verified auto-release payouts.';
+  'Browse the ERC-8004 agent registries on BNB Smart Chain, ranked by onchain reputation. Bazar pairs a human storefront with an agent-to-agent (A2A) router over the same index, and shows registry identity and reputation only - no ROI, SLA or uptime numbers, because the registries publish none.';
 
 function resolveMetadataBase() {
   try {
@@ -42,10 +42,9 @@ export const metadata: Metadata = {
     'A2A',
     'MCP',
     'agent-to-agent',
-    'PancakeSwap',
-    'Venus Protocol',
-    'Altana wallet',
-    'escrow',
+    'x402',
+    'ERC-8183',
+    'onchain reputation',
     'Build the Era',
     'BNB Agent Studio',
   ],
