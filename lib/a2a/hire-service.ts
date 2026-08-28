@@ -1,57 +1,46 @@
 /**
- * A2A hire service: turns a validated hire request into an escrow quote.
+ * A2A router service layer.
  *
- * Pure pieces (id derivation, amount math, calldata) are exported separately so
- * the developers page can render deterministic examples at build time, while
- * `processHireRequest` does the full validate -> resolve -> quote -> persist
- * pipeline for the route handler.
+ * Turns a validated request into an **unsigned ERC-8183 job intent**. It does
+ * not quote a price, because no price exists: the ERC-8004 registries publish
+ * identity and reputation only. The client chooses the budget when it calls
+ * `fund(jobId, expectedBudget)`.
+ *
+ * Pure pieces (`buildJobIntent`, `intentIdFor`, `explainCalldata`) are exported
+ * separately so the developers page can render deterministic examples against a
+ * fixed clock, while `processJobIntentRequest` does the full
+ * validate -> resolve -> build -> persist pipeline for the route handler.
  */
 import { NextResponse } from 'next/server';
-import { encodeFunctionData, getAddress, keccak256, parseUnits, stringToHex, toFunctionSelector } from 'viem';
-import type {
-  A2AErrorResponse,
-  A2AHireRequest,
-  A2AHireResponse,
-  Address,
-  Agent,
-  BillingPeriod,
-  Currency,
-  Hire,
-  PricingTier,
-} from '@/lib/types';
+import { encodeFunctionData, getAddress, keccak256, stringToHex } from 'viem';
+import type { A2AErrorResponse, Address, IndexedAgent } from '@/lib/types';
+import { APP_URL } from '@/lib/constants';
 import {
-  APP_URL,
-  BAZAR_ESCROW_ADDRESS,
-  BSC_CHAIN_ID,
-  ERC8004_IDENTITY_REGISTRY,
-  ERC8004_REPUTATION_REGISTRY,
-  ERC8004_VALIDATION_REGISTRY,
-} from '@/lib/constants';
-import { getAgent } from '@/lib/data/agents';
-import { ESCROW_ABI, ESCROW_FUNCTION_SIGNATURES } from './escrow-abi';
-import { validateHireRequest, validateTier, type ValidationIssue } from './schema';
-import { saveHire } from './store';
+  DEFAULT_CHAIN_ID,
+  PAYMENT_TOKEN_EIP712,
+  getDeployment,
+  type SupportedChainId,
+} from '@/lib/chain/addresses';
+import { queryAgents, resolveAgentSlug } from '@/lib/agents/repository';
+import { SCAN_API_BASE, SUPPORTED_CHAIN_IDS } from '@/lib/indexer/scan-client';
+import { ERC8183_ABI, ERC8183_EVENT_SIGNATURES, ERC8183_FUNCTION_SIGNATURES, NO_HOOK } from './erc8183-abi';
+import {
+  DEFAULT_JOB_DURATION_MS,
+  toAgentRef,
+  toAgentSlug,
+  validateJobIntentRequest,
+  type A2ACallStep,
+  type A2AJobIntent,
+  type A2AJobIntentRequest,
+  type A2AJobIntentResponse,
+  type ValidationIssue,
+} from './schema';
+import { saveIntent } from './store';
 
 /* ------------------------------- constants ----------------------------- */
 
-/** Protocol fee added on top of the tier price, in basis points (1%). */
-export const PROTOCOL_FEE_BPS = 100;
-/** How long an escrow quote (and its calldata) stays valid. */
-export const QUOTE_TTL_MS = 15 * 60 * 1000;
-/** Documented (not yet enforced) unauthenticated rate limit. */
-export const RATE_LIMIT_PER_MINUTE = 60;
-/** BNB and BEP-20 USDT on BSC both use 18 decimals. */
-export const TOKEN_DECIMALS: Record<Currency, number> = { BNB: 18, USDT: 18 };
 /** Fixed clock used for deterministic documentation examples. */
-export const DOCS_CLOCK = new Date('2026-08-27T12:00:00Z');
-
-const HOUR_MS = 60 * 60 * 1000;
-const PERIOD_MS: Record<BillingPeriod, number> = {
-  task: 24 * HOUR_MS,
-  day: 24 * HOUR_MS,
-  week: 7 * 24 * HOUR_MS,
-  month: 30 * 24 * HOUR_MS,
-};
+export const DOCS_CLOCK = new Date('2026-08-28T12:00:00Z');
 
 export const API_BASE_PATH = '/api/v1/a2a';
 export const API_BASE_URL = `${APP_URL}${API_BASE_PATH}`;
@@ -75,28 +64,13 @@ function base32FromHex(hex: string, length: number): string {
 }
 
 /**
- * Deterministic hire id: the same (agent, tier, payer, task) tuple always maps
- * to the same id, so re-posting a request is idempotent and returns a fresh
- * quote for the same hire.
+ * Deterministic intent id: the same (agent, payer, description, expiry) tuple
+ * always maps to the same id, so re-posting a body is idempotent and cannot
+ * produce two records for one job.
  */
-export function hireIdFor(agentId: string, tierId: string, payer: string, task = ''): string {
-  const digest = keccak256(stringToHex(`${agentId}|${tierId}|${payer.toLowerCase()}|${task}`));
-  return `hire_${base32FromHex(digest, 12)}`;
-}
-
-/** bytes32 representation of a hire id, as used by the escrow contract. */
-export function hireIdToBytes32(hireId: string): Address {
-  return keccak256(stringToHex(hireId));
-}
-
-/** Tier price plus protocol fee, rounded to 6 decimals. */
-export function quoteAmount(price: number): number {
-  return Math.round(price * (1 + PROTOCOL_FEE_BPS / 10_000) * 1e6) / 1e6;
-}
-
-/** Smallest-unit representation (wei-style) of a token amount. */
-export function toTokenUnits(amount: number, currency: Currency): bigint {
-  return parseUnits(amount.toFixed(6), TOKEN_DECIMALS[currency]);
+export function intentIdFor(slug: string, payer: string, description: string, expiredAt: number): string {
+  const digest = keccak256(stringToHex(`${slug}|${payer.toLowerCase()}|${description}|${expiredAt}`));
+  return `job_${base32FromHex(digest, 12)}`;
 }
 
 /** Normalizes any 0x address to EIP-55 checksum form (tolerates bad-case input). */
@@ -104,31 +78,13 @@ export function normalizeAddress(address: string): Address {
   return getAddress(address.toLowerCase());
 }
 
-export const LOCK_ESCROW_SELECTOR = toFunctionSelector(ESCROW_FUNCTION_SIGNATURES.lockEscrow);
-
-export interface EscrowCalldataInput {
-  tokenId: number;
-  hireId: string;
-  payer: Address;
-  amount: number;
-  currency: Currency;
-}
-
-/** ABI-encodes `lockEscrow(agentTokenId, hireId, payer, amount)`. */
-export function buildEscrowCalldata(input: EscrowCalldataInput): Address {
-  return encodeFunctionData({
-    abi: ESCROW_ABI,
-    functionName: 'lockEscrow',
-    args: [
-      BigInt(input.tokenId),
-      hireIdToBytes32(input.hireId),
-      normalizeAddress(input.payer),
-      toTokenUnits(input.amount, input.currency),
-    ],
-  });
-}
-
-/** Splits lockEscrow calldata into its selector and 32-byte words for display. */
+/**
+ * Splits calldata into its 4-byte selector and 32-byte words for display.
+ *
+ * `createJob` has a dynamic `string description`, so the words after the head
+ * are an offset, a length and the UTF-8 payload - not one argument each. The
+ * developers page labels them accordingly.
+ */
 export function explainCalldata(calldata: string): { selector: string; words: string[] } {
   const body = calldata.slice(2);
   const selector = `0x${body.slice(0, 8)}`;
@@ -137,156 +93,316 @@ export function explainCalldata(calldata: string): { selector: string; words: st
   return { selector, words };
 }
 
-/* ------------------------------- quoting ------------------------------- */
+/** Seconds since the epoch - the unit ERC-8183 `expiredAt` is denominated in. */
+export function toUnixSeconds(date: Date): number {
+  return Math.floor(date.getTime() / 1000);
+}
 
-/** Builds the full 201 response body without touching the store. */
-export function buildHireQuote(request: A2AHireRequest, agent: Agent, tier: PricingTier, now: Date): A2AHireResponse {
-  const hireId = hireIdFor(agent.id, tier.id, request.payer, request.task);
-  const amount = quoteAmount(tier.price);
-  const createdAt = now.toISOString();
-  const expiresAt = new Date(now.getTime() + PERIOD_MS[tier.period]).toISOString();
-  const validUntil = new Date(now.getTime() + QUOTE_TTL_MS).toISOString();
+/* ------------------------------ intent build ---------------------------- */
 
-  const hire: Hire = {
-    id: hireId,
-    agentId: agent.id,
-    tierId: tier.id,
-    hirer: request.payer,
-    amount,
-    currency: tier.currency,
-    status: 'pending',
-    slaProgress: 0,
-    source: 'a2a',
-    createdAt,
-    expiresAt,
+/** The ERC-8183 lifecycle, described once and rendered everywhere. */
+export function jobLifecycle(): A2ACallStep[] {
+  return [
+    {
+      step: 1,
+      signature: ERC8183_FUNCTION_SIGNATURES.createJob,
+      actor: 'client',
+      description:
+        'Submit the calldata in `createJob` to the AgenticCommerce kernel. The returned jobId is the handle for every later call.',
+      emits: ERC8183_EVENT_SIGNATURES.JobCreated,
+    },
+    {
+      step: 2,
+      signature: ERC8183_FUNCTION_SIGNATURES.fund,
+      actor: 'client',
+      description:
+        'Approve the payment token to the kernel, then fund the job with the budget you are willing to pay. Bazar does not choose this number.',
+      emits: ERC8183_EVENT_SIGNATURES.JobFunded,
+    },
+    {
+      step: 3,
+      signature: '(offchain work, then the provider submits a deliverable)',
+      actor: 'provider',
+      description:
+        'The provider performs the job and records a deliverable hash against the jobId. Bazar is not in this path.',
+      emits: ERC8183_EVENT_SIGNATURES.JobSubmitted,
+    },
+    {
+      step: 4,
+      signature: ERC8183_FUNCTION_SIGNATURES.complete,
+      actor: 'evaluator',
+      description:
+        'The evaluator accepts the deliverable and the kernel releases the escrowed budget to the provider. `reject` is the mirror path.',
+      emits: `${ERC8183_EVENT_SIGNATURES.JobCompleted} + ${ERC8183_EVENT_SIGNATURES.PaymentReleased}`,
+    },
+    {
+      step: 5,
+      signature: ERC8183_FUNCTION_SIGNATURES.claimRefund,
+      actor: 'client',
+      description: 'If the job passes `expiredAt` without completing, the client reclaims the funded budget.',
+    },
+  ];
+}
+
+/**
+ * Builds the full 201 body. Pure: no store write, no network, no clock read -
+ * `now` is injected so the docs page can render a byte-identical example.
+ */
+export function buildJobIntent(
+  request: A2AJobIntentRequest,
+  agent: IndexedAgent,
+  now: Date,
+): A2AJobIntentResponse {
+  const chainId = (request.chainId ?? agent.chainId ?? DEFAULT_CHAIN_ID) as SupportedChainId;
+  const deployment = getDeployment(chainId);
+
+  const expiryDate = request.expiresAt
+    ? new Date(request.expiresAt)
+    : new Date(now.getTime() + DEFAULT_JOB_DURATION_MS);
+  const expiredAt = toUnixSeconds(expiryDate);
+
+  // The ERC-8004 Identity Registry publishes the owner of the identity NFT and
+  // nothing else that can receive payment, so the owner is the provider.
+  const provider = normalizeAddress(agent.owner);
+  const evaluator = normalizeAddress(request.evaluator ?? deployment.evaluatorRouter);
+  const hook = normalizeAddress(request.hook ?? NO_HOOK);
+  const client = normalizeAddress(request.payer);
+
+  const calldata = encodeFunctionData({
+    abi: ERC8183_ABI,
+    functionName: 'createJob',
+    args: [provider, evaluator, BigInt(expiredAt), request.description, hook],
+  }) as Address;
+
+  const intent: A2AJobIntent = {
+    id: intentIdFor(agent.slug, client, request.description, expiredAt),
+    status: 'unsigned_intent',
+    standard: 'ERC-8183',
+    createdAt: now.toISOString(),
+    chainId,
+    contracts: {
+      agenticCommerce: deployment.agenticCommerce,
+      evaluatorRouter: deployment.evaluatorRouter,
+      optimisticPolicy: deployment.optimisticPolicy,
+      identityRegistry: deployment.identityRegistry,
+    },
+    payment: {
+      token: deployment.paymentToken,
+      eip712: { name: PAYMENT_TOKEN_EIP712.name, version: PAYMENT_TOKEN_EIP712.version },
+      quotedAmount: null,
+    },
+    createJob: {
+      to: deployment.agenticCommerce,
+      signature: ERC8183_FUNCTION_SIGNATURES.createJob,
+      args: { provider, evaluator, expiredAt, description: request.description, hook },
+      calldata,
+      value: '0x0',
+    },
+    client,
+    lifecycle: jobLifecycle(),
+    budget: {
+      quoted: false,
+      setBy: ERC8183_FUNCTION_SIGNATURES.fund,
+      note: 'No price for this agent exists on chain - the ERC-8004 registries publish identity and reputation only. You set the budget yourself in fund(jobId, expectedBudget, optParams), denominated in payment.token.',
+    },
+    agent: toAgentRef(agent),
+    settlement: {
+      observed: false,
+      note: 'Bazar generated this intent and did not sign, send or observe anything. It runs no ERC-8183 log listener, so status stays "unsigned_intent" even after you settle the job on chain. Read authoritative state with getJob(jobId) on the kernel.',
+    },
   };
-  if (request.callerAgentId !== undefined) hire.callerAgent = String(request.callerAgentId);
-  if (request.task) hire.task = request.task;
+  if (request.callerAgentId) intent.callerAgentId = request.callerAgentId;
 
+  return { ok: true, intent };
+}
+
+/* ------------------------------- pipeline ------------------------------- */
+
+export type ServiceFailure = {
+  status: 400 | 404 | 503;
+  body: A2AErrorResponse;
+};
+
+export type JobIntentResult = { status: 201; body: A2AJobIntentResponse } | ServiceFailure;
+
+export function failure(status: 400 | 404 | 503, code: string, message: string, details?: unknown): ServiceFailure {
   return {
-    ok: true,
-    hire,
-    escrow: {
-      contract: BAZAR_ESCROW_ADDRESS,
-      chainId: BSC_CHAIN_ID,
-      amount,
-      currency: tier.currency,
-      calldata: buildEscrowCalldata({
-        tokenId: agent.tokenId,
-        hireId,
-        payer: request.payer,
-        amount,
-        currency: tier.currency,
-      }),
-      validUntil,
-    },
-    agent: {
-      id: agent.id,
-      tokenId: agent.tokenId,
-      name: agent.name,
-      endpoint: agent.a2a.endpoint,
-    },
+    status,
+    body: { ok: false, error: details === undefined ? { code, message } : { code, message, details } },
   };
 }
 
-export type HireServiceResult =
-  | { status: 201; body: A2AHireResponse }
-  | { status: 400 | 403 | 404; body: A2AErrorResponse };
-
-function failure(status: 400 | 403 | 404, code: string, message: string, details?: unknown): HireServiceResult {
-  return { status, body: { ok: false, error: details === undefined ? { code, message } : { code, message, details } } };
-}
-
-function validationFailure(errors: ValidationIssue[]): HireServiceResult {
+export function validationFailure(errors: ValidationIssue[]): ServiceFailure {
   const message = errors.length === 1 ? errors[0].message : `${errors.length} fields failed validation.`;
   return failure(400, 'VALIDATION_ERROR', message, errors);
 }
 
+export const INDEX_UNAVAILABLE_MESSAGE =
+  'The ERC-8004 index is unreachable, so Bazar cannot confirm what is listed. It returns no agents rather than a fabricated fallback - retry shortly.';
+
+export function indexUnavailable(detail?: string): ServiceFailure {
+  return failure(503, 'INDEX_UNAVAILABLE', INDEX_UNAVAILABLE_MESSAGE, {
+    indexer: SCAN_API_BASE,
+    ...(detail ? { detail } : {}),
+  });
+}
+
+/**
+ * Resolves an agent reference to an indexed agent, distinguishing the states a
+ * single 404 used to collapse:
+ *   - the reference is malformed                  -> 400
+ *   - it names a chain Bazar does not read        -> 400
+ *   - the index is down                           -> 503
+ *   - the index answered and nothing matched      -> 404
+ *
+ * The lookup itself is `resolveAgentSlug` in the repository - the same resolver
+ * the /agents/[id] page uses - so the machine endpoint and the human page can
+ * never resolve the same slug to different records, or to different scores and
+ * ranks for the same record. This handler only maps the resolution onto HTTP.
+ */
+export async function resolveIndexedAgent(
+  ref: string,
+  chainId: SupportedChainId = DEFAULT_CHAIN_ID,
+): Promise<{ ok: true; agent: IndexedAgent } | ServiceFailure> {
+  const slug = toAgentSlug(ref, chainId);
+  if (!slug) {
+    return failure(
+      400,
+      'VALIDATION_ERROR',
+      'agentId must be "<chainId>-<tokenId>" (e.g. "56-43129"), a bare ERC-8004 tokenId, or the composite id "<chainId>:<registry>:<tokenId>".',
+      [{ path: 'agentId', message: `Unrecognised agent reference "${ref}".` }],
+    );
+  }
+
+  const resolution = await resolveAgentSlug(slug);
+
+  switch (resolution.status) {
+    case 'found':
+      return { ok: true, agent: resolution.agent };
+
+    case 'unsupported-chain':
+      // The index answers for Ethereum, Base and the rest. Bazar is a BNB Chain
+      // storefront, so a foreign identity is refused outright rather than
+      // resolved and dressed in BscScan links it has no rows behind.
+      return failure(
+        400,
+        'VALIDATION_ERROR',
+        `Bazar indexes BNB Chain only. Chain ${resolution.chainId} is not one of ${SUPPORTED_CHAIN_IDS.join(', ')}.`,
+        [{ path: 'agentId', message: `Unsupported chain id in "${ref}".` }],
+      );
+
+    case 'degraded':
+      return indexUnavailable(resolution.error);
+
+    default:
+      return failure(
+        404,
+        'AGENT_NOT_FOUND',
+        `No indexed agent resolved for "${ref}". Bazar looks the identity up by token id on both index routes - the per-agent record and the listing - so this means neither has it, which is not proof the identity does not exist onchain.`,
+        { agentId: ref, slug },
+      );
+  }
+}
+
 /**
  * Full pipeline for POST /api/v1/a2a/hire:
- * validate body -> resolve agent (404) -> A2A enabled? (403) -> tier/currency (400)
- * -> deadline sanity (400) -> quote (201) + persist as `pending`.
+ * validate body (400) -> resolve agent (400 / 404 / 503) -> build intent (201) + persist.
  */
-export function processHireRequest(input: unknown, now: Date = new Date()): HireServiceResult {
-  const parsed = validateHireRequest(input);
+export async function processJobIntentRequest(input: unknown, now: Date = new Date()): Promise<JobIntentResult> {
+  const parsed = validateJobIntentRequest(input, now);
   if (!parsed.ok) return validationFailure(parsed.errors);
   const request = parsed.value;
 
-  const agent = getAgent(request.agentId);
-  if (!agent) {
-    return failure(404, 'AGENT_NOT_FOUND', `No ERC-8004 agent matches "${request.agentId}" on Bazar.`, { agentId: request.agentId });
-  }
-  if (!agent.a2a.enabled) {
-    return failure(403, 'A2A_DISABLED', `${agent.name} does not accept programmatic (A2A) hires.`, { agentId: agent.id });
-  }
+  const resolved = await resolveIndexedAgent(request.agentId, request.chainId ?? DEFAULT_CHAIN_ID);
+  if (!('ok' in resolved)) return resolved;
 
-  const tierCheck = validateTier(request, agent);
-  if (!tierCheck.ok) return validationFailure(tierCheck.errors);
-
-  if (request.sla?.deadline && Date.parse(request.sla.deadline) <= now.getTime()) {
-    return validationFailure([{ path: 'sla.deadline', message: 'sla.deadline must be in the future.' }]);
-  }
-
-  const quote = buildHireQuote(request, agent, tierCheck.value, now);
-  saveHire(quote.hire);
-  return { status: 201, body: quote };
+  const built = buildJobIntent(request, resolved.agent, now);
+  saveIntent(built.intent);
+  return { status: 201, body: built };
 }
 
 /* ------------------------------ agent card ----------------------------- */
 
-/** Bazar's own A2A agent card, served at /.well-known/agent.json. */
-export function bazarAgentCard() {
+/**
+ * Bazar's own A2A agent card, served at /.well-known/agent.json.
+ *
+ * Every address is the verified deployment from `lib/chain/addresses.ts`, and
+ * every skill maps to a route that exists today. Nothing aspirational is listed:
+ * no MCP transport, no webhooks, no rate limit, no SLA verifier.
+ */
+export function bazarAgentCard(chainId: SupportedChainId = DEFAULT_CHAIN_ID) {
+  const d = getDeployment(chainId);
   return {
     name: 'Bazar Marketplace Router',
     description:
-      'Discover, hire and pay ERC-8004 AI agents on BNB Smart Chain through one endpoint. Quotes return escrow calldata; payouts auto-release on SLA verification.',
+      'Discover ERC-8004 agents on BNB Smart Chain and get an unsigned ERC-8183 job intent for any of them. Bazar reads the registries and encodes calldata; it never custodies funds, never signs, and never quotes a price the chain does not publish.',
     url: APP_URL,
-    version: '0.1.0',
+    version: '0.2.0',
     protocolVersion: '1.0',
     documentationUrl: `${APP_URL}/developers`,
-    capabilities: { streaming: false, pushNotifications: true },
+    capabilities: { streaming: false, pushNotifications: false },
     defaultInputModes: ['application/json'],
     defaultOutputModes: ['application/json'],
     skills: [
       {
         id: 'discover_agents',
         name: 'Discover agents',
-        description: 'Search and filter indexed ERC-8004 agents by category, protocol, SLA score and A2A capability.',
+        description:
+          'Search the ERC-8004 Identity Registry index on BSC by text, category, x402 support and onchain reputation.',
         tags: ['discovery', 'erc-8004', 'bsc'],
         endpoint: { method: 'GET', path: `${API_BASE_PATH}/agents` },
-        examples: ['Find health-factor monitors with SLA above 98 that accept A2A hires.'],
+        examples: ['Find health-factor agents ranked by reputation that advertise x402.'],
       },
       {
-        id: 'hire_agent',
-        name: 'Hire agent',
-        description: 'Request an escrow quote for a pricing tier. Returns hire id, amount including protocol fee and signed-ready calldata.',
-        tags: ['hire', 'escrow', 'payments'],
+        id: 'read_agent',
+        name: 'Read one agent',
+        description: 'Fetch a single indexed agent by its "<chainId>-<tokenId>" slug.',
+        tags: ['discovery', 'erc-8004'],
+        endpoint: { method: 'GET', path: `${API_BASE_PATH}/agents/{id}` },
+        examples: ['Read 56-43129.'],
+      },
+      {
+        id: 'job_intent',
+        name: 'Build a job intent',
+        description:
+          'Resolve an agent and return unsigned ERC-8183 createJob calldata addressed to the AgenticCommerce kernel. Returns no amount - the client sets the budget in fund().',
+        tags: ['erc-8183', 'payments', 'escrow'],
         endpoint: { method: 'POST', path: `${API_BASE_PATH}/hire` },
-        examples: ['Hire whalewatch-bsc on the task tier and watch 50 whale wallets.'],
+        examples: ['Build a job intent for 56-43129 to monitor a Venus health factor.'],
       },
       {
-        id: 'hire_status',
-        name: 'Hire status',
-        description: 'Track a hire through pending, escrowed, active, sla-check, released or refunded.',
-        tags: ['status', 'escrow'],
+        id: 'read_intent',
+        name: 'Re-read an intent',
+        description:
+          'Return an intent this router previously generated. In-memory only, and never reflects onchain settlement.',
+        tags: ['erc-8183'],
         endpoint: { method: 'GET', path: `${API_BASE_PATH}/hires/{id}` },
-        examples: ['What is the status of hire_01J8Z4Q1T6VF?'],
+        examples: ['Read job_8YFDGXCJ4VP1.'],
       },
     ],
     authentication: { schemes: ['none'] },
     provider: { organization: 'Bazar', url: APP_URL },
-    endpoints: {
-      rest: API_BASE_URL,
-      mcp: `${API_BASE_URL}/mcp (planned)`,
-    },
+    endpoints: { rest: API_BASE_URL },
+    chain: { chainId: d.chainId, name: d.name, explorer: d.explorer },
     registries: {
-      identity: ERC8004_IDENTITY_REGISTRY,
-      reputation: ERC8004_REPUTATION_REGISTRY,
-      validation: ERC8004_VALIDATION_REGISTRY,
-      chainId: BSC_CHAIN_ID,
+      /** ERC-8004 Identity Registry - the only registry Bazar reads directly. */
+      identity: d.identityRegistry,
+      /**
+       * Reputation is read from the public 8004scan index rather than from a
+       * registry address, so no address is claimed for it here.
+       */
+      reputationSource: SCAN_API_BASE,
     },
-    escrow: { contract: BAZAR_ESCROW_ADDRESS, chainId: BSC_CHAIN_ID, protocolFeeBps: PROTOCOL_FEE_BPS },
-    rateLimit: { unauthenticated: `${RATE_LIMIT_PER_MINUTE} requests/minute` },
+    settlement: {
+      standard: 'ERC-8183',
+      agenticCommerce: d.agenticCommerce,
+      evaluatorRouter: d.evaluatorRouter,
+      optimisticPolicy: d.optimisticPolicy,
+      paymentToken: d.paymentToken,
+      custody: 'none',
+      pricing: 'not-quoted',
+      note: 'Bazar returns unsigned createJob calldata. The client submits it, sets the budget with fund(jobId, expectedBudget) and settles with the evaluator. Bazar takes no fee and holds no funds.',
+    },
   };
 }
 
@@ -303,8 +419,6 @@ export const CORS_HEADERS: Record<string, string> = {
 
 const BASE_HEADERS: Record<string, string> = {
   ...CORS_HEADERS,
-  'X-RateLimit-Limit': String(RATE_LIMIT_PER_MINUTE),
-  'X-RateLimit-Policy': `${RATE_LIMIT_PER_MINUTE};w=60`,
   'Cache-Control': 'no-store',
 };
 
