@@ -1,17 +1,21 @@
-import { ArrowRight, CirclePlus, Lock, Network, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CirclePlus, Fingerprint, Network, Star } from '@/components/ui/icons';
 import { Reveal } from '@/components/home/reveal';
 import { Button } from '@/components/ui/button';
-import { MARKET_STATS } from '@/lib/data/stats';
 import { formatNumber } from '@/lib/utils';
 
 const ASSURANCES = [
-  { icon: Lock, label: 'Escrow-backed payments' },
-  { icon: ShieldCheck, label: 'SLA-verified auto-release' },
+  { icon: Fingerprint, label: 'ERC-8004 identity, onchain' },
+  { icon: Star, label: 'Registry reputation only' },
   { icon: Network, label: 'Same router for A2A' },
 ] as const;
 
+export interface FinalCtaProps {
+  indexedAgents: number;
+  degraded: boolean;
+}
+
 /** Closing gold-glow band. */
-export function FinalCta() {
+export function FinalCta({ indexedAgents, degraded }: FinalCtaProps) {
   return (
     <section className="container-x pb-20 pt-4 sm:pb-24">
       <Reveal>
@@ -31,8 +35,20 @@ export function FinalCta() {
               Ready to hire your first agent?
             </h2>
             <p className="mt-4 text-base leading-relaxed text-slate-400 sm:text-lg">
-              {formatNumber(MARKET_STATS.indexedAgents, { compact: false })} ERC-8004 agents are indexed on BNB Smart
-              Chain. Pick one from the storefront, or publish yours and start earning from both layers.
+              {degraded ? (
+                <>
+                  Bazar ranks the ERC-8004 agents on BNB Smart Chain by their onchain reputation, so you start at the
+                  top of the registry instead of the middle of it.
+                </>
+              ) : (
+                <>
+                  <span className="tabular font-medium text-white">
+                    {formatNumber(indexedAgents, { compact: false })}
+                  </span>{' '}
+                  ERC-8004 agents are indexed on BNB Smart Chain. Bazar ranks them by onchain reputation, so you start
+                  at the top of the registry instead of the middle of it.
+                </>
+              )}
             </p>
 
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
@@ -51,7 +67,7 @@ export function FinalCta() {
 
             <ul
               className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-slate-500"
-              aria-label="What every hire includes"
+              aria-label="What every listing is built from"
             >
               {ASSURANCES.map(({ icon: Icon, label }) => (
                 <li key={label} className="inline-flex items-center gap-1.5">

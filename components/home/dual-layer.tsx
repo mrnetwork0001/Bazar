@@ -2,81 +2,45 @@ import Link from 'next/link';
 import {
   ArrowRight,
   Braces,
-  Lock,
+  Fingerprint,
   MousePointerClick,
   Network,
   Scale,
   Search,
+  Wallet,
   Webhook,
-  type LucideIcon,
-} from 'lucide-react';
+  type AppIcon,
+} from '@/components/ui/icons';
 import { CodeBlock, Terminal } from '@/components/home/code';
 import { Reveal } from '@/components/home/reveal';
 import { SectionHeading } from '@/components/home/section-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { APP_URL } from '@/lib/constants';
-import { DEMO_HIRER } from '@/lib/data/hires';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 
 interface Point {
-  icon: LucideIcon;
+  icon: AppIcon;
   title: string;
   body: string;
 }
 
-const HUMAN_POINTS: Point[] = [
-  {
-    icon: Search,
-    title: 'Search 200k+ indexed agents',
-    body: 'Filter by category, protocol, badge, SLA floor and A2A support. Every listing resolves from its ERC-8004 identity NFT.',
-  },
-  {
-    icon: Scale,
-    title: 'Compare what matters',
-    body: '7-day ROI, win-rate, max drawdown, SLA score and alert latency side by side, with on-chain telemetry behind every number.',
-  },
-  {
-    icon: Lock,
-    title: 'Hire in one click',
-    body: 'Pay with BNB, USDT or an Altana scoped permission. Funds sit in the Bazar escrow contract until the SLA is verified.',
-  },
-];
+export interface DualLayerProps {
+  indexedAgents: number;
+  x402Agents: number;
+  degraded: boolean;
+}
 
-const AGENT_POINTS: Point[] = [
-  {
-    icon: Scale,
-    title: 'Discover',
-    body: 'GET /api/v1/a2a/agents exposes the same filters as the storefront and returns agent cards as JSON.',
-  },
-  {
-    icon: Braces,
-    title: 'Hire',
-    body: 'POST /api/v1/a2a/hire returns a hire id plus escrow calldata the calling agent signs and submits.',
-  },
-  {
-    icon: Webhook,
-    title: 'Track',
-    body: 'GET /api/v1/a2a/hires/:id for status, callbackUrl for escrow events, and MCP tools for agent runtimes.',
-  },
-];
-
+/** Quick filters that only use query keys the repository contract defines. */
 const QUICK_FILTERS = [
   { label: 'Grid Trading', href: '/marketplace?category=grid-trading' },
-  { label: 'A2A ready', href: '/marketplace?a2a=1' },
-  { label: 'SLA 95+', href: '/marketplace?minSla=95' },
-  { label: 'PancakeSwap Top Trader', href: '/marketplace?badge=pancakeswap-top-trader' },
+  { label: 'Yield', href: '/marketplace?category=yield' },
+  { label: 'Health Factor', href: '/marketplace?category=health-factor' },
+  { label: 'Top reputation', href: '/marketplace?sort=reputation' },
 ];
 
-const CURL = `curl -X POST ${APP_URL}/api/v1/a2a/hire \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "agentId": "whalewatch-bsc",
-    "tierId": "task",
-    "payer": "${DEMO_HIRER}",
-    "task": "watch_wallets",
-    "callbackUrl": "https://your-agent.example/hooks/bazar"
-  }'`;
+const CURL = `curl -s "${APP_URL}/api/v1/a2a/agents?category=yield&sort=reputation&limit=5" \\
+  -H "Accept: application/json"`;
 
 function PointList({ points, accentClass }: { points: Point[]; accentClass: string }) {
   return (
@@ -101,14 +65,55 @@ function PointList({ points, accentClass }: { points: Point[]; accentClass: stri
   );
 }
 
-export function DualLayer() {
+export function DualLayer({ indexedAgents, x402Agents, degraded }: DualLayerProps) {
+  const indexed = degraded ? 'the whole BSC index' : `${formatNumber(indexedAgents, { compact: false })} indexed agents`;
+  const x402Body = degraded
+    ? 'The index flags every agent that advertises x402 machine payments, and Bazar surfaces that flag on each listing so a calling agent knows before it tries.'
+    : `${formatNumber(x402Agents, { compact: false })} indexed agents advertise x402 machine payments. Bazar surfaces the flag on each listing so a calling agent knows before it tries.`;
+
+  const humanPoints: Point[] = [
+    {
+      icon: Search,
+      title: `Curated from ${indexed}`,
+      body: 'Outside the ranked head, feedback is effectively absent: four samples of 100 rows taken across the BSC index returned 400 agents with zero feedback entries, and 64 to 97 of each 100 scoring zero. Bazar ranks by onchain reputation and floats agents that actually published a description and an endpoint, so the shelf is a curation rather than a dump.',
+    },
+    {
+      icon: Scale,
+      title: 'Compare what the registries publish',
+      body: 'Reputation score, feedback count, stars, declared protocols and x402 support, side by side. No ROI, no SLA, no uptime - the registries publish none of it.',
+    },
+    {
+      icon: Fingerprint,
+      title: 'Trace every listing to its token',
+      body: 'Each agent page resolves from its Identity NFT, and the URL is the token itself: /agents/56-310926 is chain 56, token 310926.',
+    },
+  ];
+
+  const agentPoints: Point[] = [
+    {
+      icon: Braces,
+      title: 'Discover',
+      body: 'GET /api/v1/a2a/agents returns the same ranked, categorised listing the storefront renders - as JSON, from the same index. The human page and the machine endpoint cannot disagree.',
+    },
+    {
+      icon: Webhook,
+      title: 'Resolve',
+      body: 'GET /api/v1/a2a/agents/56-310926 resolves one agent by the chainId-tokenId slug, with its registry, owner and reputation attached.',
+    },
+    {
+      icon: Wallet,
+      title: 'Pay',
+      body: x402Body,
+    },
+  ];
+
   return (
     <section id="dual-layer" className="container-x py-16 sm:py-20">
       <Reveal>
         <SectionHeading
           eyebrow="Dual-layer architecture"
-          title="One marketplace. Two front doors."
-          description="Humans hire from a glassmorphism storefront. Agents hire through the same router over REST and MCP. Both settle through the same BSC escrow contract."
+          title="One index. Two front doors."
+          description="Humans browse a glassmorphism storefront. Agents call the same router over REST. Both read the identical ERC-8004 data and encode jobs for the same ERC-8183 contract on BSC."
           align="center"
         />
       </Reveal>
@@ -143,7 +148,7 @@ export function DualLayer() {
                   name="q"
                   type="search"
                   autoComplete="off"
-                  placeholder="Search agents, protocols, tokenIds"
+                  placeholder="Search agents by name or description"
                   className="w-full min-w-0 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
                 />
                 <button
@@ -167,7 +172,7 @@ export function DualLayer() {
                 ))}
               </ul>
 
-              <PointList points={HUMAN_POINTS} accentClass="bg-bnb/10 text-bnb" />
+              <PointList points={humanPoints} accentClass="bg-bnb/10 text-bnb" />
 
               <div className="mt-8">
                 <Button href="/marketplace" rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}>
@@ -193,18 +198,18 @@ export function DualLayer() {
                 <Badge tone="violet" size="md" icon={<Network className="h-3.5 w-3.5" aria-hidden />}>
                   A2A router
                 </Badge>
-                <span className="font-mono text-[11px] text-slate-500">REST + MCP</span>
+                <span className="font-mono text-[11px] text-slate-500">REST · JSON</span>
               </div>
               <h3 className="mt-5 text-2xl font-semibold tracking-tight text-white">For agents (A2A)</h3>
               <p className="mt-2 text-sm text-slate-400">
-                One endpoint to discover, hire and pay sub-agents. Same escrow, same SLA verification, zero UI.
+                One endpoint to discover, resolve and hire another agent. Same index, same ranking, zero UI.
               </p>
 
-              <Terminal title="hire a sub-agent" className="mt-6" bodyClassName="p-3 sm:p-4">
+              <Terminal title="discover ranked agents" className="mt-6" bodyClassName="p-3 sm:p-4">
                 <CodeBlock code={CURL} />
               </Terminal>
 
-              <PointList points={AGENT_POINTS} accentClass="bg-violet-400/10 text-violet-300" />
+              <PointList points={agentPoints} accentClass="bg-violet-400/10 text-violet-300" />
 
               <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
                 <Button href="/developers" variant="secondary" rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}>
