@@ -1,16 +1,31 @@
 /**
  * Bazar core domain types.
  *
- * These mirror what the ERC-8004 indexer will surface once it is wired to BSC:
- *   - Identity Registry  -> Agent identity NFT (tokenId, owner, agentURI)
- *   - Reputation Registry -> Reputation (score, feedback, reviews)
- *   - Validation Registry -> validations (validators, last validated)
- * Until then, `lib/data/agents.ts` provides deterministic seeded mock data.
+ * Everything here traces to the live ERC-8004 index. The registries publish
+ * identity and reputation only, so there is deliberately no ROI, drawdown,
+ * win rate, SLA score, uptime, APY, TVL, volume, latency or hire count type
+ * in this file - Bazar does not display numbers it cannot source.
+ *   - Identity Registry   -> IndexedAgent (tokenId, owner, registry, protocols)
+ *   - Reputation Registry -> IndexedReputation (score, feedback, stars)
+ * See lib/indexer/map.ts for the mapping and lib/agents/repository.ts for the
+ * query surface.
  */
 
 export type Address = `0x${string}`;
 
 export type CategoryId = 'rebalancing' | 'grid-trading' | 'health-factor' | 'yield';
+
+/**
+ * Whether an agent's category came from the agent's own registration text.
+ *
+ * ERC-8004 has no category field, so every category in Bazar is derived
+ * (lib/indexer/classify.ts). This says whether the derivation had anything to
+ * work with:
+ *   - 'matched'      - a term in the agent's name or description matched a rule.
+ *   - 'unclassified' - nothing matched, and the category is a coverage
+ *                      placement by Bazar rather than a claim by the agent.
+ */
+export type CategoryConfidence = 'matched' | 'unclassified';
 
 export interface Category {
   id: CategoryId;
@@ -21,220 +36,11 @@ export interface Category {
   agentType: string;
   primaryAction: string;
   keyMetric: string;
-  /** lucide-react icon name */
+  /** Icon name from components/ui/icons (Heroicons). */
   icon: 'Scale' | 'Grid3x3' | 'HeartPulse' | 'TrendingUp';
   /** Tailwind color key under `cat.*` and hex value for inline styles */
   accent: 'rebalancing' | 'grid' | 'health' | 'yield';
   accentHex: string;
-}
-
-export type BadgeId =
-  | 'erc8004-verified'
-  | 'validated'
-  | 'pancakeswap-top-trader'
-  | 'venus-risk-monitor'
-  | 'a2a-ready'
-  | 'mcp-enabled'
-  | 'fractional'
-  | 'top-rated';
-
-export type Protocol =
-  | 'PancakeSwap'
-  | 'Venus'
-  | 'Lista DAO'
-  | 'Thena'
-  | 'Alpaca Finance'
-  | 'Wombat'
-  | 'Binance Oracle'
-  | 'Chainlink'
-  | 'opBNB';
-
-export type Currency = 'BNB' | 'USDT';
-export type BillingPeriod = 'task' | 'day' | 'week' | 'month';
-
-export interface PricingTier {
-  id: string;
-  name: string;
-  price: number;
-  currency: Currency;
-  period: BillingPeriod;
-  description: string;
-  features: string[];
-  recommended?: boolean;
-}
-
-export interface AgentMetrics {
-  /** 7-day ROI in percent (e.g. 4.2 = +4.2%) */
-  roi7d: number;
-  /** 30-day ROI in percent */
-  roi30d: number;
-  /** Max drawdown in percent, positive number (e.g. 3.1 = -3.1%) */
-  maxDrawdown: number;
-  /** Win rate in percent */
-  winRate: number;
-  /** SLA adherence score 0-100 */
-  slaScore: number;
-  /** Uptime percent */
-  uptime: number;
-  totalHires: number;
-  activeHires: number;
-  /** Average response latency in ms */
-  avgResponseMs: number;
-  /** USD value managed / monitored by the agent */
-  tvlManaged: number;
-  /** 7-day executed volume in USD */
-  volume7d: number;
-  /** Category-specific headline metric (e.g. alert latency, liquidation prevention rate, net APY) */
-  headline: { label: string; value: string };
-}
-
-export interface Reputation {
-  /** ERC-8004 Reputation Registry aggregate score 0-100 */
-  score: number;
-  reviews: number;
-  positiveFeedback: number;
-  negativeFeedback: number;
-  /** ERC-8004 Validation Registry count */
-  validations: number;
-  lastValidatedAt: string;
-  validators: Address[];
-}
-
-export interface A2AConfig {
-  enabled: boolean;
-  /** Public A2A endpoint for the agent */
-  endpoint: string;
-  mcp: boolean;
-  protocols: string[];
-  /** Supported task types for programmatic hiring */
-  tasks: string[];
-}
-
-export interface FractionalOffer {
-  enabled: boolean;
-  tokenSymbol: string;
-  supply: number;
-  holders: number;
-  /** Percent of agent revenue shared with token holders */
-  revenueShare: number;
-  /** Estimated APR for holders, percent */
-  apr: number;
-  /** Price per share token in BNB */
-  sharePriceBnb: number;
-}
-
-export interface Agent {
-  /** URL slug, e.g. "whalewatch-bsc" */
-  id: string;
-  /** ERC-8004 Identity NFT token id */
-  tokenId: number;
-  name: string;
-  /** e.g. "@whalewatch" */
-  handle: string;
-  tagline: string;
-  description: string;
-  category: CategoryId;
-  owner: Address;
-  /** Address the agent operates from */
-  agentAddress: Address;
-  /** ERC-8004 agentURI (agent card) */
-  agentURI: string;
-  registeredAt: string;
-  verified: boolean;
-  badges: BadgeId[];
-  protocols: Protocol[];
-  capabilities: string[];
-  metrics: AgentMetrics;
-  reputation: Reputation;
-  pricing: PricingTier[];
-  a2a: A2AConfig;
-  fractional?: FractionalOffer;
-  /** 30 daily equity-curve points, base 100 */
-  sparkline: number[];
-  avatar: {
-    /** Tailwind gradient classes, e.g. "from-cyan-400 to-blue-600" */
-    gradient: string;
-    initials: string;
-  };
-  featured?: boolean;
-}
-
-export type HireStatus =
-  | 'pending'
-  | 'escrowed'
-  | 'active'
-  | 'sla-check'
-  | 'released'
-  | 'refunded'
-  | 'disputed';
-
-export interface Hire {
-  id: string;
-  agentId: string;
-  tierId: string;
-  hirer: Address;
-  amount: number;
-  currency: Currency;
-  status: HireStatus;
-  /** 0-100 progress against the SLA */
-  slaProgress: number;
-  source: 'human' | 'a2a';
-  createdAt: string;
-  expiresAt: string;
-  escrowTx?: Address;
-  releaseTx?: Address;
-  /** For A2A hires: the calling agent id/address */
-  callerAgent?: string;
-  task?: string;
-}
-
-/* ------------------------------------------------------------------ */
-/* A2A router API contract (/api/v1/a2a/*)                            */
-/* ------------------------------------------------------------------ */
-
-export interface A2AHireRequest {
-  /** Bazar agent id (slug) or ERC-8004 tokenId */
-  agentId: string | number;
-  tierId: string;
-  /** Address paying into escrow (the calling agent's wallet) */
-  payer: Address;
-  currency?: Currency;
-  /** Optional task description passed to the hired agent */
-  task?: string;
-  /** Optional caller agent identity (ERC-8004 tokenId or slug) */
-  callerAgentId?: string | number;
-  /** Optional SLA overrides */
-  sla?: {
-    /** Max acceptable latency in ms */
-    maxLatencyMs?: number;
-    /** Minimum uptime percent */
-    minUptime?: number;
-    /** Deadline ISO timestamp */
-    deadline?: string;
-  };
-  /** Webhook URL to be notified on escrow events */
-  callbackUrl?: string;
-}
-
-export interface A2AHireResponse {
-  ok: true;
-  hire: Hire;
-  escrow: {
-    contract: Address;
-    chainId: number;
-    amount: number;
-    currency: Currency;
-    /** Calldata the caller signs & submits to lock funds */
-    calldata: Address;
-    /** Expiry of the quote */
-    validUntil: string;
-  };
-  agent: {
-    id: string;
-    tokenId: number;
-    name: string;
-    endpoint: string;
-  };
 }
 
 export interface A2AErrorResponse {
@@ -247,27 +53,55 @@ export interface A2AErrorResponse {
 }
 
 /* ------------------------------------------------------------------ */
-/* Indexed agents — the real shape, backed by the ERC-8004 registry    */
+/* Indexed agents - the real shape, backed by the ERC-8004 registry    */
 /*                                                                    */
-/* Every field here traces to something actually on-chain or returned  */
+/* Every field here traces to something actually onchain or returned  */
 /* by the 8004scan index. There is deliberately no ROI, drawdown, APY  */
 /* or TVL: the registry does not publish trading performance, so Bazar */
 /* does not display it. See lib/indexer/map.ts.                        */
 /* ------------------------------------------------------------------ */
 
-/** Reputation as published by the ERC-8004 Reputation Registry. */
+/**
+ * Reputation as published by the ERC-8004 Reputation Registry.
+ *
+ * There is exactly one reader for this shape - `readReputation` in
+ * lib/indexer/reputation.ts - because the index publishes two conflicting
+ * `total_score` values and Bazar must never render both. Never build this
+ * object by hand from a raw record.
+ */
 export interface IndexedReputation {
-  /** Aggregate 8004scan score, 0-100. */
+  /**
+   * The canonical aggregate 8004scan score, 0-100, rounded to the two decimals
+   * the index itself publishes.
+   *
+   * This is the leaderboard final score: the listing endpoint's `total_score`,
+   * which is also carried inside the per-agent record as
+   * `scores.breakdown.final_score`. It is NOT the per-agent record's stale
+   * top-level `total_score`. See lib/indexer/reputation.ts for the measurement
+   * that settles which is which.
+   */
   totalScore: number;
-  /** Mean of individual feedback entries, 0-5. */
+  /**
+   * Mean feedback score as published by the index. Measured on live BSC data
+   * this is a 0-100 scale, NOT the 0-5 the field name suggests, and it is
+   * frequently 0 even for agents with hundreds of feedback entries. Never
+   * render it as an N-of-5 star rating, and never treat 0 as a bad score.
+   */
   averageScore: number;
   starCount: number;
   totalFeedbacks: number;
   /** Composite liveness/completeness score, null when not yet computed. */
   healthScore: number | null;
-  /** Rank across all indexed agents, null when unranked. */
+  /**
+   * Rank across all indexed agents, null when the record does not publish one.
+   *
+   * The listing endpoint omits it entirely (null on 20 of 20 rows sampled
+   * 2026-08-28), so a marketplace card honestly shows no rank while a detail
+   * page, which also reads the per-agent record, can show one. That is an
+   * omission on one route, not a disagreement between two.
+   */
   rank: number | null;
-  /** Rank within this chain, null when unranked. */
+  /** Rank within this chain, null when the record does not publish one. */
   networkRank: number | null;
 }
 
@@ -292,8 +126,25 @@ export interface IndexedAgent {
   protocols: string[];
   /** Agent advertises x402 machine payments. */
   x402: boolean;
+  /**
+   * The category shelf this agent is filed on.
+   *
+   * ERC-8004 publishes no category field, so this is always derived by Bazar
+   * from the agent's own registration text (lib/indexer/classify.ts). Read
+   * `categoryConfidence` before presenting it as something the agent claims:
+   * when that is 'unclassified' this value is a coverage placement, not a fact
+   * about the agent, and a surface that renders it as a fact is lying.
+   */
   category: CategoryId;
-  /** Why the agent landed in that category — surfaced in the UI. */
+  /**
+   * Whether `category` came from the agent's own words ('matched') or from
+   * Bazar's coverage placement ('unclassified'). Measured on the live index
+   * 2026-08-28, 59 of the top 100 agents by reputation are 'unclassified'.
+   *
+   * This is the field to branch on. Do not string-match `categoryReason`.
+   */
+  categoryConfidence: CategoryConfidence;
+  /** Why the agent landed in that category - display copy, surfaced in the UI. */
   categoryReason: string;
   registeredAt: string;
   updatedAt: string;
