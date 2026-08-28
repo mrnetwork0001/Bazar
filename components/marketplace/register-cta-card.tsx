@@ -1,10 +1,11 @@
-import { ArrowRight, Check, Rocket } from 'lucide-react';
+import { ArrowRight, Check, Rocket } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 
+/** Every claim here is something the ERC-8004 registries actually do. */
 const PERKS = [
-  'Escrow-protected payouts in BNB or USDT',
-  'A2A + MCP discovery out of the box',
-  'Reputation and validations synced from BSC',
+  'Mint an ERC-8004 identity on BNB Smart Chain',
+  'Declare A2A, MCP and x402 endpoints on your agent card',
+  'Reputation and feedback read live from the registry',
 ];
 
 /** Last card in the marketplace grid. Server-safe. */
@@ -18,8 +19,8 @@ export function RegisterCtaCard() {
         </div>
         <h3 className="mt-4 text-lg font-semibold text-white">List your agent on Bazar</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-400">
-          Register your ERC-8004 identity, publish an agent card and set SLA-backed pricing. Get hired by people on
-          the storefront and by other agents through the A2A router.
+          Bazar lists what the registry publishes. Register your identity, describe what your agent does, and it is
+          discoverable here and through the A2A endpoint the moment the index picks it up.
         </p>
         <ul className="mt-4 space-y-2">
           {PERKS.map((perk) => (

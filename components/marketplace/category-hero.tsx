@@ -1,11 +1,11 @@
-import type { Agent, Category } from '@/lib/types';
-import { formatNumber, formatPct, formatUsd } from '@/lib/utils';
-import { CATEGORY_ICONS, withAlpha } from './marketplace-config';
+import type { Category, IndexedAgent } from '@/lib/types';
+import { formatNumber } from '@/lib/utils';
+import { CATEGORY_ICONS, countClassified, withAlpha } from './marketplace-config';
 
 export interface CategoryHeroProps {
   category: Category;
-  /** All agents in this category (unfiltered) — used for the aggregate facts. */
-  agents: Agent[];
+  /** The agents actually rendered on this page - the only set we can honestly aggregate. */
+  agents: IndexedAgent[];
 }
 
 function Fact({ label, value, accent }: { label: string; value: string; accent?: string }) {
@@ -19,13 +19,33 @@ function Fact({ label, value, accent }: { label: string; value: string; accent?:
   );
 }
 
-/** Band shown under the tabs when a category is selected. Tinted with the category accent. Server-safe. */
+function hasProtocol(agent: IndexedAgent, protocol: string): boolean {
+  return agent.protocols.some((p) => p.trim().toUpperCase() === protocol);
+}
+
+/**
+ * Band shown under the tabs when a category is selected.
+ *
+ * Every figure is computed from the agents on this page. There is no
+ * "agents in this category" total to quote: the index has no category field,
+ * so Bazar classifies what it fetches (lib/indexer/classify.ts) and can only
+ * describe the window it actually looked at. Server-safe.
+ */
 export function CategoryHero({ category, agents }: CategoryHeroProps) {
   const Icon = CATEGORY_ICONS[category.icon];
   const hex = category.accentHex;
-  const totalHires = agents.reduce((sum, a) => sum + a.metrics.totalHires, 0);
-  const avgSla = agents.length ? agents.reduce((sum, a) => sum + a.metrics.slaScore, 0) / agents.length : 0;
-  const tvl = agents.reduce((sum, a) => sum + a.metrics.tvlManaged, 0);
+
+  const n = agents.length;
+  const avgScore = n ? agents.reduce((sum, a) => sum + a.reputation.totalScore, 0) / n : 0;
+  const withFeedback = agents.filter((a) => a.reputation.totalFeedbacks > 0).length;
+  const withA2A = agents.filter((a) => hasProtocol(a, 'A2A')).length;
+  const withMcp = agents.filter((a) => hasProtocol(a, 'MCP')).length;
+  const withX402 = agents.filter((a) => a.x402).length;
+  // How many of these agents Bazar can point at a matched term for. The rest
+  // matched nothing and were spread across the four buckets for coverage, which
+  // the copy has to say out loud rather than implying every filing is derived
+  // from the agent's own words.
+  const matched = countClassified(agents);
 
   return (
     <section
@@ -53,15 +73,29 @@ export function CategoryHero({ category, agents }: CategoryHeroProps) {
               {category.name}
             </h2>
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-400">{category.description}</p>
+            <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-400">
+              Figures below describe the {formatNumber(n, { compact: false })} agent{n === 1 ? '' : 's'} on this page.
+              ERC-8004 has no category field, so Bazar reads the text each agent registered onchain:{' '}
+              <span className="font-medium text-slate-200">
+                {formatNumber(matched, { compact: false })} of {formatNumber(n, { compact: false })}
+              </span>{' '}
+              matched a term for this category and carry the coloured chip. The remainder matched nothing, are marked{' '}
+              <span className="font-medium text-slate-200">Unclassified</span>, and are shown here for coverage rather
+              than because they claimed this category.
+            </p>
           </div>
         </div>
         <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:w-auto lg:min-w-[440px]">
-          <Fact label="Primary on-chain action" value={category.primaryAction} />
-          <Fact label="Key metric" value={category.keyMetric} accent={hex} />
-          <Fact label="Agents listed" value={formatNumber(agents.length, { compact: false })} />
-          <Fact label="Hires completed" value={formatNumber(totalHires)} />
-          <Fact label="Avg SLA score" value={formatPct(avgSla, { sign: false, decimals: 1 })} />
-          <Fact label={category.id === 'rebalancing' ? 'Category share' : 'TVL under management'} value={tvl > 0 ? formatUsd(tvl) : 'Alerts only'} />
+          <Fact label="Primary onchain action" value={category.primaryAction} />
+          <Fact label="On this page" value={formatNumber(n, { compact: false })} accent={hex} />
+          <Fact
+            label="Avg reputation"
+            value={n ? `${avgScore.toFixed(1)} / 100` : 'No agents'}
+          />
+          <Fact label="With feedback" value={n ? `${withFeedback} of ${n}` : '0'} />
+          <Fact label="Matched a category term" value={n ? `${matched} of ${n}` : '0'} />
+          <Fact label="Declare A2A / MCP" value={`${withA2A} / ${withMcp}`} />
+          <Fact label="x402 payments" value={formatNumber(withX402, { compact: false })} />
         </dl>
       </div>
     </section>
