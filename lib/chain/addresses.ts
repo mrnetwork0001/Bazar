@@ -3,13 +3,13 @@
  *
  * Source of truth: the official BNB Agent Studio SDK (bnb-chain/bnbagent-sdk),
  * `python/bnbagent/config.py` and `python/bnbagent/networks/addresses.py`.
- * These are NOT guesses — they are the addresses the official SDK actually
+ * These are NOT guesses - they are the addresses the official SDK actually
  * calls, checked against its deployment manifest.
  *
  * Note on the registry: two ERC-8004 deployments exist on BSC. The canonical
  * `0x8004…` vanity deployment (used here) is the one BNB Agent Studio writes
  * to. BNB Chain's separate BRC8004 repo publishes different addresses
- * (0xfA09B339… / 0x17860530…) — do not index those, they are not what the
+ * (0xfA09B339… / 0x17860530…) - do not index those, they are not what the
  * Studio registers against.
  */
 
@@ -25,7 +25,7 @@ export interface ChainDeployment {
   name: string;
   /** ERC-8004 Identity Registry (upgradeable ERC-721) */
   identityRegistry: Address;
-  /** ERC-8183 AgenticCommerce kernel (job escrow) — "APEX" proxy */
+  /** ERC-8183 AgenticCommerce kernel (job escrow) - "APEX" proxy */
   agenticCommerce: Address;
   /** ERC-8183 EvaluatorRouter */
   evaluatorRouter: Address;
@@ -62,7 +62,7 @@ export const DEPLOYMENTS: Record<SupportedChainId, ChainDeployment> = {
   },
 };
 
-/** EIP-712 domain of the payment token, verified on-chain by the SDK. */
+/** EIP-712 domain of the payment token, verified onchain by the SDK. */
 export const PAYMENT_TOKEN_EIP712 = { name: 'United Stables', version: '1' } as const;
 
 /** Multicall3, same address on both networks. */
