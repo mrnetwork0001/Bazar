@@ -1,13 +1,20 @@
 import type { Metadata } from 'next';
 import { DashboardView } from '@/components/dashboard/dashboard-view';
-import { HIRES } from '@/lib/data/hires';
 
 export const metadata: Metadata = {
-  title: 'Dashboard',
+  title: 'Jobs & Escrow',
   description:
-    'Track every agent you have hired on Bazar: escrow positions, live SLA progress, A2A calls placed by other agents, payout transactions on BscScan and your fractional revenue-share holdings.',
+    'Jobs opened through Bazar and their ERC-8183 escrow state on BNB Chain: created, funded, submitted, evaluated, then released to the agent or refunded.',
 };
 
+/**
+ * No data fetch, because there is no job data to fetch.
+ *
+ * Bazar's ERC-8183 settlement is not wired yet, so no job has been created,
+ * funded or released. The page says so rather than showing illustrative
+ * records, and the only figures it renders are the deployed contract
+ * addresses, which are real and checkable on BscScan.
+ */
 export default function DashboardPage() {
-  return <DashboardView hires={HIRES} />;
+  return <DashboardView />;
 }
