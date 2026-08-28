@@ -6,11 +6,27 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * "0x8004…a432". Returns the value untouched when it is already shorter than
+ * the truncation would be: the naive slice on a short string repeats its own
+ * characters on both sides of the ellipsis ("0x1234…0x1234"), which reads as a
+ * longer address than the one actually held.
+ */
 export function shortAddress(address: string, chars = 4) {
   if (!address) return '';
+  if (address.length <= chars * 2 + 3) return address;
   return `${address.slice(0, chars + 2)}…${address.slice(-chars)}`;
 }
 
+/**
+ * Currency and percentage formatters, for the labelled demo ledger ONLY.
+ *
+ * Nothing Bazar reads from the ERC-8004 registries is a price, a percentage
+ * return or a rate: the registries publish identity and reputation, and the
+ * indexer publishes neither a fee nor a quote. If one of these is about to
+ * render a number that came from the index, the number is invented and the fix
+ * is to render the absence instead, not to reach for a formatter.
+ */
 export function formatUsd(value: number, opts: { compact?: boolean; decimals?: number } = {}) {
   const { compact = true, decimals } = opts;
   if (compact) {
@@ -51,12 +67,40 @@ export function formatToken(value: number, currency: string) {
   return `${value.toLocaleString('en-US', { maximumFractionDigits: decimals })} ${currency}`;
 }
 
+/**
+ * Shown wherever a timestamp cannot be read. The index guarantees `created_at`
+ * and `updated_at` are strings, not that they parse, and "Invalid Date" on an
+ * agent page reads like a Bazar bug rather than a gap in the record.
+ */
+export const UNKNOWN_DATE = 'Unknown';
+
+/**
+ * Registry timestamps are rendered in UTC, not in the render machine's zone, so
+ * a server render and a client render of the same ISO string can never disagree
+ * - and the date matches the one BscScan shows for the same transaction.
+ */
 export function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return UNKNOWN_DATE;
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
-export function formatRelative(iso: string, now = new Date('2026-08-27T12:00:00Z')) {
-  const diff = now.getTime() - new Date(iso).getTime();
+/**
+ * `now` is required on purpose. A default would freeze the clock at build time
+ * (or at whatever date the default was written), which is how every dashboard
+ * timestamp came to be a day understated. Callers compute the clock once on the
+ * server and thread it down as a prop, so server and client render the identical
+ * string and hydration stays clean.
+ */
+export function formatRelative(iso: string, now: Date) {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return UNKNOWN_DATE;
+  const diff = now.getTime() - then;
   const abs = Math.abs(diff);
   const minutes = Math.round(abs / 60000);
   const hours = Math.round(abs / 3600000);
