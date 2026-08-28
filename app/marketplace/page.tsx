@@ -1,79 +1,101 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { BadgeCheck, Boxes, Gauge, Network } from 'lucide-react';
-import type { Agent, CategoryId } from '@/lib/types';
-import { AGENTS, getAgentsByCategory, queryAgents } from '@/lib/data/agents';
-import { CATEGORIES, CATEGORY_MAP } from '@/lib/data/categories';
-import { MARKET_STATS } from '@/lib/data/stats';
-import { formatNumber, formatPct } from '@/lib/utils';
+import { AlertTriangle, Boxes, Coins, Radio } from '@/components/ui/icons';
+import { getMarketStats, queryAgents } from '@/lib/agents/repository';
+import { CATEGORY_MAP } from '@/lib/data/categories';
+import { formatNumber } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { A2AToggle } from '@/components/marketplace/a2a-toggle';
 import { ActiveFilters } from '@/components/marketplace/active-filters';
 import { AgentGrid } from '@/components/marketplace/agent-grid';
 import { CategoryHero } from '@/components/marketplace/category-hero';
 import { CategoryTabs } from '@/components/marketplace/category-tabs';
-import { FiltersButton, FiltersPanel } from '@/components/marketplace/filters-panel';
+import { Pagination } from '@/components/marketplace/pagination';
 import { ResultsHeader } from '@/components/marketplace/results-header';
 import { SearchBar } from '@/components/marketplace/search-bar';
 import { SortSelect } from '@/components/marketplace/sort-select';
-import { ControlSkeleton, FiltersSkeleton, TabsSkeleton } from '@/components/marketplace/skeletons';
+import { X402Toggle } from '@/components/marketplace/x402-toggle';
+import { ControlSkeleton, TabsSkeleton } from '@/components/marketplace/skeletons';
 import {
-  buildFacets,
+  countClassified,
+  PAGE_SIZE,
+  pageStep,
   parseMarketplaceParams,
+  resolveTotal,
+  sortLabel,
   toAgentQuery,
-  type CategoryCounts,
   type RawParams,
 } from '@/components/marketplace/marketplace-config';
 
 export const metadata: Metadata = {
   title: 'Marketplace',
   description:
-    'Discover, compare and hire ERC-8004 AI agents on BNB Smart Chain. Filter by category, verified badges, protocols and SLA score, then hire in one click or through the A2A router.',
+    'Browse ERC-8004 agents indexed live from BNB Smart Chain, ranked by onchain reputation. Identity, feedback and declared A2A / MCP / x402 endpoints straight from the registries - no self-reported performance.',
 };
 
 interface MarketplacePageProps {
   searchParams?: RawParams;
 }
 
-const HEADER_STATS = [
-  {
-    label: 'Verified agents',
-    value: formatNumber(MARKET_STATS.verifiedAgents),
-    icon: BadgeCheck,
-    tone: 'text-bnb',
-  },
-  {
-    label: 'Avg SLA score',
-    value: formatPct(MARKET_STATS.avgSla, { sign: false, decimals: 1 }),
-    icon: Gauge,
-    tone: 'text-emerald-300',
-  },
-  {
-    label: 'A2A calls (24h)',
-    value: formatNumber(MARKET_STATS.a2aCalls24h),
-    icon: Network,
-    tone: 'text-violet-300',
-  },
-] as const;
-
-export default function MarketplacePage({ searchParams }: MarketplacePageProps) {
+export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
   const params = parseMarketplaceParams(searchParams ?? {});
-  const query = toAgentQuery(params);
-  const agents = queryAgents(query);
+  const step = pageStep(params.category);
   const category = params.category ? CATEGORY_MAP[params.category] : undefined;
-  const categoryAgents: Agent[] = category ? getAgentsByCategory(category.id) : [];
 
-  // Category counts reflect every other active filter, so tabs read as facets.
-  const counts = CATEGORIES.reduce<CategoryCounts>(
-    (acc, c) => {
-      acc[c.id as CategoryId] = queryAgents({ ...query, category: c.id }).length;
-      return acc;
+  // One listing round trip plus the cached headline count - the two are
+  // independent, so they run together rather than in sequence.
+  const [page, stats] = await Promise.all([queryAgents(toAgentQuery(params)), getMarketStats()]);
+
+  const indexLive = !page.degraded && !stats.degraded;
+
+  // One total for the whole page, resolved once and handed to every surface
+  // that prints one. `getMarketStats()` (cached 900s) and the listing call
+  // (cached 300s) both report an index-wide count and drift apart by a few
+  // registrations between cache windows, which read as two contradictory
+  // headline numbers on one screen; `resolveTotal` picks exactly one and says
+  // what it counts, so nothing downstream has to guess whether the number means
+  // the index or the matches.
+  const total = resolveTotal(params, page, stats);
+  // The index-wide count for the header sentence and the tile. It is the same
+  // value the results line quotes whenever nothing is narrowing the query, and
+  // `null` rather than a remembered figure when neither source answered.
+  const indexWide = stats.degraded
+    ? total.basis === 'index' && total.known
+      ? total.value
+      : null
+    : stats.indexedAgents;
+  // The x402 tile counts the same thing the results line counts whenever the
+  // x402 toggle is the only thing narrowing the query, and the two sources are
+  // cached for different windows: without this the page printed "67,010" in the
+  // tile and "of 67,008 matching" in the results line, two figures for one fact.
+  // The listing answered this request, so it is the fresher of the two.
+  const x402Wide =
+    params.x402Only && !params.q && total.known && total.basis === 'matching'
+      ? total.value
+      : stats.degraded
+        ? null
+        : stats.x402Agents;
+  const classified = countClassified(page.agents);
+
+  const headerStats = [
+    {
+      label: 'Agents indexed (BSC)',
+      value: indexWide === null ? 'Unavailable' : formatNumber(indexWide, { compact: false }),
+      icon: Boxes,
+      tone: 'text-bnb',
     },
-    { all: queryAgents({ ...query, category: 'all' }).length } as CategoryCounts,
-  );
-
-  // Badge / protocol counts are scoped to the category, search and A2A toggle.
-  const facets = buildFacets(queryAgents({ q: query.q, category: query.category, a2aOnly: query.a2aOnly }));
+    {
+      label: 'Advertise x402',
+      value: x402Wide === null ? 'Unavailable' : formatNumber(x402Wide, { compact: false }),
+      icon: Coins,
+      tone: 'text-violet-300',
+    },
+    {
+      label: 'Index status',
+      value: indexLive ? 'Live' : 'Unreachable',
+      icon: indexLive ? Radio : AlertTriangle,
+      tone: indexLive ? 'text-emerald-300' : 'text-amber-300',
+    },
+  ];
 
   return (
     <div className="relative isolate">
@@ -88,39 +110,59 @@ export default function MarketplacePage({ searchParams }: MarketplacePageProps) 
               <Badge tone="gold" size="md" icon={<Boxes className="h-3.5 w-3.5" aria-hidden />}>
                 ERC-8004 on BNB Smart Chain
               </Badge>
-              <Badge
-                tone="emerald"
-                size="md"
-                icon={
-                  <span className="relative flex h-2 w-2" aria-hidden>
-                    <span className="absolute inline-flex h-full w-full animate-pulse-ring rounded-full bg-emerald-400" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                  </span>
-                }
-              >
-                Live indexer
-              </Badge>
+              {indexLive ? (
+                <Badge
+                  tone="emerald"
+                  size="md"
+                  icon={
+                    <span className="relative flex h-2 w-2" aria-hidden>
+                      <span className="absolute inline-flex h-full w-full animate-pulse-ring rounded-full bg-emerald-400" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    </span>
+                  }
+                >
+                  Live index
+                </Badge>
+              ) : (
+                <Badge tone="rose" size="md" icon={<AlertTriangle className="h-3.5 w-3.5" aria-hidden />}>
+                  Index unreachable
+                </Badge>
+              )}
             </div>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
               <span className="text-gradient-white">Agent Marketplace</span>
             </h1>
             <p className="mt-3 text-base leading-relaxed text-slate-400 sm:text-lg">
-              <span className="tabular font-semibold text-slate-100">{formatNumber(MARKET_STATS.indexedAgents, { compact: false })}</span>{' '}
-              ERC-8004 agents indexed on BSC. Compare verified track records, SLA scores and escrow pricing, then hire in
-              one click, or let your own agent hire through the A2A router.
+              {indexWide === null ? (
+                <>The ERC-8004 index did not answer, so no agent count is shown rather than a remembered one.</>
+              ) : (
+                <>
+                  <span className="tabular font-semibold text-slate-100">
+                    {formatNumber(indexWide, { compact: false })}
+                  </span>{' '}
+                  agents indexed on BSC. Bazar lists the top of that index {PAGE_SIZE} at a time, ranked by{' '}
+                  <span className="font-medium text-slate-200">{sortLabel(params.sort).toLowerCase()}</span>.
+                </>
+              )}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              Identity, reputation and declared endpoints come straight from the registries. They publish no ROI, no
+              SLA and no pricing, so neither does Bazar.
             </p>
           </div>
 
-          <dl className="grid grid-cols-3 divide-x divide-white/[0.08] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl lg:min-w-[440px]">
-            {HEADER_STATS.map((stat) => {
+          {/* Stacked below sm: at 375px a three-up grid truncates the labels to
+              "ADVERT…" and "INDEX S…", leaving the values under nothing. */}
+          <dl className="grid grid-cols-1 divide-y divide-white/[0.08] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:min-w-[440px]">
+            {headerStats.map((stat) => {
               const Icon = stat.icon;
               return (
                 <div key={stat.label} className="px-4 py-3.5 sm:px-5">
                   <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                    <Icon className={`h-3.5 w-3.5 ${stat.tone}`} aria-hidden />
-                    <span className="truncate">{stat.label}</span>
+                    <Icon className={`h-3.5 w-3.5 shrink-0 ${stat.tone}`} aria-hidden />
+                    <span className="min-w-0">{stat.label}</span>
                   </dt>
-                  <dd className="tabular mt-1 text-xl font-semibold text-white sm:text-2xl">{stat.value}</dd>
+                  <dd className="tabular mt-1 text-lg font-semibold text-white sm:text-xl">{stat.value}</dd>
                 </div>
               );
             })}
@@ -130,60 +172,64 @@ export default function MarketplacePage({ searchParams }: MarketplacePageProps) 
         {/* Category tabs */}
         <div className="mt-8">
           <Suspense fallback={<TabsSkeleton />}>
-            <CategoryTabs counts={counts} />
+            <CategoryTabs />
           </Suspense>
         </div>
 
-        {category && (
+        {category && !page.degraded && (
           <div className="mt-6">
-            <CategoryHero category={category} agents={categoryAgents} />
+            <CategoryHero category={category} agents={page.agents} />
           </div>
         )}
 
-        {/* Sidebar + results */}
-        <div className="mt-6 lg:grid lg:grid-cols-[260px_1fr] lg:items-start lg:gap-8">
-          <aside className="hidden lg:block" aria-label="Filter agents">
-            <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 backdrop-blur-xl">
-              <Suspense fallback={<FiltersSkeleton />}>
-                <FiltersPanel facets={facets} showHeader />
-              </Suspense>
-            </div>
-          </aside>
-
-          <section aria-label="Agents" className="min-w-0">
-            {/* Toolbar */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Suspense fallback={<ControlSkeleton className="flex-1" />}>
-                <SearchBar className="flex-1" />
-              </Suspense>
-              <div className="flex flex-wrap items-center gap-2">
-                <Suspense fallback={<ControlSkeleton className="w-40" />}>
-                  <SortSelect />
-                </Suspense>
-                <Suspense fallback={<ControlSkeleton className="w-44" />}>
-                  <A2AToggle />
-                </Suspense>
-                <div className="lg:hidden">
-                  <Suspense fallback={<ControlSkeleton className="w-24" />}>
-                    <FiltersButton facets={facets} />
-                  </Suspense>
-                </div>
-              </div>
-            </div>
-
-            <Suspense fallback={null}>
-              <ActiveFilters className="mt-4" />
+        <section aria-label="Agents" className="mt-6 min-w-0">
+          {/* Toolbar */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Suspense fallback={<ControlSkeleton className="flex-1" />}>
+              <SearchBar className="flex-1" />
             </Suspense>
-
-            <div className="mt-4">
-              <ResultsHeader count={agents.length} total={AGENTS.length} categoryName={category?.name} q={params.q} sort={params.sort} />
+            <div className="flex flex-wrap items-center gap-2">
+              <Suspense fallback={<ControlSkeleton className="w-44" />}>
+                <SortSelect />
+              </Suspense>
+              <Suspense fallback={<ControlSkeleton className="w-44" />}>
+                <X402Toggle />
+              </Suspense>
             </div>
+          </div>
 
-            <div className="mt-4">
-              <AgentGrid agents={agents} />
-            </div>
-          </section>
-        </div>
+          <Suspense fallback={null}>
+            <ActiveFilters className="mt-4" />
+          </Suspense>
+
+          <div className="mt-4">
+            <ResultsHeader
+              count={page.agents.length}
+              total={total}
+              offset={page.offset}
+              step={step}
+              categoryName={category?.name}
+              classified={classified}
+              q={params.q}
+              sort={params.sort}
+              degraded={page.degraded}
+            />
+          </div>
+
+          <div className="mt-4">
+            <AgentGrid
+              agents={page.agents}
+              degraded={page.degraded}
+              error={page.error}
+              q={params.q}
+              categoryName={category?.name}
+            />
+          </div>
+
+          {!page.degraded && (
+            <Pagination className="mt-8" params={params} total={total} step={step} count={page.agents.length} />
+          )}
+        </section>
       </main>
     </div>
   );
