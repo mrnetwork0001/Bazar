@@ -1,19 +1,15 @@
 'use client';
 
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { SAMPLE_HIRE_REQUEST } from '@/lib/a2a/schema';
-import { APP_URL } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { CodeBlock, type CodeLang } from '@/components/developers/code-block';
 
 /**
- * Three renderings of the exact same call: POST /api/v1/a2a/hire with the
- * canonical body from `lib/a2a/schema.ts`. All three snippets are derived from
- * `SAMPLE_HIRE_REQUEST`, so they cannot drift from the validator.
+ * Three renderings of the same call: POST /api/v1/a2a/hire with the canonical
+ * body. The body is passed in from the server page, built against a real agent
+ * resolved from the live index, so a reader can paste any of these into a
+ * terminal and get a 201 - not a 404 on a slug that only ever existed in docs.
  */
-
-const HIRE_URL = `${APP_URL}/api/v1/a2a/hire`;
-const BODY_JSON = JSON.stringify(SAMPLE_HIRE_REQUEST, null, 2);
 
 function indent(text: string, pad: string) {
   return text
@@ -27,42 +23,6 @@ function toTsObject(json: string) {
   return json.replace(/^(\s*)"([A-Za-z_$][\w$]*)":/gm, '$1$2:');
 }
 
-const CURL = `curl -sS -X POST ${HIRE_URL} \\
-  -H "Content-Type: application/json" \\
-  -d '${indent(BODY_JSON, '  ')}'`;
-
-const TYPESCRIPT = `import type { A2AHireResponse, A2AErrorResponse } from "./bazar-types";
-
-const res = await fetch("${HIRE_URL}", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(${indent(toTsObject(BODY_JSON), '  ')}),
-});
-
-const quote = (await res.json()) as A2AHireResponse | A2AErrorResponse;
-if (!quote.ok) throw new Error(\`\${quote.error.code}: \${quote.error.message}\`);
-
-// res.status === 201. Sign quote.escrow.calldata and send it to
-// quote.escrow.contract on BSC (chainId 56) to lock the escrow.
-console.log(quote.hire.id, quote.escrow.amount, quote.escrow.currency);`;
-
-const PYTHON = `import requests
-
-res = requests.post(
-    "${HIRE_URL}",
-    json=${indent(BODY_JSON, '    ')},
-    headers={"Content-Type": "application/json"},
-    timeout=10,
-)
-
-quote = res.json()
-if not quote["ok"]:
-    raise RuntimeError(quote["error"]["code"] + ": " + quote["error"]["message"])
-
-# res.status_code == 201. Sign quote["escrow"]["calldata"] and send it to
-# quote["escrow"]["contract"] on BSC (chain id 56) to lock the escrow.
-print(quote["hire"]["id"], quote["escrow"]["amount"], quote["escrow"]["currency"])`;
-
 interface Tab {
   id: string;
   label: string;
@@ -71,28 +31,87 @@ interface Tab {
   code: string;
 }
 
-const TABS: Tab[] = [
-  { id: 'curl', label: 'curl', lang: 'bash', title: 'POST /api/v1/a2a/hire', code: CURL },
-  { id: 'typescript', label: 'TypeScript', lang: 'ts', title: 'hire.ts — fetch', code: TYPESCRIPT },
-  { id: 'python', label: 'Python', lang: 'python', title: 'hire.py — requests', code: PYTHON },
-];
+export interface QuickstartTabsProps {
+  /** Absolute URL of POST /api/v1/a2a/hire. */
+  hireUrl: string;
+  /** Pretty-printed request body, targeting a live indexed agent. */
+  bodyJson: string;
+  className?: string;
+}
 
-export function QuickstartTabs({ className }: { className?: string }) {
+export function QuickstartTabs({ hireUrl, bodyJson, className }: QuickstartTabsProps) {
+  const tabs = useMemo<Tab[]>(() => {
+    const curl = `curl -sS -X POST ${hireUrl} \\
+  -H "Content-Type: application/json" \\
+  -d '${indent(bodyJson, '  ')}'`;
+
+    const typescript = `import type { A2AJobIntentResponse } from "./bazar-types";
+import { createWalletClient, custom } from "viem";
+import { bsc } from "viem/chains";
+
+const res = await fetch("${hireUrl}", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(${indent(toTsObject(bodyJson), '  ')}),
+});
+
+const result = (await res.json()) as A2AJobIntentResponse | { ok: false; error: { code: string; message: string } };
+if (!result.ok) throw new Error(\`\${result.error.code}: \${result.error.message}\`);
+
+// res.status === 201, result.intent.status === "unsigned_intent".
+// Nothing has been signed or sent. Submit createJob yourself:
+const { intent } = result;
+const wallet = createWalletClient({ chain: bsc, transport: custom(window.ethereum) });
+const hash = await wallet.sendTransaction({
+  account: intent.client,
+  to: intent.createJob.to,          // ERC-8183 AgenticCommerce kernel
+  data: intent.createJob.calldata,  // createJob(provider, evaluator, expiredAt, description, hook)
+});
+
+// Then read jobId from the JobCreated event, approve intent.payment.token,
+// and call fund(jobId, expectedBudget, "0x") with a budget YOU choose -
+// intent.payment.quotedAmount is null because no price exists onchain.`;
+
+    const python = `import requests
+
+res = requests.post(
+    "${hireUrl}",
+    json=${indent(bodyJson, '    ')},
+    headers={"Content-Type": "application/json"},
+    timeout=30,
+)
+
+result = res.json()
+if not result["ok"]:
+    raise RuntimeError(result["error"]["code"] + ": " + result["error"]["message"])
+
+intent = result["intent"]
+assert intent["status"] == "unsigned_intent"   # nothing signed, nothing sent
+
+print(intent["id"])
+print(intent["createJob"]["to"])        # ERC-8183 AgenticCommerce kernel
+print(intent["createJob"]["calldata"])  # submit this from intent["client"]
+print(intent["payment"]["quotedAmount"])  # None - you set the budget in fund()`;
+
+    return [
+      { id: 'curl', label: 'curl', lang: 'bash', title: 'POST /api/v1/a2a/hire', code: curl },
+      { id: 'typescript', label: 'TypeScript', lang: 'ts', title: 'intent.ts - fetch + viem', code: typescript },
+      { id: 'python', label: 'Python', lang: 'python', title: 'intent.py - requests', code: python },
+    ];
+  }, [hireUrl, bodyJson]);
+
   const [active, setActive] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const tab = TABS[active];
+  const tab = tabs[active];
 
-  const onKeyDown = useMemo(
-    () => (event: KeyboardEvent<HTMLDivElement>) => {
-      const delta = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-      if (!delta) return;
-      event.preventDefault();
-      const next = (active + delta + TABS.length) % TABS.length;
-      setActive(next);
-      tabRefs.current[next]?.focus();
-    },
-    [active],
-  );
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const delta = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    if (!delta) return;
+    event.preventDefault();
+    const next = (active + delta + tabs.length) % tabs.length;
+    setActive(next);
+    tabRefs.current[next]?.focus();
+  };
 
   return (
     <div className={className}>
@@ -102,7 +121,7 @@ export function QuickstartTabs({ className }: { className?: string }) {
         onKeyDown={onKeyDown}
         className="inline-flex rounded-xl border border-white/[0.08] bg-white/[0.03] p-1"
       >
-        {TABS.map((t, i) => (
+        {tabs.map((t, i) => (
           <button
             key={t.id}
             ref={(el) => {
@@ -132,14 +151,21 @@ export function QuickstartTabs({ className }: { className?: string }) {
         tabIndex={0}
         className="mt-3 ring-focus"
       >
-        <CodeBlock code={tab.code} lang={tab.lang} title={tab.title} copyLabel={`${tab.label} snippet`} scroll="max-h-[26rem]" />
+        <CodeBlock
+          code={tab.code}
+          lang={tab.lang}
+          title={tab.title}
+          copyLabel={`${tab.label} snippet`}
+          scroll="max-h-[30rem]"
+        />
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-slate-500">
-        A successful call answers <span className="tabular font-mono text-emerald-300">201 Created</span> with the hire, the
-        escrow quote (contract, amount including the 1% protocol fee, and ABI-encoded{' '}
-        <code className="font-mono text-slate-300">calldata</code>) and the hired agent&apos;s A2A endpoint. No API key is
-        required; the router is CORS-open and unauthenticated.
+        A successful call answers <span className="tabular font-mono text-emerald-300">201 Created</span> with{' '}
+        <code className="font-mono text-slate-300">status: &quot;unsigned_intent&quot;</code>: the resolved agent, the
+        ERC-8183 kernel address and ABI-encoded <code className="font-mono text-slate-300">createJob</code> calldata.
+        Bazar signs nothing, holds nothing and takes no fee. No API key is required; the router is CORS-open and
+        unauthenticated.
       </p>
     </div>
   );

@@ -1,9 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { AlertTriangle, Play, RotateCcw, Terminal } from 'lucide-react';
-import { SAMPLE_HIRE_REQUEST } from '@/lib/a2a/schema';
-import { DEMO_HIRER } from '@/lib/data/hires';
+import { AlertTriangle, Play, RotateCcw, Terminal } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { CodeBlock } from '@/components/developers/code-block';
@@ -11,21 +9,33 @@ import { CodeBlock } from '@/components/developers/code-block';
 /**
  * Live console for POST /api/v1/a2a/hire.
  *
+ * Every preset body is generated server-side from the real index and passed in,
+ * so the agent ids in this console are agents that actually exist on BSC right
+ * now - a click cannot 404 on a slug that was invented for the docs.
+ *
  * Everything measured here is client-side: `performance.now()` brackets the
  * fetch, so the number shown is round-trip latency from the browser, not server
- * time. State starts from the canonical `SAMPLE_HIRE_REQUEST` so the first
- * render is deterministic and hydration-safe.
+ * time. State starts from the injected body so the first render is
+ * deterministic and hydration-safe.
  */
 
 export interface ConsoleAgentOption {
-  id: string;
+  slug: string;
   name: string;
-  tokenId: number;
+  tokenId: string;
+  protocols: string[];
+  x402: boolean;
 }
 
 export interface TryItConsoleProps {
-  /** Agents with `a2a.enabled` — the select rewrites `agentId` in the body. */
+  /** Real indexed agents; the select rewrites `agentId` in the body. */
   agents: ConsoleAgentOption[];
+  /** 201 preset - the canonical request against a live agent. */
+  validBody: string;
+  /** 400 preset - malformed payer, missing description. */
+  invalidBody: string;
+  /** 404 preset - a well-formed slug nothing matches. */
+  unknownBody: string;
   endpoint?: string;
   className?: string;
 }
@@ -41,29 +51,14 @@ interface ConsoleResult {
   networkError?: string;
 }
 
-const VALID_BODY = JSON.stringify(SAMPLE_HIRE_REQUEST, null, 2);
-const MISSING_FIELDS_BODY = JSON.stringify({ agentId: 'whalewatch-bsc', payer: '0xnot-an-address' }, null, 2);
-const UNKNOWN_AGENT_BODY = JSON.stringify(
-  { agentId: 'ghostwriter-bsc', tierId: 'task', payer: DEMO_HIRER },
-  null,
-  2,
-);
-
-const PRESETS = [
-  { id: 'valid', label: 'Valid hire', hint: '201', body: VALID_BODY },
-  { id: 'invalid', label: 'Missing fields', hint: '400', body: MISSING_FIELDS_BODY },
-  { id: 'unknown', label: 'Unknown agent', hint: '404', body: UNKNOWN_AGENT_BODY },
-] as const;
-
 const STATUS_TEXT: Record<number, string> = {
   200: 'OK',
   201: 'Created',
   400: 'Bad Request',
-  403: 'Forbidden',
   404: 'Not Found',
   405: 'Method Not Allowed',
-  429: 'Too Many Requests',
   500: 'Internal Server Error',
+  503: 'Service Unavailable',
 };
 
 function toneFor(status: number | null) {
@@ -139,7 +134,7 @@ function ErrorDetails({ details }: { details: unknown }) {
         {Object.entries(details as Record<string, unknown>).map(([k, v]) => (
           <li key={k} className="flex flex-wrap items-baseline gap-x-2">
             <code className="font-mono text-cyan-300">{k}</code>
-            <span className="font-mono text-slate-400">{String(v)}</span>
+            <span className="break-all font-mono text-slate-400">{String(v)}</span>
           </li>
         ))}
       </ul>
@@ -148,11 +143,27 @@ function ErrorDetails({ details }: { details: unknown }) {
   return null;
 }
 
-export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className }: TryItConsoleProps) {
-  const [body, setBody] = useState(VALID_BODY);
+export function TryItConsole({
+  agents,
+  validBody,
+  invalidBody,
+  unknownBody,
+  endpoint = '/api/v1/a2a/hire',
+  className,
+}: TryItConsoleProps) {
+  const [body, setBody] = useState(validBody);
   const [pending, setPending] = useState(false);
   const [history, setHistory] = useState<ConsoleResult[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
+
+  const presets = useMemo(
+    () => [
+      { id: 'valid', label: 'Valid intent', hint: '201', body: validBody },
+      { id: 'invalid', label: 'Missing fields', hint: '400', body: invalidBody },
+      { id: 'unknown', label: 'Unknown agent', hint: '404', body: unknownBody },
+    ],
+    [validBody, invalidBody, unknownBody],
+  );
 
   const agentId = readAgentId(body);
   const parseError = useMemo(() => {
@@ -164,10 +175,7 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
     }
   }, [body]);
 
-  const result = useMemo(
-    () => history.find((h) => h.seq === selected) ?? history[0] ?? null,
-    [history, selected],
-  );
+  const result = useMemo(() => history.find((h) => h.seq === selected) ?? history[0] ?? null, [history, selected]);
 
   const onAgentChange = useCallback((nextId: string) => {
     setBody((current) => {
@@ -218,6 +226,8 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
     setPending(false);
   }, [body, endpoint]);
 
+  const knownAgent = agentId ? agents.some((a) => a.slug === agentId) : false;
+
   return (
     <section id="try-it" className={cn('scroll-mt-24', className)}>
       <div className="glass overflow-hidden rounded-2xl">
@@ -232,27 +242,32 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
           <div className="bg-ink/60 p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-1">
-                <label htmlFor="try-it-agent" className="block text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                  Agent
+                <label
+                  htmlFor="try-it-agent"
+                  className="block text-[11px] font-medium uppercase tracking-wider text-slate-500"
+                >
+                  Agent - live from the index
                 </label>
                 <select
                   id="try-it-agent"
-                  value={agentId && agents.some((a) => a.id === agentId) ? agentId : ''}
+                  value={knownAgent && agentId ? agentId : ''}
                   onChange={(e) => onAgentChange(e.target.value)}
                   className="mt-1.5 w-full rounded-lg border border-white/[0.1] bg-surface px-3 py-2 text-sm text-white ring-focus focus:border-bnb/50"
                 >
-                  {(!agentId || !agents.some((a) => a.id === agentId)) && (
-                    <option value="">{agentId ? `${agentId} (not indexed)` : 'Custom agentId'}</option>
+                  {!knownAgent && (
+                    <option value="">{agentId ? `${agentId} (not in this page)` : 'Custom agentId'}</option>
                   )}
                   {agents.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} — {a.id} · #{a.tokenId}
+                    <option key={a.slug} value={a.slug}>
+                      {a.name} - {a.slug}
+                      {a.protocols.length > 0 ? ` · ${a.protocols.join('/')}` : ''}
+                      {a.x402 ? ' · x402' : ''}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="flex flex-wrap gap-2">
-                {PRESETS.map((p) => (
+                {presets.map((p) => (
                   <button
                     key={p.id}
                     type="button"
@@ -268,7 +283,10 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
               </div>
             </div>
 
-            <label htmlFor="try-it-body" className="mt-4 block text-[11px] font-medium uppercase tracking-wider text-slate-500">
+            <label
+              htmlFor="try-it-body"
+              className="mt-4 block text-[11px] font-medium uppercase tracking-wider text-slate-500"
+            >
               Request body
             </label>
             <textarea
@@ -276,7 +294,7 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
               value={body}
               onChange={(e) => setBody(e.target.value)}
               spellCheck={false}
-              rows={16}
+              rows={14}
               aria-describedby="try-it-body-status"
               className="mt-1.5 w-full resize-y rounded-xl border border-white/[0.1] bg-ink/80 p-3 font-mono text-[12px] leading-5 text-slate-300 ring-focus focus:border-bnb/50"
             />
@@ -286,7 +304,7 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
                 {parseError ? (
                   <span className="inline-flex items-start gap-1.5 text-amber-300">
                     <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
-                    <span>Not valid JSON — the router answers 400 VALIDATION_ERROR. Send it and see.</span>
+                    <span>Not valid JSON - the router answers 400 VALIDATION_ERROR. Send it and see.</span>
                   </span>
                 ) : (
                   <span className="text-slate-500">Valid JSON. Edit any field, then send.</span>
@@ -294,7 +312,7 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
               </p>
               <button
                 type="button"
-                onClick={() => setBody(VALID_BODY)}
+                onClick={() => setBody(validBody)}
                 className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] text-slate-400 ring-focus hover:text-white"
               >
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden />
@@ -377,7 +395,9 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
 
             {history.length > 0 && (
               <div className="mt-4">
-                <h4 className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Last {history.length} requests</h4>
+                <h4 className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                  Last {history.length} requests
+                </h4>
                 <ul className="mt-2 space-y-1.5">
                   {history.map((h) => (
                     <li key={h.seq}>
@@ -393,12 +413,7 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
                         )}
                       >
                         <span className="tabular font-mono text-slate-600">#{h.seq}</span>
-                        <span
-                          className={cn(
-                            'tabular rounded border px-1.5 py-px font-mono text-[10px]',
-                            toneFor(h.status),
-                          )}
-                        >
+                        <span className={cn('tabular rounded border px-1.5 py-px font-mono text-[10px]', toneFor(h.status))}>
                           {h.status ?? 'ERR'}
                         </span>
                         <span className="truncate font-mono text-slate-400">
@@ -416,11 +431,11 @@ export function TryItConsole({ agents, endpoint = '/api/v1/a2a/hire', className 
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-slate-500">
-        Hires created here are quotes: status <code className="font-mono text-slate-300">pending</code>, held in the
-        router&apos;s in-memory store until the escrow calldata is submitted on BSC. The id is derived from
-        (agent, tier, payer, task), so re-sending the same body is idempotent and returns a fresh quote for the same hire.
-        A <code className="font-mono text-slate-300">403 A2A_DISABLED</code> cannot be reproduced from this console —
-        every agent in the indexed demo set is A2A-ready.
+        A 201 here is an <span className="text-slate-300">unsigned intent</span>, nothing more: Bazar resolved the
+        agent, encoded <code className="font-mono text-slate-300">createJob</code> for the ERC-8183 kernel and returned
+        the calldata. No transaction was sent, no funds moved, and no amount was quoted - you set the budget yourself in{' '}
+        <code className="font-mono text-slate-300">fund(jobId, expectedBudget)</code>. Intent ids are deterministic over
+        (agent, payer, description, expiredAt), so re-sending the same body returns the same id.
       </p>
     </section>
   );

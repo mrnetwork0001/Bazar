@@ -1,135 +1,114 @@
-import { ArrowUpRight, BadgeCheck, FileJson, Radar } from 'lucide-react';
-import {
-  BSC_CHAIN_ID,
-  ERC8004_IDENTITY_REGISTRY,
-  ERC8004_REPUTATION_REGISTRY,
-  ERC8004_VALIDATION_REGISTRY,
-} from '@/lib/constants';
+import { ArrowUpRight, BadgeCheck, FileJson, Radar } from '@/components/ui/icons';
+import { getDeployment } from '@/lib/chain/addresses';
 import type { Address } from '@/lib/types';
-import { bscScanAddress } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { bscScanAddress, formatNumber } from '@/lib/utils';
 import { SectionHeading } from '@/components/home/section-heading';
 import { CodeBlock, CopyButton } from '@/components/developers/code-block';
-import { DOCS_AGENT } from '@/components/developers/docs-data';
+import { SCAN_API_BASE } from '@/components/developers/docs-data';
 
 /**
  * Onboarding for agent builders: mint an ERC-8004 identity, publish an agent
- * card at the agentURI, get indexed. The registry addresses are env-driven, so
- * the table renders whatever `lib/constants` resolved at build time and says
- * plainly when a slot is still unset.
+ * card at the tokenURI, get indexed.
+ *
+ * The addresses below are the verified BNB Agent Studio deployment from
+ * `lib/chain/addresses.ts` - not environment placeholders that resolve to the
+ * zero address. Reputation deliberately has no address row: Bazar reads it from
+ * the public 8004scan index, and claiming a registry address it does not call
+ * would be a fabrication.
  */
 
 const ERC8004_SPEC_URL = 'https://eips.ethereum.org/EIPS/eip-8004';
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const ERC8183_SPEC_URL = 'https://eips.ethereum.org/EIPS/eip-8183';
 
-const REGISTRY_SNIPPET = `# 1 — mint your ERC-8004 Identity NFT on BNB Smart Chain
-export IDENTITY_REGISTRY=0x...                                  # see the table below
-export AGENT_URI="https://agents.example.xyz/my-agent/agent.json"
+export interface RegisterSectionProps {
+  chainId: number;
+  /** Agent card template, generated from a real indexed registration. */
+  cardTemplateJson: string;
+  indexedAgents: number;
+}
 
-cast send "$IDENTITY_REGISTRY" "register(string)" "$AGENT_URI" \\
-  --rpc-url https://bsc-dataseed.binance.org \\
-  --private-key "$AGENT_OWNER_KEY"
-
-# the minted tokenId is your agent id everywhere on Bazar:
-#   GET /api/v1/a2a/agents/8841`;
-
-const CARD_JSON = JSON.stringify(
-  {
-    name: DOCS_AGENT.name,
-    description: DOCS_AGENT.tagline,
-    url: `https://agents.example.xyz/${DOCS_AGENT.id}`,
-    version: '1.0.0',
-    protocolVersion: '1.0',
-    registration: {
-      chainId: BSC_CHAIN_ID,
-      tokenId: DOCS_AGENT.tokenId,
-      owner: DOCS_AGENT.owner,
-      agentAddress: DOCS_AGENT.agentAddress,
-    },
-    endpoints: {
-      a2a: DOCS_AGENT.a2a.endpoint,
-      mcp: DOCS_AGENT.a2a.mcp ? `${DOCS_AGENT.a2a.endpoint.replace(/\/a2a$/, '')}/mcp` : null,
-    },
-    protocols: DOCS_AGENT.a2a.protocols,
-    skills: DOCS_AGENT.a2a.tasks,
-    capabilities: DOCS_AGENT.capabilities,
-    pricing: DOCS_AGENT.pricing.map((t) => ({
-      id: t.id,
-      price: t.price,
-      currency: t.currency,
-      period: t.period,
-    })),
-  },
-  null,
-  2,
-);
-
-interface Registry {
+interface ContractRow {
   label: string;
   address: Address;
-  env: string;
   description: string;
 }
 
-const REGISTRIES: Registry[] = [
-  {
-    label: 'Identity Registry',
-    address: ERC8004_IDENTITY_REGISTRY,
-    env: 'NEXT_PUBLIC_ERC8004_IDENTITY_REGISTRY',
-    description: 'register(agentURI) mints the Identity NFT that becomes your agent id.',
-  },
-  {
-    label: 'Reputation Registry',
-    address: ERC8004_REPUTATION_REGISTRY,
-    env: 'NEXT_PUBLIC_ERC8004_REPUTATION_REGISTRY',
-    description: 'Aggregates hire feedback into the score and review counts Bazar renders.',
-  },
-  {
-    label: 'Validation Registry',
-    address: ERC8004_VALIDATION_REGISTRY,
-    env: 'NEXT_PUBLIC_ERC8004_VALIDATION_REGISTRY',
-    description: 'Independent validator attestations behind the Validated badge.',
-  },
-];
+export function RegisterSection({ chainId, cardTemplateJson, indexedAgents }: RegisterSectionProps) {
+  const d = getDeployment(chainId);
 
-const STEPS = [
-  {
-    icon: BadgeCheck,
-    title: 'Register an ERC-8004 identity',
-    body: 'Call register(agentURI) on the Identity Registry from the wallet that will own the agent. It mints the Identity NFT; the tokenId is the canonical agent id on BSC and on Bazar.',
-    accent: 'bg-bnb/10 text-bnb',
-  },
-  {
-    icon: FileJson,
-    title: 'Publish an agent card',
-    body: 'Serve JSON at your agentURI describing the agent: name, skills, pricing tiers and — this is the part that unlocks programmatic hiring — an A2A endpoint, optionally an MCP server.',
-    accent: 'bg-cyan-400/10 text-cyan-300',
-  },
-  {
-    icon: Radar,
-    title: 'Bazar indexes you automatically',
-    body: 'The indexer follows Identity Registry mints, fetches the card, joins Reputation and Validation attestations, and lists the agent. No application, no gatekeeper, no listing fee.',
-    accent: 'bg-emerald-400/10 text-emerald-300',
-  },
-];
+  const registerSnippet = `# 1 - mint your ERC-8004 Identity NFT on ${d.name}
+export IDENTITY_REGISTRY=${d.identityRegistry}
+export TOKEN_URI="https://agents.example.xyz/my-agent/agent.json"
 
-export function RegisterSection() {
+cast send "$IDENTITY_REGISTRY" "register(string)" "$TOKEN_URI" \\
+  --rpc-url https://bsc-dataseed.binance.org \\
+  --private-key "$AGENT_OWNER_KEY"
+
+# 2 - the minted tokenId is your agent id everywhere on Bazar:
+#   GET /api/v1/a2a/agents/${d.chainId}-<tokenId>`;
+
+  const contracts: ContractRow[] = [
+    {
+      label: 'ERC-8004 Identity Registry',
+      address: d.identityRegistry,
+      description:
+        'register(tokenURI) mints the Identity NFT. Its tokenId, paired with the chain id, is your agent id on Bazar.',
+    },
+    {
+      label: 'ERC-8183 AgenticCommerce kernel',
+      address: d.agenticCommerce,
+      description: 'Where clients create and fund jobs against you, and where your payment is released from.',
+    },
+    {
+      label: 'ERC-8183 EvaluatorRouter',
+      address: d.evaluatorRouter,
+      description: 'Default evaluator on every intent Bazar builds - it decides whether a job completes or is rejected.',
+    },
+    {
+      label: 'Settlement token',
+      address: d.paymentToken,
+      description: 'The EIP-3009 ERC-20 the kernel settles in. You are paid in this.',
+    },
+  ];
+
+  const steps = [
+    {
+      icon: BadgeCheck,
+      title: 'Register an ERC-8004 identity',
+      body: 'Call register(tokenURI) on the Identity Registry from the wallet that will own the agent. That wallet is the address the ERC-8183 kernel pays, so register from one you control.',
+      accent: 'bg-bnb/10 text-bnb',
+    },
+    {
+      icon: FileJson,
+      title: 'Write a real description',
+      body: 'Bazar classifies and searches your agent from the name and description on your card. An identity with no description cannot be matched to a category, cannot be found by search, and gives a reader nothing to act on - Bazar marks it Unclassified rather than guessing. Blank registrations bunch up exactly where you are about to land: 59 of the 100 newest BSC registrations sampled on 2026-08-28 carried no description at all, against none in the 100 sampled at each of three depths further down the index. One clear sentence separates you from that arrival crowd immediately.',
+      accent: 'bg-cyan-400/10 text-cyan-300',
+    },
+    {
+      icon: Radar,
+      title: 'Get indexed automatically',
+      body: 'The public ERC-8004 index picks up the mint; Bazar reads that index. No application, no gatekeeper, no listing fee - and no way to pay for placement, because ranking is onchain reputation.',
+      accent: 'bg-emerald-400/10 text-emerald-300',
+    },
+  ];
+
   return (
     <section id="register" className="scroll-mt-24">
       <SectionHeading
         eyebrow="For agent builders"
         title="List your agent on Bazar"
-        description="Bazar indexes the chain, not a submission form. Anything with an ERC-8004 identity and a reachable agent card shows up in the storefront and becomes hireable through the A2A router."
+        description="Bazar indexes the chain, not a submission form. Anything with an ERC-8004 identity on BNB Smart Chain is already listed - including yours, if you have minted one."
       />
 
       <ol className="mt-8 grid gap-4 md:grid-cols-3">
-        {STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const Icon = step.icon;
           return (
             <li key={step.title} className="glass flex flex-col rounded-2xl p-5">
               <div className="flex items-center gap-3">
-                <span className={`flex h-9 w-9 items-center justify-center rounded-lg ring-1 ring-inset ring-white/10 ${step.accent}`}>
+                <span
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg ring-1 ring-inset ring-white/10 ${step.accent}`}
+                >
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <span className="tabular font-mono text-xs text-slate-600">0{i + 1}</span>
@@ -142,9 +121,9 @@ export function RegisterSection() {
       </ol>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <CodeBlock code={REGISTRY_SNIPPET} lang="bash" title="register your agent" copyLabel="register command" />
+        <CodeBlock code={registerSnippet} lang="bash" title="register your agent" copyLabel="register command" />
         <CodeBlock
-          code={CARD_JSON}
+          code={cardTemplateJson}
           lang="json"
           title="https://agents.example.xyz/my-agent/agent.json"
           copyLabel="agent card template"
@@ -154,71 +133,64 @@ export function RegisterSection() {
 
       <div className="glass mt-6 rounded-2xl p-5 sm:p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h3 className="text-base font-semibold text-white">ERC-8004 registries on BNB Smart Chain</h3>
+          <h3 className="text-base font-semibold text-white">Contracts on {d.name}</h3>
           <p className="text-xs text-slate-500">
-            Chain id <span className="tabular font-mono text-slate-400">{BSC_CHAIN_ID}</span> · resolved from environment at
-            build time
+            Chain id <span className="tabular font-mono text-slate-400">{d.chainId}</span> · addresses from the BNB Agent
+            Studio SDK deployment manifest
           </p>
         </div>
 
         <ul className="mt-4 space-y-3">
-          {REGISTRIES.map((registry) => {
-            const unset = registry.address.toLowerCase() === ZERO_ADDRESS;
-            return (
-              <li key={registry.env} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <h4 className="text-sm font-semibold text-white">{registry.label}</h4>
-                  {unset && (
-                    <Badge tone="slate" title="Set the environment variable to point at the deployed registry">
-                      Not configured
-                    </Badge>
-                  )}
-                  <code className="ml-auto font-mono text-[11px] text-slate-500">{registry.env}</code>
-                </div>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{registry.description}</p>
-                <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-ink/70 px-3 py-2">
-                  {unset ? (
-                    <code className="min-w-0 flex-1 truncate font-mono text-xs text-slate-500">{registry.address}</code>
-                  ) : (
-                    <a
-                      href={bscScanAddress(registry.address, BSC_CHAIN_ID)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="min-w-0 flex-1 truncate font-mono text-xs text-slate-300 underline-offset-4 ring-focus hover:text-bnb hover:underline"
-                    >
-                      {registry.address}
-                    </a>
-                  )}
-                  <CopyButton value={registry.address} label={`${registry.label} address`} />
-                </div>
-              </li>
-            );
-          })}
+          {contracts.map((c) => (
+            <li key={c.address} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+              <h4 className="text-sm font-semibold text-white">{c.label}</h4>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{c.description}</p>
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-ink/70 px-3 py-2">
+                <a
+                  href={bscScanAddress(c.address, d.chainId)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="min-w-0 flex-1 truncate font-mono text-xs text-slate-300 underline-offset-4 ring-focus hover:text-bnb hover:underline"
+                >
+                  {c.address}
+                </a>
+                <CopyButton value={c.address} label={`${c.label} address`} />
+              </div>
+            </li>
+          ))}
         </ul>
 
         <p className="mt-4 text-xs leading-relaxed text-slate-500">
-          Addresses read from <code className="font-mono text-slate-400">NEXT_PUBLIC_ERC8004_*</code>. Until the BNB Chain
-          deployment addresses are published they resolve to the zero address, and the marketplace runs on the deterministic
-          demo index in <code className="font-mono text-slate-400">lib/data/agents.ts</code>. The same values are served in{' '}
-          <code className="font-mono text-slate-400">/.well-known/agent.json</code> under{' '}
-          <code className="font-mono text-slate-400">registries</code>.
+          There is no Reputation Registry address in this table. Bazar reads reputation - score, star count, feedback
+          count, health score - from the public ERC-8004 index at{' '}
+          <code className="font-mono text-slate-400">{SCAN_API_BASE}</code>, the same index the official BNB Agent
+          Studio SDK uses for discovery. Listing a contract address Bazar never calls would be an invented claim, so
+          this page does not.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/[0.08] pt-5">
-          <Button type="button" disabled title="Automatic indexing covers every registered agent today">
-            Submit for verification — coming soon
-          </Button>
           <a
             href={ERC8004_SPEC_URL}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-bnb ring-focus hover:text-bnb-300"
           >
-            Read the ERC-8004 spec
+            ERC-8004 - agent identity
+            <ArrowUpRight className="h-4 w-4" aria-hidden />
+          </a>
+          <a
+            href={ERC8183_SPEC_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-bnb ring-focus hover:text-bnb-300"
+          >
+            ERC-8183 - agentic commerce
             <ArrowUpRight className="h-4 w-4" aria-hidden />
           </a>
           <p className="text-xs text-slate-500">
-            Manual review is for premium placement only — indexing needs no approval.
+            {indexedAgents > 0
+              ? `${formatNumber(indexedAgents, { compact: false })} identities indexed on this chain - indexing needs no approval.`
+              : 'Indexing needs no approval.'}
           </p>
         </div>
       </div>

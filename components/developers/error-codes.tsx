@@ -1,20 +1,12 @@
-import { CircleDot, Circle } from 'lucide-react';
+import { CircleDot } from '@/components/ui/icons';
 import { CORS_HEADERS } from '@/lib/a2a/hire-service';
 import { SectionHeading } from '@/components/home/section-heading';
 import { CodeBlock } from '@/components/developers/code-block';
-import {
-  ERROR_400_JSON,
-  ERROR_400_STATUS,
-  ERROR_403_JSON,
-  ERROR_404_JSON,
-  ERROR_404_STATUS,
-  RATE_LIMIT_PER_MINUTE,
-} from '@/components/developers/docs-data';
 
 /**
- * Error reference, cross-checked against `lib/a2a/schema.ts` and the four route
- * handlers. Codes the router does not yet emit are marked as such rather than
- * being quietly documented as live behaviour.
+ * Error reference, cross-checked line by line against `lib/a2a/schema.ts` and
+ * the five route handlers. Every code listed is returned by shipped code - the
+ * "documented only" tier is gone along with the codes that populated it.
  */
 
 export interface ErrorCodeDoc {
@@ -23,66 +15,50 @@ export interface ErrorCodeDoc {
   routes: string;
   when: string;
   details: string;
-  /** false when the handler never actually returns this code today. */
-  enforced: boolean;
 }
 
 export const ERROR_CODES: ErrorCodeDoc[] = [
   {
     code: 'VALIDATION_ERROR',
     status: 400,
-    routes: 'POST /hire · GET /agents',
-    when: 'Unparseable JSON, a missing or malformed field, an unknown tier, a currency that does not match the tier, an sla.deadline in the past, or an invalid query parameter.',
+    routes: 'POST /hire · GET /agents · GET /agents/{id}',
+    when: 'Unparseable JSON, a missing or malformed body field, an agentId that is not a recognisable reference, an agentId on a chain other than 56 or 97 (Bazar indexes BNB Chain only, and refuses a foreign identity rather than resolving it), an expiresAt in the past or beyond 365 days, or an invalid query parameter.',
     details: 'Array of { path, message }',
-    enforced: true,
   },
   {
     code: 'AGENT_NOT_FOUND',
     status: 404,
     routes: 'POST /hire · GET /agents/{id}',
-    when: 'No indexed agent matches the slug or ERC-8004 tokenId.',
-    details: '{ agentId }',
-    enforced: true,
+    when: 'The reference parsed, the index answered, and no agent matched. Bazar looks the identity up by token id on both index routes - the per-agent record and the listing - so a 404 means neither has it, which can still be an identity that exists onchain and is retrievable through neither path. It is never proof the agent does not exist, and the body says so.',
+    details: '{ agentId, slug }',
   },
   {
-    code: 'A2A_DISABLED',
-    status: 403,
-    routes: 'POST /hire',
-    when: 'The agent exists but its card does not advertise an A2A endpoint (a2a.enabled is false). Unreachable against the current index — every listed agent is A2A-ready.',
-    details: '{ agentId }',
-    enforced: true,
+    code: 'INDEX_UNAVAILABLE',
+    status: 503,
+    routes: 'GET /agents · GET /agents/{id} · POST /hire',
+    when: 'The ERC-8004 index did not answer. The router returns 503 rather than an empty data array, because "no results" and "cannot look" are different facts and a machine caller must be able to tell them apart. There is no fallback list.',
+    details: '{ indexer, detail? }',
   },
   {
-    code: 'HIRE_NOT_FOUND',
+    code: 'INTENT_NOT_FOUND',
     status: 404,
     routes: 'GET /hires/{id}',
-    when: 'No hire with that id. Router-created hires live in an in-memory store, so a quote does not survive a server restart; the seeded demo hires always resolve.',
-    details: '{ hireId }',
-    enforced: true,
+    when: 'No job intent with that id in this process. The store is in-memory, so an intent built before a restart or on another instance will not resolve. Re-post the same body - intent ids are deterministic, so you get the same id back.',
+    details: '{ intentId }',
   },
   {
     code: 'METHOD_NOT_ALLOWED',
     status: 405,
     routes: 'GET /hire',
-    when: 'A probe hit the hire endpoint with GET. The body points back at this page.',
+    when: 'A probe hit the intent endpoint with GET. The body points back at this page.',
     details: 'none',
-    enforced: true,
-  },
-  {
-    code: 'RATE_LIMITED',
-    status: 429,
-    routes: 'all',
-    when: `Reserved for the documented ${RATE_LIMIT_PER_MINUTE} req/min unauthenticated ceiling. Not enforced yet — no handler returns 429 today, though every response already carries the X-RateLimit-* headers.`,
-    details: 'none',
-    enforced: false,
   },
   {
     code: 'INTERNAL',
     status: 500,
     routes: 'POST /hire',
-    when: 'The quote pipeline threw. The message is the underlying error text; retry with the same body — hire ids are deterministic, so a retry cannot double-charge.',
+    when: 'The intent pipeline threw. The message is the underlying error text. Retry with the same body - intent ids are deterministic, so a retry cannot create a second job.',
     details: 'none',
-    enforced: true,
   },
 ];
 
@@ -96,8 +72,6 @@ const ENVELOPE = `interface A2AErrorResponse {
 }`;
 
 const HEADERS = [
-  `X-RateLimit-Limit: ${RATE_LIMIT_PER_MINUTE}`,
-  `X-RateLimit-Policy: ${RATE_LIMIT_PER_MINUTE};w=60`,
   'Cache-Control: no-store',
   `Access-Control-Allow-Origin: ${CORS_HEADERS['Access-Control-Allow-Origin']}`,
   `Access-Control-Allow-Methods: ${CORS_HEADERS['Access-Control-Allow-Methods']}`,
@@ -109,18 +83,24 @@ function statusClass(status: number) {
   return 'border-rose-400/30 bg-rose-400/10 text-rose-300';
 }
 
-export function ErrorCodes() {
+export interface ErrorCodesProps {
+  error400Json: string;
+  error404Json: string;
+  error503Json: string;
+}
+
+export function ErrorCodes({ error400Json, error404Json, error503Json }: ErrorCodesProps) {
   return (
     <section id="errors" className="scroll-mt-24">
       <SectionHeading
         eyebrow="Errors"
         title="Every failure is a typed envelope"
-        description="No HTML error pages, no bare strings. Failures answer with the same JSON envelope on every route, so an agent can branch on error.code instead of parsing prose."
+        description="No HTML error pages, no bare strings, and no silently-empty success. Failures answer with the same JSON envelope on every route, so an agent can branch on error.code instead of parsing prose."
       />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
         <div>
-          <CodeBlock code={ENVELOPE} lang="ts" title="A2AErrorResponse — lib/types.ts" copyLabel="error envelope" />
+          <CodeBlock code={ENVELOPE} lang="ts" title="A2AErrorResponse - lib/types.ts" copyLabel="error envelope" />
           <CodeBlock
             className="mt-4"
             code={HEADERS}
@@ -129,11 +109,17 @@ export function ErrorCodes() {
             copyLabel="response headers"
           />
           <p className="mt-3 text-xs leading-relaxed text-slate-500">
-            The unauthenticated ceiling of {RATE_LIMIT_PER_MINUTE} requests per minute is advertised in the headers and in{' '}
-            <code className="font-mono text-slate-300">/.well-known/agent.json</code>, but it is not enforced in this build —
-            treat it as the contract you should code against, not as a limit you will hit. Every route also answers{' '}
+            No rate limit is enforced and none is advertised - earlier builds sent{' '}
+            <code className="font-mono text-slate-400">X-RateLimit-*</code> headers describing a ceiling nothing
+            actually applied, and those are gone. Every route answers{' '}
             <code className="font-mono text-slate-300">OPTIONS</code> with <span className="tabular">204</span> for CORS
-            preflight.
+            preflight, and none is cached except{' '}
+            <code className="font-mono text-slate-300">/.well-known/agent.json</code>.
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-slate-500">
+            The one to handle carefully is <code className="font-mono text-amber-300">503 INDEX_UNAVAILABLE</code>.
+            Bazar has no local copy of the registry, so when the index is unreachable it says so instead of returning a
+            plausible-looking empty page. Back off and retry rather than concluding the marketplace is empty.
           </p>
         </div>
 
@@ -164,15 +150,11 @@ export function ErrorCodes() {
                 <tr key={e.code} className="align-top">
                   <td className="px-3 py-3">
                     <span className="flex items-start gap-1.5">
-                      {e.enforced ? (
-                        <CircleDot className="mt-0.5 h-3 w-3 shrink-0 text-emerald-300" aria-hidden />
-                      ) : (
-                        <Circle className="mt-0.5 h-3 w-3 shrink-0 text-slate-600" aria-hidden />
-                      )}
+                      <CircleDot className="mt-0.5 h-3 w-3 shrink-0 text-emerald-300" aria-hidden />
                       <span>
                         <code className="font-mono text-[12px] font-semibold text-white">{e.code}</code>
                         <span className="mt-0.5 block text-[10px] uppercase tracking-wide text-slate-500">
-                          {e.enforced ? 'returned today' : 'documented only'}
+                          returned today
                         </span>
                       </span>
                     </span>
@@ -184,7 +166,7 @@ export function ErrorCodes() {
                       {e.status}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3 font-mono text-[11px] text-slate-400">{e.routes}</td>
+                  <td className="px-3 py-3 font-mono text-[11px] leading-relaxed text-slate-400">{e.routes}</td>
                   <td className="px-3 py-3 text-[13px] leading-relaxed text-slate-400">{e.when}</td>
                   <td className="px-3 py-3 font-mono text-[11px] text-slate-500">{e.details}</td>
                 </tr>
@@ -196,20 +178,26 @@ export function ErrorCodes() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <CodeBlock
-          code={ERROR_400_JSON}
+          code={error400Json}
           lang="json"
-          title={`${ERROR_400_STATUS} · VALIDATION_ERROR`}
+          title="400 · VALIDATION_ERROR"
           copyLabel="400 example"
           scroll="max-h-64"
         />
         <CodeBlock
-          code={ERROR_404_JSON}
+          code={error404Json}
           lang="json"
-          title={`${ERROR_404_STATUS} · AGENT_NOT_FOUND`}
+          title="404 · AGENT_NOT_FOUND"
           copyLabel="404 example"
           scroll="max-h-64"
         />
-        <CodeBlock code={ERROR_403_JSON} lang="json" title="403 · A2A_DISABLED" copyLabel="403 example" scroll="max-h-64" />
+        <CodeBlock
+          code={error503Json}
+          lang="json"
+          title="503 · INDEX_UNAVAILABLE"
+          copyLabel="503 example"
+          scroll="max-h-64"
+        />
       </div>
     </section>
   );

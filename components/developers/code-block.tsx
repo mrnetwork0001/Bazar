@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Check, ClipboardCopy } from 'lucide-react';
+import { Check, ClipboardCopy } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
 /**
@@ -116,7 +116,7 @@ function compiled(lang: Exclude<CodeLang, 'text'>) {
   return entry;
 }
 
-/** Tokenizes one line. Pure and deterministic — safe on the server too. */
+/** Tokenizes one line. Pure and deterministic - safe on the server too. */
 export function highlightLine(line: string, lang: CodeLang): ReactNode[] {
   if (lang === 'text' || !line) return [line];
   const { re, classes } = compiled(lang);
@@ -168,7 +168,7 @@ export function CopyButton({ value, label = 'code', showLabel, className }: Copy
       await navigator.clipboard.writeText(value);
       ok = true;
     } catch {
-      // Clipboard API is unavailable outside secure contexts — fall back.
+      // Clipboard API is unavailable outside secure contexts - fall back.
       try {
         const el = document.createElement('textarea');
         el.value = value;
@@ -224,7 +224,7 @@ export interface CodeBlockProps {
   copyLabel?: string;
   /** Extra node in the header, right of the title. */
   aside?: ReactNode;
-  /** Drop the glass frame and header — just the highlighted pre. */
+  /** Drop the glass frame and header - just the highlighted pre. */
   bare?: boolean;
   /** Tailwind max-height for a vertical scroll area, e.g. "max-h-96". */
   scroll?: string;
