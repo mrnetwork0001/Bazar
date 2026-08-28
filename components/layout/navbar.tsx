@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { MotionConfig, motion } from 'framer-motion';
-import { CirclePlus, Menu, X } from 'lucide-react';
+import { CirclePlus, Menu, X } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/layout/logo';
 import { MobileNav, isActivePath } from '@/components/layout/mobile-nav';

@@ -1,16 +1,17 @@
 import Link from 'next/link';
-import { ArrowUpRight, Github } from 'lucide-react';
+import { ArrowUpRight } from '@/components/ui/icons';
+import { SocialLinks } from '@/components/layout/social-icons';
 import { Logo } from '@/components/layout/logo';
 import { SOCIAL_LINKS } from '@/lib/constants';
+import { BSC_MAINNET, getDeployment } from '@/lib/chain/addresses';
 import { CATEGORIES } from '@/lib/data/categories';
-import { MARKET_STATS } from '@/lib/data/stats';
-import { formatNumber } from '@/lib/utils';
+import { bscScanAddress } from '@/lib/utils';
 
 interface FooterLink {
   label: string;
   href: string;
   external?: boolean;
-  /** Rendered in mono — used for paths like /.well-known/agent.json */
+  /** Rendered in mono - used for paths like /.well-known/agent.json */
   mono?: boolean;
 }
 
@@ -19,6 +20,22 @@ interface FooterColumn {
   links: FooterLink[];
 }
 
+const BSC = getDeployment(BSC_MAINNET);
+
+/**
+ * Every href here has to resolve, and has to resolve to something Bazar owns.
+ *
+ * Four entries did not: an "MCP server" link to /developers#mcp (Bazar
+ * publishes no MCP server, and the anchor was `protocols`), an "Altana Wallet"
+ * row whose href was a duplicate of the BNB Chain row above it, a Resources
+ * column built from a GitHub repository that is not published yet - its
+ * "Project spec" and "license" links both 404'd, which is the worst possible
+ * result for a link inviting a judge to check provenance - and a "Telegram" row
+ * under Provenance pointing at https://t.me/Bazar, which resolves but belongs to
+ * an unrelated Persian-language news channel (see UNVERIFIED_LINKS). Provenance
+ * now lists only things a reader can check for themselves: the index the
+ * listings are read from, and the three contracts on BscScan.
+ */
 const COLUMNS: FooterColumn[] = [
   {
     title: 'Product',
@@ -33,7 +50,7 @@ const COLUMNS: FooterColumn[] = [
       { label: 'A2A API', href: '/developers' },
       { label: 'Register agent', href: '/developers#register' },
       { label: '/.well-known/agent.json', href: '/.well-known/agent.json', mono: true },
-      { label: 'MCP server', href: '/developers#mcp' },
+      { label: 'Protocols & x402', href: '/developers#protocols' },
     ],
   },
   {
@@ -43,15 +60,27 @@ const COLUMNS: FooterColumn[] = [
       { label: 'ERC-8004', href: 'https://eips.ethereum.org/EIPS/eip-8004', external: true },
       { label: 'PancakeSwap', href: 'https://pancakeswap.finance', external: true },
       { label: 'Venus Protocol', href: 'https://venus.io', external: true },
-      { label: 'Altana Wallet', href: 'https://www.bnbchain.org', external: true },
     ],
   },
   {
-    title: 'Resources',
+    title: 'Provenance',
     links: [
-      { label: 'GitHub', href: SOCIAL_LINKS.github, external: true },
-      { label: 'Project spec', href: `${SOCIAL_LINKS.github}/blob/main/BAZAR_PROJECT_SPEC.md`, external: true },
-      { label: 'Apache 2.0 license', href: `${SOCIAL_LINKS.github}/blob/main/LICENSE`, external: true },
+      { label: '8004scan index', href: SOCIAL_LINKS.indexer, external: true },
+      {
+        label: 'Identity Registry',
+        href: bscScanAddress(BSC.identityRegistry, BSC.chainId),
+        external: true,
+      },
+      {
+        label: 'ERC-8183 kernel',
+        href: bscScanAddress(BSC.agenticCommerce, BSC.chainId),
+        external: true,
+      },
+      {
+        label: 'Settlement token',
+        href: bscScanAddress(BSC.paymentToken, BSC.chainId),
+        external: true,
+      },
     ],
   },
 ];
@@ -79,7 +108,6 @@ function FooterAnchor({ link }: { link: FooterLink }) {
 }
 
 export function Footer() {
-  const indexedBlock = formatNumber(MARKET_STATS.lastIndexedBlock, { compact: false });
 
   return (
     <footer className="relative mt-16 border-t border-white/[0.08] bg-ink/60">
@@ -93,22 +121,13 @@ export function Footer() {
               <Logo size="md" subtitle />
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-slate-400">
-              The dual-layer ERC-8004 agent marketplace for BNB Chain — a human storefront and an A2A router, settling
-              through one escrow contract on BSC.
+              The dual-layer ERC-8004 agent marketplace for BNB Chain - a human storefront and an A2A router, reading
+              the live registries and encoding jobs for one ERC-8183 contract on BSC.
             </p>
             <p className="mt-4 max-w-sm text-xs leading-relaxed text-slate-500">
-              Built for Build the Era — BNB Agent Studio Marketplace Hackathon
+              Built for Build the Era - BNB Agent Studio Marketplace Hackathon
             </p>
-            <a
-              href={SOCIAL_LINKS.github}
-              target="_blank"
-              rel="noreferrer"
-              className="glass mt-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-bnb/40 hover:text-white ring-focus"
-            >
-              <Github className="h-3.5 w-3.5" aria-hidden />
-              Open source on GitHub
-              <ArrowUpRight className="h-3 w-3 text-slate-500" aria-hidden />
-            </a>
+            <SocialLinks className="mt-5 -ml-2.5" />
           </div>
 
           {/* Link columns */}
@@ -127,24 +146,6 @@ export function Footer() {
                 </ul>
               </nav>
             ))}
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="mt-12 flex flex-col gap-4 border-t border-white/[0.08] pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-slate-500">© 2026 Bazar · Apache 2.0</p>
-
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <p className="font-mono text-xs text-slate-500">
-              Indexed block <span className="tabular text-slate-300">#{indexedBlock}</span>
-            </p>
-            <p className="inline-flex items-center gap-2 text-xs text-slate-400">
-              <span className="relative flex h-2 w-2" aria-hidden>
-                <span className="absolute inline-flex h-full w-full animate-pulse-ring rounded-full bg-bnb" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-bnb" />
-              </span>
-              ERC-8004 Indexer: <span className="font-medium text-bnb">live</span>
-            </p>
           </div>
         </div>
       </div>

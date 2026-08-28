@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, CirclePlus, Github } from 'lucide-react';
+import { ArrowUpRight, CirclePlus, Database } from '@/components/ui/icons';
 import { ConnectButton } from '@/components/wallet/connect-button';
 import { NetworkChip } from '@/components/wallet/wallet-menu';
 import { NAV_LINKS, SOCIAL_LINKS } from '@/lib/constants';
@@ -108,13 +108,13 @@ export function MobileNav({ open, onClose, pathname }: MobileNavProps) {
               <div className="flex items-center justify-between border-t border-white/[0.06] pt-4">
                 <NetworkChip />
                 <a
-                  href={SOCIAL_LINKS.github}
+                  href={SOCIAL_LINKS.indexer}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md text-xs text-slate-400 transition-colors hover:text-white ring-focus"
                 >
-                  <Github className="h-3.5 w-3.5" aria-hidden />
-                  GitHub
+                  <Database className="h-3.5 w-3.5" aria-hidden />
+                  8004scan index
                   <ArrowUpRight className="h-3 w-3" aria-hidden />
                 </a>
               </div>
