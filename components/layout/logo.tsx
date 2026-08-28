@@ -16,8 +16,13 @@ export interface LogoMarkProps {
 }
 
 /**
- * Bazar mark: a BNB-gold hexagon (the chain) wrapping an isometric cube (the block / agent).
- * Pure inline SVG — server-safe, no ids, no external assets.
+ * Bazar mark: a bazaar archway - the gateway into a market - enclosing a
+ * three-node agent graph: one hub hiring two sub-agents, which is literally
+ * what the A2A router does.
+ *
+ * Chosen over the previous hexagon-and-cube because that mark said "generic
+ * web3" and nothing about a marketplace. Pure inline SVG, server-safe, no ids,
+ * no external assets.
  */
 export function LogoMark({ size = 'md', className }: LogoMarkProps) {
   const px = typeof size === 'number' ? size : MARK_PX[size];
@@ -32,26 +37,26 @@ export function LogoMark({ size = 'md', className }: LogoMarkProps) {
       focusable="false"
       className={cn('shrink-0', className)}
     >
-      {/* Outer hexagon */}
+      {/* Archway */}
       <path
-        d="M16 2 L28.12 9 L28.12 23 L16 30 L3.88 23 L3.88 9 Z"
-        fill="rgba(240,185,11,0.09)"
+        d="M7 27 L7 13.5 A13 13 0 0 1 16 4.5 A13 13 0 0 1 25 13.5 L25 27"
+        fill="rgba(240,185,11,0.10)"
         stroke="#F0B90B"
-        strokeWidth="1.5"
+        strokeWidth="2.25"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {/* Isometric cube: top / left / right faces */}
-      <path d="M16 8 L22.93 12 L16 16 L9.07 12 Z" fill="#FCD34D" />
-      <path d="M9.07 12 L16 16 L16 24 L9.07 20 Z" fill="#F0B90B" />
-      <path d="M16 16 L22.93 12 L22.93 20 L16 24 Z" fill="#A67C07" />
-      {/* Crisp edges */}
+      {/* Hub -> two hired agents */}
       <path
-        d="M16 8 L22.93 12 L22.93 20 L16 24 L9.07 20 L9.07 12 Z M16 16 L9.07 12 M16 16 L22.93 12 M16 16 L16 24"
-        stroke="#07080B"
-        strokeWidth="0.6"
-        strokeLinejoin="round"
-        opacity="0.7"
+        d="M16 14.5 L10.75 21.5 M16 14.5 L21.25 21.5"
+        stroke="#F0B90B"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        opacity="0.75"
       />
+      <circle cx="16" cy="14.5" r="2.5" fill="#FCD34D" />
+      <circle cx="10.75" cy="21.5" r="1.7" fill="#F0B90B" />
+      <circle cx="21.25" cy="21.5" r="1.7" fill="#F0B90B" />
     </svg>
   );
 }
