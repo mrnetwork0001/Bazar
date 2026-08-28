@@ -3,11 +3,18 @@
  *
  * The only invented values here are cosmetic: an avatar gradient and initials
  * for agents that registered without an image. Every number the UI renders as
- * a metric comes straight off the index.
+ * a metric comes straight off the index, through the single canonical reader
+ * in lib/indexer/reputation.ts.
+ *
+ * This maps BOTH shapes the index returns - a listing row and the richer
+ * per-agent record - so whichever route an agent was fetched from, the object
+ * the UI sees is identical. That is what keeps the human page and the machine
+ * endpoint from disagreeing.
  */
 
 import type { Address, IndexedAgent } from '@/lib/types';
 import { classify, explain } from '@/lib/indexer/classify';
+import { readReputation } from '@/lib/indexer/reputation';
 import type { ScanAgent } from '@/lib/indexer/scan-client';
 
 /** Stable gradient per agent so avatars do not reshuffle between renders. */
@@ -64,18 +71,14 @@ export function mapAgent(raw: ScanAgent): IndexedAgent {
     description,
     imageUrl: raw.image_url || null,
     verified: Boolean(raw.is_verified),
-    reputation: {
-      totalScore: raw.total_score ?? 0,
-      averageScore: raw.average_score ?? 0,
-      starCount: raw.star_count ?? 0,
-      totalFeedbacks: raw.total_feedbacks ?? 0,
-      healthScore: raw.health_score ?? null,
-      rank: raw.rank ?? null,
-      networkRank: raw.network_rank ?? null,
-    },
+    // One reader, always. The index publishes two conflicting `total_score`
+    // values and `readReputation` is the only thing allowed to choose between
+    // them, so a card, a sort key, a detail page and the A2A API cannot drift.
+    reputation: readReputation(raw),
     protocols: Array.isArray(raw.supported_protocols) ? raw.supported_protocols : [],
     x402: Boolean(raw.x402_supported),
     category: classification.category,
+    categoryConfidence: classification.confidence,
     categoryReason: explain(classification),
     registeredAt: raw.created_at,
     updatedAt: raw.updated_at,
@@ -88,4 +91,23 @@ export function mapAgent(raw: ScanAgent): IndexedAgent {
 
 export function mapAgents(raw: ScanAgent[]): IndexedAgent[] {
   return raw.map(mapAgent);
+}
+
+/**
+ * Everything `mapAgent` reads, checked before an unshaped record is trusted.
+ *
+ * The per-agent route returns an open record, so this is the gate between
+ * "the index answered" and "the index answered with an agent". A record that
+ * fails it is treated as no answer rather than mapped into a half-empty page.
+ */
+export function isMappableRecord(raw: Record<string, unknown>): boolean {
+  return (
+    typeof raw.agent_id === 'string' &&
+    typeof raw.token_id === 'string' &&
+    typeof raw.chain_id === 'number' &&
+    typeof raw.contract_address === 'string' &&
+    typeof raw.owner_address === 'string' &&
+    typeof raw.created_at === 'string' &&
+    typeof raw.updated_at === 'string'
+  );
 }
