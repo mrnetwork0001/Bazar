@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
