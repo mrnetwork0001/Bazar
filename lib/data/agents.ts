@@ -67,7 +67,7 @@ function sparklineFor(rand: () => number, roi30d: number, drawdown: number, poin
 /* ------------------------------ pricing --------------------------------- */
 
 const TIER_FEATURES: Record<CategoryId, { task: string[]; week: string[]; month: string[] }> = {
-  monitoring: {
+  rebalancing: {
     task: ['One-off wallet or pool scan', 'Alert report delivered on-chain', 'A2A callback on completion'],
     week: ['Unlimited alerts for 7 days', 'Up to 25 tracked wallets / pools', 'Telegram + webhook delivery'],
     month: ['Everything in Weekly', 'Up to 250 tracked wallets / pools', 'Priority <500ms alert lane', 'Dedicated MCP endpoint'],
@@ -146,11 +146,11 @@ const SEEDS: AgentSeed[] = [
     tagline: 'Sub-second whale wallet & liquidity alerts on BSC.',
     description:
       'WhaleWatch tracks the top 2,000 BSC wallets and every PancakeSwap v3 pool above $1M TVL. It fires alerts on large transfers, LP adds/removes and CEX inflows within 400ms of block inclusion, and can call back your agent via A2A with a structured event payload.',
-    category: 'monitoring',
+    category: 'rebalancing',
     badges: ['erc8004-verified', 'validated', 'a2a-ready', 'mcp-enabled', 'top-rated'],
     protocols: ['PancakeSwap', 'Binance Oracle', 'opBNB'],
     capabilities: ['Whale transfer alerts', 'LP add/remove detection', 'CEX inflow/outflow tagging', 'Webhook + A2A callbacks', 'Custom wallet lists'],
-    pricing: tiers('monitoring', { task: 0.01, week: 0.06, month: 0.2 }),
+    pricing: tiers('rebalancing', { task: 0.01, week: 0.06, month: 0.2 }),
     roi7d: 0, roi30d: 0, maxDrawdown: 0, winRate: 99.1, slaScore: 99.2, uptime: 99.98,
     totalHires: 4120, activeHires: 318, avgResponseMs: 412, tvlManaged: 0, volume7d: 0,
     headline: { label: 'Alert latency', value: '412 ms' },
@@ -166,11 +166,11 @@ const SEEDS: AgentSeed[] = [
     tagline: 'Live PancakeSwap v3 liquidity migration radar.',
     description:
       'LiquidityPulse monitors concentrated-liquidity positions across PancakeSwap v3 and Thena, alerting on range migrations, liquidity cliffs and thin-book conditions before slippage spikes.',
-    category: 'monitoring',
+    category: 'rebalancing',
     badges: ['erc8004-verified', 'a2a-ready', 'validated'],
     protocols: ['PancakeSwap', 'Thena'],
     capabilities: ['Range migration alerts', 'Liquidity cliff detection', 'Slippage forecasting', 'Pool depth snapshots'],
-    pricing: tiers('monitoring', { task: 0.008, week: 0.05, month: 0.16 }),
+    pricing: tiers('rebalancing', { task: 0.008, week: 0.05, month: 0.16 }),
     roi7d: 0, roi30d: 0, maxDrawdown: 0, winRate: 97.8, slaScore: 98.1, uptime: 99.9,
     totalHires: 1873, activeHires: 142, avgResponseMs: 640, tvlManaged: 0, volume7d: 0,
     headline: { label: 'Alert latency', value: '640 ms' },
@@ -186,11 +186,11 @@ const SEEDS: AgentSeed[] = [
     tagline: 'New-token honeypot & rug-pull risk scanner.',
     description:
       'RugRadar simulates buys and sells on every new BSC token launch, checks ownership renouncement, hidden mint functions, tax traps and LP lock status, and scores each contract in under a second.',
-    category: 'monitoring',
+    category: 'rebalancing',
     badges: ['erc8004-verified', 'validated', 'a2a-ready', 'mcp-enabled'],
     protocols: ['PancakeSwap', 'Binance Oracle'],
     capabilities: ['Honeypot simulation', 'Tax trap detection', 'LP lock verification', 'Owner privilege audit', 'Deployer reputation'],
-    pricing: tiers('monitoring', { task: 0.005, week: 0.04, month: 0.12 }),
+    pricing: tiers('rebalancing', { task: 0.005, week: 0.04, month: 0.12 }),
     roi7d: 0, roi30d: 0, maxDrawdown: 0, winRate: 98.6, slaScore: 97.4, uptime: 99.95,
     totalHires: 6250, activeHires: 401, avgResponseMs: 880, tvlManaged: 0, volume7d: 0,
     headline: { label: 'Scan latency', value: '880 ms' },
@@ -206,11 +206,11 @@ const SEEDS: AgentSeed[] = [
     tagline: 'Price-feed deviation & stale-oracle watchdog.',
     description:
       'OracleSentinel compares Binance Oracle and Chainlink feeds against PancakeSwap TWAPs and flags deviations, staleness and manipulation attempts that could trigger bad liquidations on Venus.',
-    category: 'monitoring',
+    category: 'rebalancing',
     badges: ['erc8004-verified', 'a2a-ready'],
     protocols: ['Binance Oracle', 'Chainlink', 'Venus', 'PancakeSwap'],
     capabilities: ['Feed deviation alerts', 'Staleness detection', 'TWAP vs oracle comparison', 'Manipulation heuristics'],
-    pricing: tiers('monitoring', { task: 0.006, week: 0.045, month: 0.14 }),
+    pricing: tiers('rebalancing', { task: 0.006, week: 0.045, month: 0.14 }),
     roi7d: 0, roi30d: 0, maxDrawdown: 0, winRate: 96.9, slaScore: 96.3, uptime: 99.87,
     totalHires: 940, activeHires: 88, avgResponseMs: 520, tvlManaged: 0, volume7d: 0,
     headline: { label: 'Alert latency', value: '520 ms' },
@@ -226,11 +226,11 @@ const SEEDS: AgentSeed[] = [
     tagline: 'Pending-transaction radar for large swaps & MEV.',
     description:
       'MempoolHawk watches the BSC mempool for large pending swaps, sandwich setups and liquidation bots, giving your agents a head start before the next block lands.',
-    category: 'monitoring',
+    category: 'rebalancing',
     badges: ['erc8004-verified', 'a2a-ready', 'mcp-enabled'],
     protocols: ['PancakeSwap', 'opBNB'],
     capabilities: ['Large pending swap alerts', 'Sandwich detection', 'Liquidation bot tracking', 'Gas spike alerts'],
-    pricing: tiers('monitoring', { task: 0.012, week: 0.08, month: 0.26 }),
+    pricing: tiers('rebalancing', { task: 0.012, week: 0.08, month: 0.26 }),
     roi7d: 0, roi30d: 0, maxDrawdown: 0, winRate: 95.4, slaScore: 95.8, uptime: 99.7,
     totalHires: 730, activeHires: 96, avgResponseMs: 290, tvlManaged: 0, volume7d: 0,
     headline: { label: 'Alert latency', value: '290 ms' },

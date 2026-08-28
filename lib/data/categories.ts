@@ -1,19 +1,25 @@
 import type { Category, CategoryId } from '@/lib/types';
 
+/**
+ * The four categories the BNB Agent Studio Marketplace brief specifies:
+ * Rebalancing, Grid Trading, Yield Optimisation, Health Factor Monitoring.
+ *
+ * These are graded ("Agent Diversity: balanced coverage across all four
+ * categories"), so the set is fixed by the brief and must not drift.
+ */
 export const CATEGORIES: Category[] = [
   {
-    id: 'monitoring',
-    name: 'Monitoring',
-    shortName: 'Monitoring',
-    tagline: 'Whale & market trackers',
+    id: 'rebalancing',
+    name: 'Rebalancing',
+    shortName: 'Rebalancing',
+    tagline: 'Portfolio weight keepers',
     description:
-      'Real-time wallet, liquidity and mempool surveillance across BSC. Sub-second alerts for whale moves, LP shifts and price deviations.',
-    agentType: 'Whale & Market Trackers',
-    primaryAction: 'Real-time wallet & liquidity alerts',
-    keyMetric: 'Alert Latency (<1s)',
-    keyMetricKey: 'avgResponseMs',
-    icon: 'Radar',
-    accent: 'monitoring',
+      'Agents that hold a target allocation across BSC assets, trimming winners and topping up laggards as prices move, so a portfolio keeps its intended risk shape without manual work.',
+    agentType: 'Portfolio Rebalancers',
+    primaryAction: 'Drift-triggered portfolio rebalancing',
+    keyMetric: 'Allocation drift held',
+    icon: 'Scale',
+    accent: 'rebalancing',
     accentHex: '#22D3EE',
   },
   {
@@ -22,44 +28,41 @@ export const CATEGORIES: Category[] = [
     shortName: 'Grid',
     tagline: 'Automated DEX traders',
     description:
-      'PancakeSwap grid bots, range managers and cross-DEX arbitrage agents with verified on-chain track records.',
+      'PancakeSwap grid bots, range managers and cross-DEX arbitrage agents that place laddered orders and harvest volatility inside a defined band.',
     agentType: 'Automated DEX Traders',
     primaryAction: 'PancakeSwap grid trading & arbitrage',
-    keyMetric: '7-Day ROI %',
-    keyMetricKey: 'roi7d',
+    keyMetric: 'Reputation score',
     icon: 'Grid3x3',
     accent: 'grid',
     accentHex: '#F0B90B',
   },
   {
-    id: 'health-factor',
-    name: 'Health Factor',
-    shortName: 'Health',
-    tagline: 'DeFi liquidation monitors',
-    description:
-      'Venus Protocol and Lista DAO collateral guardians that watch your health factor and auto-repay before liquidation.',
-    agentType: 'DeFi Liquidation Monitors',
-    primaryAction: 'Venus Protocol collateral adjustment',
-    keyMetric: 'Liquidation Prevention Rate',
-    keyMetricKey: 'winRate',
-    icon: 'HeartPulse',
-    accent: 'health',
-    accentHex: '#34D399',
-  },
-  {
     id: 'yield',
-    name: 'Yield Optimization',
+    name: 'Yield Optimisation',
     shortName: 'Yield',
-    tagline: 'APY maximizers',
+    tagline: 'APY maximisers',
     description:
-      'Capital routers that continuously rebalance across BSC lending markets, LPs and liquid staking to maximize net APY.',
-    agentType: 'APY Maximizers',
-    primaryAction: 'Capital routing across BSC yield pools',
-    keyMetric: 'Net APY %',
-    keyMetricKey: 'roi30d',
+      'Capital routers that continuously compare and rebalance across BSC lending markets, LPs and liquid staking to chase the best net yield after gas.',
+    agentType: 'APY Maximisers',
+    primaryAction: 'Capital routing across BSC yield venues',
+    keyMetric: 'Reputation score',
     icon: 'TrendingUp',
     accent: 'yield',
     accentHex: '#A78BFA',
+  },
+  {
+    id: 'health-factor',
+    name: 'Health Factor',
+    shortName: 'Health',
+    tagline: 'Liquidation monitors',
+    description:
+      'Venus and Lista collateral guardians that watch a position every block and repay or top up before the health factor crosses the liquidation threshold.',
+    agentType: 'DeFi Liquidation Monitors',
+    primaryAction: 'Venus collateral monitoring & auto-repay',
+    keyMetric: 'Reputation score',
+    icon: 'HeartPulse',
+    accent: 'health',
+    accentHex: '#34D399',
   },
 ];
 

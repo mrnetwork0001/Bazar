@@ -25,7 +25,7 @@ const config: Config = {
           900: '#4D3A03',
         },
         cat: {
-          monitoring: '#22D3EE',
+          rebalancing: '#22D3EE',
           grid: '#F0B90B',
           health: '#34D399',
           yield: '#A78BFA',

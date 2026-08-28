@@ -26,7 +26,7 @@ function miniStats(agent: Agent): MiniStat[] {
         { label: 'Max DD', value: formatPct(-m.maxDrawdown, { decimals: 1 }), tone: m.maxDrawdown > 0 ? 'down' : 'neutral' },
         { label: 'Win rate', value: formatPct(m.winRate, { sign: false, decimals: 1 }) },
       ];
-    case 'monitoring':
+    case 'rebalancing':
       return [
         { label: 'Latency', value: `${m.avgResponseMs} ms` },
         { label: 'Uptime', value: formatPct(m.uptime, { sign: false }) },

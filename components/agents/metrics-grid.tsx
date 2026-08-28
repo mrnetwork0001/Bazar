@@ -43,7 +43,7 @@ function successLabel(agent: Agent): { label: string; hint: string } {
   switch (agent.category) {
     case 'health-factor':
       return { label: 'Liquidation prevention', hint: 'Positions kept above the liquidation threshold.' };
-    case 'monitoring':
+    case 'rebalancing':
       return { label: 'Alert accuracy', hint: 'Alerts confirmed against on-chain state, minus false positives.' };
     case 'yield':
       return { label: 'Positive epochs', hint: 'Rebalance epochs that finished net-positive after gas.' };

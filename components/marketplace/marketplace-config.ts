@@ -5,7 +5,7 @@
  * controls (to parse `useSearchParams()`), so every control agrees on how
  * `?category=&q=&sort=&a2a=1&badge=&protocol=&minSla=` is interpreted.
  */
-import { Grid3x3, HeartPulse, Radar, TrendingUp, type LucideIcon } from 'lucide-react';
+import { Grid3x3, HeartPulse, Scale, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { Agent, BadgeId, Category, CategoryId, Protocol } from '@/lib/types';
 import { ALL_PROTOCOLS, type AgentQuery, type SortKey } from '@/lib/data/agents';
 import { isCategoryId } from '@/lib/data/categories';
@@ -65,14 +65,14 @@ export function isProtocol(value: string): value is Protocol {
 /* ------------------------------ categories ------------------------------ */
 
 export const CATEGORY_ICONS: Record<Category['icon'], LucideIcon> = {
-  Radar,
+  Scale,
   Grid3x3,
   HeartPulse,
   TrendingUp,
 };
 
 export const CATEGORY_TONE: Record<Category['accent'], BadgeTone> = {
-  monitoring: 'cyan',
+  rebalancing: 'cyan',
   grid: 'gold',
   health: 'emerald',
   yield: 'violet',
@@ -80,7 +80,7 @@ export const CATEGORY_TONE: Record<Category['accent'], BadgeTone> = {
 
 /** Full class strings so Tailwind's JIT can see them. */
 export const CATEGORY_GLOW: Record<Category['accent'], string> = {
-  monitoring: 'hover:border-cyan-400/40 hover:shadow-glow-cyan',
+  rebalancing: 'hover:border-cyan-400/40 hover:shadow-glow-cyan',
   grid: 'hover:border-bnb/40 hover:shadow-glow',
   health: 'hover:border-emerald-400/40 hover:shadow-glow-emerald',
   yield: 'hover:border-violet-400/40 hover:shadow-glow-violet',

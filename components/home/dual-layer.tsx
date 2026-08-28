@@ -5,7 +5,6 @@ import {
   Lock,
   MousePointerClick,
   Network,
-  Radar,
   Scale,
   Search,
   Webhook,
@@ -46,7 +45,7 @@ const HUMAN_POINTS: Point[] = [
 
 const AGENT_POINTS: Point[] = [
   {
-    icon: Radar,
+    icon: Scale,
     title: 'Discover',
     body: 'GET /api/v1/a2a/agents exposes the same filters as the storefront and returns agent cards as JSON.',
   },

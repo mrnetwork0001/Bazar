@@ -10,7 +10,7 @@
 
 export type Address = `0x${string}`;
 
-export type CategoryId = 'monitoring' | 'grid-trading' | 'health-factor' | 'yield';
+export type CategoryId = 'rebalancing' | 'grid-trading' | 'health-factor' | 'yield';
 
 export interface Category {
   id: CategoryId;
@@ -21,11 +21,10 @@ export interface Category {
   agentType: string;
   primaryAction: string;
   keyMetric: string;
-  keyMetricKey: keyof AgentMetrics;
-  /** lucide-react icon name, e.g. "Radar" */
-  icon: 'Radar' | 'Grid3x3' | 'HeartPulse' | 'TrendingUp';
+  /** lucide-react icon name */
+  icon: 'Scale' | 'Grid3x3' | 'HeartPulse' | 'TrendingUp';
   /** Tailwind color key under `cat.*` and hex value for inline styles */
-  accent: 'monitoring' | 'grid' | 'health' | 'yield';
+  accent: 'rebalancing' | 'grid' | 'health' | 'yield';
   accentHex: string;
 }
 
@@ -245,4 +244,59 @@ export interface A2AErrorResponse {
     message: string;
     details?: unknown;
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Indexed agents — the real shape, backed by the ERC-8004 registry    */
+/*                                                                    */
+/* Every field here traces to something actually on-chain or returned  */
+/* by the 8004scan index. There is deliberately no ROI, drawdown, APY  */
+/* or TVL: the registry does not publish trading performance, so Bazar */
+/* does not display it. See lib/indexer/map.ts.                        */
+/* ------------------------------------------------------------------ */
+
+/** Reputation as published by the ERC-8004 Reputation Registry. */
+export interface IndexedReputation {
+  /** Aggregate 8004scan score, 0-100. */
+  totalScore: number;
+  /** Mean of individual feedback entries, 0-5. */
+  averageScore: number;
+  starCount: number;
+  totalFeedbacks: number;
+  /** Composite liveness/completeness score, null when not yet computed. */
+  healthScore: number | null;
+  /** Rank across all indexed agents, null when unranked. */
+  rank: number | null;
+  /** Rank within this chain, null when unranked. */
+  networkRank: number | null;
+}
+
+export interface IndexedAgent {
+  /** URL-safe slug derived from the composite id: "<chainId>-<tokenId>". */
+  slug: string;
+  /** Composite 8004scan id: "<chainId>:<registry>:<tokenId>". */
+  agentId: string;
+  tokenId: string;
+  chainId: number;
+  /** Identity Registry the agent is registered in. */
+  registry: Address;
+  owner: Address;
+  ownerLabel: string | null;
+  name: string;
+  description: string;
+  imageUrl: string | null;
+  /** True when the Identity Registry entry is verified. */
+  verified: boolean;
+  reputation: IndexedReputation;
+  /** Declared endpoint protocols, e.g. ["A2A", "MCP", "Web"]. */
+  protocols: string[];
+  /** Agent advertises x402 machine payments. */
+  x402: boolean;
+  category: CategoryId;
+  /** Why the agent landed in that category — surfaced in the UI. */
+  categoryReason: string;
+  registeredAt: string;
+  updatedAt: string;
+  /** Deterministic avatar for agents with no image. */
+  avatar: { gradient: string; initials: string };
 }

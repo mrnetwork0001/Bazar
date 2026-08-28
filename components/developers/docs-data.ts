@@ -41,7 +41,7 @@ export const DOCS_TIER: PricingTier =
 
 export const AGENTS_LIST_QUERY = '?category=monitoring&a2a=1&sort=sla&limit=1';
 
-const listMatches = queryAgents({ category: 'monitoring', a2aOnly: true, sort: 'sla' });
+const listMatches = queryAgents({ category: 'rebalancing', a2aOnly: true, sort: 'sla' });
 export const AGENTS_LIST_JSON = pretty({
   ok: true,
   data: listMatches.slice(0, 1).map(toAgentSummary),

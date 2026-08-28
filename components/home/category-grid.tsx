@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, Grid3x3, HeartPulse, Radar, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, Grid3x3, HeartPulse, Scale, TrendingUp, type LucideIcon } from 'lucide-react';
 import { Reveal } from '@/components/home/reveal';
 import { SectionHeading } from '@/components/home/section-heading';
 import { getAgentsByCategory } from '@/lib/data/agents';
@@ -7,11 +7,11 @@ import { CATEGORIES } from '@/lib/data/categories';
 import type { Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-const ICONS: Record<Category['icon'], LucideIcon> = { Radar, Grid3x3, HeartPulse, TrendingUp };
+const ICONS: Record<Category['icon'], LucideIcon> = { Scale, Grid3x3, HeartPulse, TrendingUp };
 
 /** Static class strings per accent so Tailwind can see them at build time. */
 const ACCENT: Record<Category['accent'], { text: string; hover: string; tile: string }> = {
-  monitoring: {
+  rebalancing: {
     text: 'text-cat-monitoring',
     hover: 'hover:border-cat-monitoring/50 hover:shadow-glow-cyan',
     tile: 'bg-cat-monitoring/10',

@@ -61,7 +61,7 @@ export function CategoryHero({ category, agents }: CategoryHeroProps) {
           <Fact label="Agents listed" value={formatNumber(agents.length, { compact: false })} />
           <Fact label="Hires completed" value={formatNumber(totalHires)} />
           <Fact label="Avg SLA score" value={formatPct(avgSla, { sign: false, decimals: 1 })} />
-          <Fact label={category.id === 'monitoring' ? 'Category share' : 'TVL under management'} value={tvl > 0 ? formatUsd(tvl) : 'Alerts only'} />
+          <Fact label={category.id === 'rebalancing' ? 'Category share' : 'TVL under management'} value={tvl > 0 ? formatUsd(tvl) : 'Alerts only'} />
         </dl>
       </div>
     </section>
