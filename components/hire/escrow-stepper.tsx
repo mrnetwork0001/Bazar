@@ -1,8 +1,23 @@
-import { Check } from 'lucide-react';
-import { ESCROW_STEPS } from '@/lib/constants';
+import { Check } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
-export type EscrowStepId = (typeof ESCROW_STEPS)[number]['id'];
+/**
+ * The ERC-8183 job lifecycle Bazar hires against: fund the kernel, the agent
+ * works, the evaluator policy rules on the result, the kernel settles.
+ *
+ * Kept beside the modal because it is the only surface that renders it. The
+ * `ESCROW_STEPS` list it used to share with lib/constants described the older
+ * SLA-scored escrow and no longer exists.
+ */
+export const HIRE_STEPS = [
+  { id: 'brief', title: 'Brief', description: 'Describe the job and set the budget you are willing to commit.' },
+  { id: 'fund', title: 'Fund', description: 'The budget is committed to the ERC-8183 commerce kernel on BNB Smart Chain.' },
+  { id: 'work', title: 'Work', description: 'The agent executes the job and reports back against the commitment.' },
+  { id: 'evaluate', title: 'Evaluate', description: 'The evaluator policy rules on whether the delivered work counts.' },
+  { id: 'settle', title: 'Settle', description: 'The kernel releases the budget to the agent, or returns it to you.' },
+] as const;
+
+export type EscrowStepId = (typeof HIRE_STEPS)[number]['id'];
 
 export interface EscrowStepperProps {
   /** The step currently in progress. Everything before it reads as done. */
@@ -10,23 +25,19 @@ export interface EscrowStepperProps {
   className?: string;
 }
 
-/**
- * Compact five-node rail for the escrow lifecycle defined in `ESCROW_STEPS`.
- * Shown inside the hire modal so the user can see how far the money travels
- * before it reaches the agent.
- */
+/** Compact five-node rail for the hire lifecycle, shown inside the hire modal. */
 export function EscrowStepper({ currentId, className }: EscrowStepperProps) {
   const currentIndex = Math.max(
     0,
-    ESCROW_STEPS.findIndex((step) => step.id === currentId),
+    HIRE_STEPS.findIndex((step) => step.id === currentId),
   );
-  const current = ESCROW_STEPS[currentIndex];
-  const lastIndex = ESCROW_STEPS.length - 1;
+  const current = HIRE_STEPS[currentIndex];
+  const lastIndex = HIRE_STEPS.length - 1;
 
   return (
     <div className={cn('select-none', className)}>
-      <ol className="grid grid-cols-5 gap-0.5" aria-label="Escrow progress">
-        {ESCROW_STEPS.map((step, i) => {
+      <ol className="grid grid-cols-5 gap-0.5" aria-label="Hire progress">
+        {HIRE_STEPS.map((step, i) => {
           const done = i < currentIndex;
           const isCurrent = i === currentIndex;
           return (
@@ -63,7 +74,7 @@ export function EscrowStepper({ currentId, className }: EscrowStepperProps) {
       </ol>
 
       <p className="mt-2 text-center text-[11px] leading-snug text-slate-500 sm:hidden">
-        Step {currentIndex + 1} of {ESCROW_STEPS.length} · <span className="text-slate-300">{current.title}</span>
+        Step {currentIndex + 1} of {HIRE_STEPS.length} · <span className="text-slate-300">{current.title}</span>
       </p>
       <p className="mt-2 hidden text-center text-[11px] leading-snug text-slate-500 sm:block">{current.description}</p>
     </div>

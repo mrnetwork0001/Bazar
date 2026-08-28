@@ -1,15 +1,13 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Zap } from 'lucide-react';
-import type { Agent } from '@/lib/types';
+import { Zap } from '@/components/ui/icons';
+import type { IndexedAgent } from '@/lib/types';
 import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui/button';
 import { HireModal } from '@/components/hire/hire-modal';
 
 export interface HireButtonProps {
-  agent: Agent;
-  /** Pre-select a pricing tier when the modal opens. */
-  tierId?: string;
+  agent: IndexedAgent;
   size?: ButtonSize;
   variant?: ButtonVariant;
   label?: string;
@@ -17,13 +15,12 @@ export interface HireButtonProps {
 }
 
 /**
- * Self-contained hire entry point: renders the trigger and owns the modal's
- * open state, so server components (the agent page, pricing cards) can drop the
- * whole escrow flow in without becoming client components themselves.
+ * Hire entry point: renders the trigger and owns the dialog's open state, so a
+ * server component can drop the whole flow in without becoming a client
+ * component itself. No price is shown here or in the dialog - none exists.
  */
 export function HireButton({
   agent,
-  tierId,
   size = 'md',
   variant = 'primary',
   label = 'Hire agent',
@@ -46,7 +43,7 @@ export function HireButton({
       >
         {label}
       </Button>
-      <HireModal agent={agent} open={open} onClose={handleClose} defaultTierId={tierId} />
+      <HireModal agent={agent} open={open} onClose={handleClose} />
     </>
   );
 }
