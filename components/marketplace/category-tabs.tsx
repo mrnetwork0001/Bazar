@@ -1,17 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { LayoutGrid, type LucideIcon } from 'lucide-react';
+import { LayoutGrid, type AppIcon } from '@/components/ui/icons';
 import type { CategoryId } from '@/lib/types';
 import { CATEGORIES, isCategoryId } from '@/lib/data/categories';
 import { cn } from '@/lib/utils';
-import { BNB_HEX, CATEGORY_ICONS, withAlpha, type CategoryCounts } from './marketplace-config';
+import { BNB_HEX, CATEGORY_ICONS, withAlpha } from './marketplace-config';
 import { useMarketplaceParams } from './use-marketplace-params';
 
 interface Tab {
   id: CategoryId | 'all';
   name: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   hex: string;
 }
 
@@ -21,10 +21,15 @@ const TABS: Tab[] = [
 ];
 
 /**
- * URL-driven category tabs (`?category=`). Links preserve every other param.
- * Render inside `<Suspense>`.
+ * URL-driven category tabs (`?category=`). Links preserve every other param
+ * and reset the offset, since the ranking window changes with the filter.
+ *
+ * No per-tab counts: categories are classified locally over the fetched page,
+ * so any number here would be "matches within the top N scanned" and would
+ * cost one extra round trip against the whole index per tab. Render inside
+ * `<Suspense>`.
  */
-export function CategoryTabs({ counts }: { counts: CategoryCounts }) {
+export function CategoryTabs() {
   const { searchParams, href } = useMarketplaceParams();
   const current = searchParams.get('category');
   const active: CategoryId | 'all' = isCategoryId(current) ? current : 'all';
@@ -41,7 +46,7 @@ export function CategoryTabs({ counts }: { counts: CategoryCounts }) {
           return (
             <li key={tab.id}>
               <Link
-                href={href({ category: tab.id === 'all' ? null : tab.id })}
+                href={href({ category: tab.id === 'all' ? null : tab.id, offset: null })}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium transition-colors duration-200 ring-focus',
@@ -57,15 +62,6 @@ export function CategoryTabs({ counts }: { counts: CategoryCounts }) {
               >
                 <Icon className="h-4 w-4" aria-hidden />
                 <span className="whitespace-nowrap">{tab.name}</span>
-                <span
-                  className={cn(
-                    'tabular rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-none',
-                    isActive ? 'bg-ink/50 text-inherit' : 'bg-white/[0.06] text-slate-400',
-                  )}
-                  aria-label={`${counts[tab.id]} agents`}
-                >
-                  {counts[tab.id]}
-                </span>
               </Link>
             </li>
           );

@@ -1,13 +1,17 @@
 'use client';
 
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 import { DEFAULT_SORT, SORT_OPTIONS, isSortKey, parseSort } from './marketplace-config';
 import { useMarketplaceParams } from './use-marketplace-params';
 
-/** Native select bound to `?sort=` (keyboard + screen-reader friendly). Render inside `<Suspense>`. */
+/**
+ * Native select bound to `?sort=` (keyboard + screen-reader friendly).
+ * Every option maps to a sort the index actually supports; changing it resets
+ * the offset. Render inside `<Suspense>`.
+ */
 export function SortSelect({ className }: { className?: string }) {
-  const { searchParams, set } = useMarketplaceParams();
+  const { searchParams, set, pending } = useMarketplaceParams();
   const current = parseSort(searchParams.get('sort'));
 
   return (
@@ -15,10 +19,11 @@ export function SortSelect({ className }: { className?: string }) {
       <span className="sr-only">Sort agents by</span>
       <ArrowUpDown className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400" aria-hidden />
       <select
+        aria-busy={pending}
         value={current}
         onChange={(e) => {
           const next = e.target.value;
-          set({ sort: isSortKey(next) && next !== DEFAULT_SORT ? next : null });
+          set({ sort: isSortKey(next) && next !== DEFAULT_SORT ? next : null, offset: null });
         }}
         className={cn(
           'h-10 cursor-pointer appearance-none rounded-xl border border-white/[0.08] bg-white/[0.04] pl-9 pr-9 text-sm font-medium text-slate-200 backdrop-blur-xl',
@@ -26,7 +31,7 @@ export function SortSelect({ className }: { className?: string }) {
         )}
       >
         {SORT_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value} className="bg-surface text-slate-200">
+          <option key={o.value} value={o.value} title={o.hint} className="bg-surface text-slate-200">
             {o.label}
           </option>
         ))}

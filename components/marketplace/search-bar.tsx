@@ -1,23 +1,26 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Loader2, Search, X } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 import { useMarketplaceParams } from './use-marketplace-params';
 
 const DEBOUNCE_MS = 300;
 
 /**
- * Debounced search box bound to `?q=`. Press "/" anywhere to focus, Escape to clear.
- * Render inside `<Suspense>`.
+ * Debounced search box bound to `?q=`, mapped to the repository's `search`
+ * param and pushed down to the index, which matches on the name and
+ * description an agent registered onchain - nothing else is searchable, so
+ * the placeholder does not promise more. Press "/" anywhere to focus, Escape
+ * to clear. Render inside `<Suspense>`.
  */
 export function SearchBar({ className }: { className?: string }) {
-  const { searchParams, set } = useMarketplaceParams();
+  const { searchParams, set, pending } = useMarketplaceParams();
   const urlQ = searchParams.get('q')?.trim() ?? '';
 
   const [value, setValue] = useState(urlQ);
   const inputRef = useRef<HTMLInputElement>(null);
-  /** Last value we pushed to (or read from) the URL — prevents clobbering while typing. */
+  /** Last value we pushed to (or read from) the URL - prevents clobbering while typing. */
   const syncedRef = useRef(urlQ);
   const setRef = useRef(set);
 
@@ -39,7 +42,7 @@ export function SearchBar({ className }: { className?: string }) {
     if (next === syncedRef.current) return;
     const timer = setTimeout(() => {
       syncedRef.current = next;
-      setRef.current({ q: next || null });
+      setRef.current({ q: next || null, offset: null });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [value]);
@@ -83,14 +86,21 @@ export function SearchBar({ className }: { className?: string }) {
           }
         }}
         aria-label="Search agents"
-        placeholder="Search agents, capabilities, protocols or token ID"
+        aria-busy={pending}
+        placeholder="Search agent names and descriptions"
         className={cn(
           'h-10 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-9 pr-16 text-sm text-white backdrop-blur-xl',
           'placeholder:text-slate-500 transition-colors hover:border-white/20 focus:border-bnb/50 ring-focus',
           '[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden',
         )}
       />
-      <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center">
+      <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+        {pending && (
+          <span className="inline-flex items-center px-0.5 text-bnb" role="status">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            <span className="sr-only">Loading results</span>
+          </span>
+        )}
         {value ? (
           <button
             type="button"

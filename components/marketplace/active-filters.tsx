@@ -1,21 +1,30 @@
 'use client';
 
-import { Gauge, Network, Search, X, type LucideIcon } from 'lucide-react';
+import { Coins, Search, X, type AppIcon } from '@/components/ui/icons';
 import { CATEGORY_MAP } from '@/lib/data/categories';
-import { BADGE_META } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { A2A_ACCENT_HEX, hasActiveFilters, parseMarketplaceParams, rawFromSearchParams, withAlpha } from './marketplace-config';
+import {
+  X402_ACCENT_HEX,
+  hasActiveFilters,
+  parseMarketplaceParams,
+  rawFromSearchParams,
+  withAlpha,
+} from './marketplace-config';
 import { useMarketplaceParams } from './use-marketplace-params';
 
 interface Chip {
   key: string;
   label: string;
-  icon?: LucideIcon;
+  icon?: AppIcon;
   hex?: string;
   onRemove: () => void;
 }
 
-/** Removable chips for every active filter plus "Clear all". Renders nothing when idle. Render inside `<Suspense>`. */
+/**
+ * Removable chips for every active filter plus "Clear all". Renders nothing
+ * when idle. Every removal also resets the offset, so the user lands back at
+ * the top of the ranking instead of deep in the tail. Render inside `<Suspense>`.
+ */
 export function ActiveFilters({ className }: { className?: string }) {
   const { searchParams, set, clearAll } = useMarketplaceParams();
   const params = parseMarketplaceParams(rawFromSearchParams(searchParams));
@@ -25,25 +34,29 @@ export function ActiveFilters({ className }: { className?: string }) {
 
   if (params.category) {
     const category = CATEGORY_MAP[params.category];
-    chips.push({ key: 'category', label: category.name, hex: category.accentHex, onRemove: () => set({ category: null }) });
+    chips.push({
+      key: 'category',
+      label: category.name,
+      hex: category.accentHex,
+      onRemove: () => set({ category: null, offset: null }),
+    });
   }
   if (params.q) {
-    chips.push({ key: 'q', label: `“${params.q}”`, icon: Search, onRemove: () => set({ q: null }) });
+    chips.push({
+      key: 'q',
+      label: `“${params.q}”`,
+      icon: Search,
+      onRemove: () => set({ q: null, offset: null }),
+    });
   }
-  if (params.a2aOnly) {
-    chips.push({ key: 'a2a', label: 'A2A-ready', icon: Network, hex: A2A_ACCENT_HEX, onRemove: () => set({ a2a: null }) });
-  }
-  for (const badge of params.badges) {
-    const meta = BADGE_META[badge];
-    const rest = params.badges.filter((b) => b !== badge);
-    chips.push({ key: `badge:${badge}`, label: meta.label, icon: meta.icon, onRemove: () => set({ badge: rest.length ? rest.join(',') : null }) });
-  }
-  for (const protocol of params.protocols) {
-    const rest = params.protocols.filter((p) => p !== protocol);
-    chips.push({ key: `protocol:${protocol}`, label: protocol, onRemove: () => set({ protocol: rest.length ? rest.join(',') : null }) });
-  }
-  if (params.minSla !== undefined) {
-    chips.push({ key: 'minSla', label: `SLA ≥ ${params.minSla.toFixed(1)}%`, icon: Gauge, onRemove: () => set({ minSla: null }) });
+  if (params.x402Only) {
+    chips.push({
+      key: 'x402',
+      label: 'x402 payments',
+      icon: Coins,
+      hex: X402_ACCENT_HEX,
+      onRemove: () => set({ x402: null, offset: null }),
+    });
   }
 
   return (
