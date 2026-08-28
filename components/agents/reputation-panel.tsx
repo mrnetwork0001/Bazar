@@ -1,33 +1,26 @@
 import type { ReactNode } from 'react';
-import { ArrowUpRight, Fingerprint, ShieldCheck, Star, ThumbsDown, ThumbsUp } from 'lucide-react';
-import type { Agent } from '@/lib/types';
-import { CopyButton } from '@/components/agents/copy-button';
-import {
-  ERC8004_IDENTITY_REGISTRY,
-  ERC8004_REPUTATION_REGISTRY,
-  ERC8004_VALIDATION_REGISTRY,
-} from '@/lib/constants';
-import { bscScanAddress, clamp, cn, formatNumber, formatRelative, shortAddress } from '@/lib/utils';
+import { Activity, ArrowUpRight, MessageSquare, Star, Trophy } from '@/components/ui/icons';
+import type { IndexedAgent } from '@/lib/types';
+import { DEPLOYMENTS, type SupportedChainId } from '@/lib/chain/addresses';
+import type { ScoreDimension } from '@/components/agents/agent-detail';
+import { formatScore } from '@/components/agents/reputation-format';
+import { clamp, cn, formatDate, formatNumber } from '@/lib/utils';
 
-/* -------------------------------- shell --------------------------------- */
+/* --------------------------------- shell -------------------------------- */
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-
-function RegistryPanel({
+function Card({
   title,
-  registry,
   icon,
   accent,
+  footer,
   children,
 }: {
   title: string;
-  /** ERC-8004 registry contract this panel reads from. */
-  registry: string;
   icon: ReactNode;
   accent: string;
+  footer: ReactNode;
   children: ReactNode;
 }) {
-  const deployed = registry !== ZERO_ADDRESS;
   return (
     <div className="flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-xl sm:p-5">
       <div className="flex items-center gap-2">
@@ -39,22 +32,8 @@ function RegistryPanel({
         </span>
         <h3 className="text-sm font-semibold text-white">{title}</h3>
       </div>
-      <p className="mt-2 font-mono text-[10px] leading-snug text-slate-600">
-        {deployed ? (
-          <a
-            href={bscScanAddress(registry)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 transition-colors hover:text-slate-300 ring-focus"
-          >
-            {shortAddress(registry, 6)}
-            <ArrowUpRight className="h-3 w-3" aria-hidden />
-          </a>
-        ) : (
-          'Registry address set at deploy time'
-        )}
-      </p>
       <div className="mt-4 flex-1">{children}</div>
+      <p className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-slate-500">{footer}</p>
     </div>
   );
 }
@@ -73,8 +52,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 function ScoreRing({ score, accent }: { score: number; accent: string }) {
   const radius = 34;
   const circumference = 2 * Math.PI * radius;
-  const pct = clamp(score, 0, 100) / 100;
-  const dash = circumference * pct;
+  const dash = circumference * (clamp(score, 0, 100) / 100);
 
   return (
     <div className="relative h-24 w-24 shrink-0">
@@ -92,173 +70,274 @@ function ScoreRing({ score, accent }: { score: number; accent: string }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="tabular text-2xl font-semibold leading-none text-white">{score}</span>
+        <span className="tabular text-2xl font-semibold leading-none text-white">
+          {formatScore(score)}
+        </span>
         <span className="mt-0.5 text-[10px] uppercase tracking-wider text-slate-500">/ 100</span>
       </div>
     </div>
   );
 }
 
-/* -------------------------------- panel --------------------------------- */
+/* --------------------------------- meter -------------------------------- */
+
+function Meter({ value, accent }: { value: number; accent: string }) {
+  return (
+    <div
+      className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]"
+      role="img"
+      aria-label={`${Math.round(value)} out of 100`}
+    >
+      <div
+        className="h-full rounded-full"
+        style={{ width: `${clamp(value, 0, 100)}%`, background: accent }}
+      />
+    </div>
+  );
+}
+
+/* --------------------------------- panel -------------------------------- */
 
 export interface ReputationPanelProps {
-  agent: Agent;
+  agent: IndexedAgent;
+  /** Component scores published alongside the aggregate, when available. */
+  scores?: ScoreDimension[];
+  /** When the index last recomputed those scores. */
+  scoredAt?: string | null;
   className?: string;
 }
 
 /**
- * The three ERC-8004 registries, side by side: Identity (who the agent is),
- * Reputation (what hirers reported) and Validation (what independent
- * validators attested). Server-safe apart from the copy controls.
+ * Validation counts are deliberately absent.
+ *
+ * The index publishes `total_validations` / `successful_validations`, but the
+ * ERC-8004 Validation Registry has no production deployment on BNB Smart Chain,
+ * so the pair is 0/0 for every BSC identity. The landing page states plainly
+ * that Bazar renders no validator attestations; a "Validations - None" row here
+ * contradicted that for the sake of a field that can only ever read zero.
  */
-export function ReputationPanel({ agent, className }: ReputationPanelProps) {
+
+/**
+ * Reputation exactly as the ERC-8004 Reputation Registry index publishes it:
+ * an aggregate score, a mean feedback rating, star and feedback counts, an
+ * optional health score and optional ranks.
+ *
+ * Zero feedback is the normal case - most of even the top-ranked BSC agents
+ * have never had a feedback entry written against them - so the empty state
+ * is designed as a first-class state, and no ratio is ever divided by
+ * `totalFeedbacks`.
+ */
+export function ReputationPanel({ agent, scores, scoredAt, className }: ReputationPanelProps) {
   const rep = agent.reputation;
-  const total = Math.max(1, rep.positiveFeedback + rep.negativeFeedback);
-  const positivePct = (rep.positiveFeedback / total) * 100;
-  const negativePct = 100 - positivePct;
+  const hasFeedback = rep.totalFeedbacks > 0;
+  // 0 shows up on agents with 100+ entries: the index simply has not populated
+  // an average there. Rendering it as "0" would read as a damning rating.
+  const hasAverage = rep.averageScore > 0;
+  const ranked = rep.rank !== null || rep.networkRank !== null;
+  // `networkRank` is per-chain, so the label names the chain the identity is on
+  // rather than asserting BSC for a record that may not be from it.
+  const networkName = DEPLOYMENTS[agent.chainId as SupportedChainId]?.name ?? `Chain ${agent.chainId}`;
+
+  const breakdown = scores ?? [];
 
   return (
-    <div className={cn('grid grid-cols-1 gap-3 lg:grid-cols-3', className)}>
-      {/* ------------------------------ Identity ---------------------------- */}
-      <RegistryPanel
-        title="Identity Registry"
-        registry={ERC8004_IDENTITY_REGISTRY}
-        accent="#F0B90B"
-        icon={<Fingerprint className="h-3.5 w-3.5" aria-hidden />}
-      >
-        <dl>
-          <Row label="Token ID">
-            <span className="tabular font-mono text-sm font-semibold text-white">#{agent.tokenId}</span>
-          </Row>
-          <Row label="Owner">
-            <a
-              href={bscScanAddress(agent.owner)}
-              target="_blank"
-              rel="noreferrer"
-              className="tabular truncate font-mono text-xs text-slate-300 transition-colors hover:text-bnb ring-focus"
-            >
-              {shortAddress(agent.owner)}
-            </a>
-            <CopyButton value={agent.owner} label="owner address" />
-          </Row>
-          <Row label="Agent URI">
-            <a
-              href={agent.agentURI}
-              target="_blank"
-              rel="noreferrer"
-              className="truncate font-mono text-xs text-slate-300 transition-colors hover:text-bnb ring-focus"
-              title={agent.agentURI}
-            >
-              {agent.agentURI.replace(/^https?:\/\//, '')}
-            </a>
-            <CopyButton value={agent.agentURI} label="agent URI" />
-          </Row>
-          <Row label="Status">
-            <span
-              className={cn(
-                'inline-flex items-center gap-1.5 text-xs font-semibold',
-                agent.verified ? 'text-emerald-300' : 'text-slate-400',
+    <div className={cn('space-y-3', className)}>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        {/* ---------------------------- aggregate --------------------------- */}
+        <Card
+          title="Reputation score"
+          icon={<Trophy className="h-3.5 w-3.5" aria-hidden />}
+          accent="#F0B90B"
+          footer={
+            <>
+              The aggregate score published by the ERC-8004 reputation index for this identity. Bazar ranks and sorts on
+              it, and never recomputes or smooths it.
+            </>
+          }
+        >
+          <div className="flex items-center gap-4">
+            <ScoreRing score={rep.totalScore} accent="#F0B90B" />
+            <div className="min-w-0 flex-1">
+              {ranked ? (
+                <dl>
+                  {rep.rank !== null && (
+                    <Row label="Rank">
+                      <span className="tabular text-sm font-semibold text-white">
+                        #{formatNumber(rep.rank, { compact: false })}
+                      </span>
+                    </Row>
+                  )}
+                  {rep.networkRank !== null && (
+                    <Row label={`${networkName} rank`}>
+                      <span className="tabular text-sm font-semibold text-white">
+                        #{formatNumber(rep.networkRank, { compact: false })}
+                      </span>
+                    </Row>
+                  )}
+                </dl>
+              ) : (
+                <>
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Rank</div>
+                  <div className="mt-0.5 text-sm font-semibold text-slate-300">Not published</div>
+                  <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
+                    The index has not placed this identity in a ranking. Bazar reports that rather than inferring a
+                    position from the score.
+                  </p>
+                </>
               )}
-            >
-              <span
-                aria-hidden
-                className={cn('h-1.5 w-1.5 rounded-full', agent.verified ? 'bg-emerald-400' : 'bg-slate-500')}
-              />
-              {agent.verified ? 'Verified' : 'Unverified'}
-            </span>
-          </Row>
-        </dl>
-      </RegistryPanel>
-
-      {/* ----------------------------- Reputation --------------------------- */}
-      <RegistryPanel
-        title="Reputation Registry"
-        registry={ERC8004_REPUTATION_REGISTRY}
-        accent="#22D3EE"
-        icon={<Star className="h-3.5 w-3.5" aria-hidden />}
-      >
-        <div className="flex items-center gap-4">
-          <ScoreRing score={rep.score} accent="#22D3EE" />
-          <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Reviews</div>
-            <div className="tabular text-xl font-semibold text-white">{formatNumber(rep.reviews, { compact: false })}</div>
-            <p className="mt-1 text-[11px] leading-snug text-slate-500">
-              Signed feedback from settled escrows, one vote per hire.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-2.5">
-          <div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="inline-flex items-center gap-1.5 font-medium text-emerald-300">
-                <ThumbsUp className="h-3 w-3" aria-hidden />
-                Positive
-              </span>
-              <span className="tabular text-slate-400">
-                {formatNumber(rep.positiveFeedback, { compact: false })} · {positivePct.toFixed(1)}%
-              </span>
-            </div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-              <div className="h-full rounded-full bg-emerald-400" style={{ width: `${positivePct}%` }} />
             </div>
           </div>
-          <div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="inline-flex items-center gap-1.5 font-medium text-rose-300">
-                <ThumbsDown className="h-3 w-3" aria-hidden />
-                Negative
-              </span>
-              <span className="tabular text-slate-400">
-                {formatNumber(rep.negativeFeedback, { compact: false })} · {negativePct.toFixed(1)}%
-              </span>
-            </div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-              <div className="h-full rounded-full bg-rose-400" style={{ width: `${negativePct}%` }} />
-            </div>
-          </div>
-        </div>
-      </RegistryPanel>
+        </Card>
 
-      {/* ----------------------------- Validation --------------------------- */}
-      <RegistryPanel
-        title="Validation Registry"
-        registry={ERC8004_VALIDATION_REGISTRY}
-        accent="#34D399"
-        icon={<ShieldCheck className="h-3.5 w-3.5" aria-hidden />}
-      >
-        <dl>
-          <Row label="Validations">
-            <span className="tabular text-sm font-semibold text-white">
-              {formatNumber(rep.validations, { compact: false })}
-            </span>
-          </Row>
-          <Row label="Last validated">
-            <span className="text-xs text-slate-300">{formatRelative(rep.lastValidatedAt)}</span>
-          </Row>
-        </dl>
+        {/* ----------------------------- feedback --------------------------- */}
+        <Card
+          title="Feedback"
+          icon={<MessageSquare className="h-3.5 w-3.5" aria-hidden />}
+          accent="#22D3EE"
+          footer={
+            <>
+              Feedback entries and stars recorded against this identity in the Reputation Registry. The registry
+              publishes counts and an average - not a positive/negative split - so Bazar shows no split.
+            </>
+          }
+        >
+          {hasFeedback ? (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="tabular text-3xl font-semibold leading-none text-white">
+                  {formatNumber(rep.totalFeedbacks, { compact: false })}
+                </span>
+                <span className="text-xs text-slate-500">
+                  feedback {rep.totalFeedbacks === 1 ? 'entry' : 'entries'}
+                </span>
+              </div>
 
-        <div className="mt-3">
-          <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Validators</div>
-          <ul className="mt-2 space-y-1.5">
-            {rep.validators.map((validator) => (
-              <li key={validator}>
-                <a
-                  href={bscScanAddress(validator)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/[0.06] ring-focus"
-                >
-                  <span className="tabular truncate font-mono text-xs text-slate-300 group-hover:text-white">
-                    {shortAddress(validator, 6)}
+              {hasAverage ? (
+                <div className="mt-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                      Average rating
+                    </span>
+                    <span className="tabular text-sm font-semibold text-white">
+                      {formatScore(rep.averageScore)} / 100
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <Meter value={rep.averageScore} accent="#22D3EE" />
+                  </div>
+                  <p className="mt-2 text-[11px] leading-snug text-slate-500">
+                    Published by the index on a 0-100 scale, not as a five-star rating.
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-4 rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-3 py-2.5 text-[11px] leading-relaxed text-slate-500">
+                  The index publishes no average rating for these entries. That is a gap in the data, not a score of
+                  zero, so Bazar leaves it blank rather than rendering a zero.
+                </p>
+              )}
+
+              <dl className="mt-4">
+                <Row label="Stars">
+                  <Star className="h-3.5 w-3.5 text-bnb" aria-hidden />
+                  <span className="tabular text-sm font-semibold text-white">
+                    {formatNumber(rep.starCount, { compact: false })}
                   </span>
-                  <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-600 group-hover:text-emerald-300" aria-hidden />
-                </a>
-              </li>
+                </Row>
+              </dl>
+            </>
+          ) : (
+            <div className="flex h-full flex-col justify-center rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-3.5 py-4">
+              <p className="text-sm font-medium text-slate-300">No feedback recorded yet</p>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+                Nobody has written a feedback entry for this agent. That is the norm rather than a warning: most
+                registered agents on BNB Smart Chain have none.
+              </p>
+              <dl className="mt-3">
+                <Row label="Stars">
+                  <Star className="h-3.5 w-3.5 text-bnb" aria-hidden />
+                  <span className="tabular text-sm font-semibold text-white">
+                    {formatNumber(rep.starCount, { compact: false })}
+                  </span>
+                </Row>
+              </dl>
+            </div>
+          )}
+        </Card>
+
+        {/* ------------------------------ health ---------------------------- */}
+        <Card
+          title="Health score"
+          icon={<Activity className="h-3.5 w-3.5" aria-hidden />}
+          accent="#34D399"
+          footer={
+            <>
+              A completeness and liveness measure computed by the index over the registry record itself - not a trading
+              or uptime metric.{' '}
+              <a
+                href="https://8004scan.io"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-0.5 text-slate-400 transition-colors hover:text-bnb ring-focus"
+              >
+                Source: 8004scan
+                <ArrowUpRight className="h-3 w-3" aria-hidden />
+              </a>
+            </>
+          }
+        >
+          {rep.healthScore === null ? (
+            <div className="flex h-full flex-col justify-center rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-3.5 py-4">
+              <p className="text-sm font-medium text-slate-300">Not computed</p>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+                The index has not published a health score for this identity. Bazar leaves the field empty rather than
+                substituting a default.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="tabular text-3xl font-semibold leading-none text-white">
+                  {rep.healthScore.toFixed(0)}
+                </span>
+                <span className="text-xs text-slate-500">/ 100</span>
+              </div>
+              <div className="mt-3">
+                <Meter value={rep.healthScore} accent="#34D399" />
+              </div>
+            </>
+          )}
+
+        </Card>
+      </div>
+
+      {/* ---------------------------- breakdown --------------------------- */}
+      {breakdown.length > 0 && (
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-xl sm:p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-sm font-semibold text-white">What the score is made of</h3>
+            {scoredAt && <p className="text-[11px] text-slate-500">Recomputed {formatDate(scoredAt)}</p>}
+          </div>
+          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+            The index publishes the component scores behind the aggregate, each on a 0-100 scale. Bazar shows them so
+            a low headline number can be read rather than guessed at.
+          </p>
+          <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+            {breakdown.map((dimension) => (
+              <div key={dimension.key}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <dt className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                    {dimension.label}
+                  </dt>
+                  <dd className="tabular text-xs font-semibold text-white">{formatScore(dimension.value)}</dd>
+                </div>
+                <div className="mt-1.5">
+                  <Meter value={dimension.value} accent="#F0B90B" />
+                </div>
+              </div>
             ))}
-          </ul>
+          </dl>
         </div>
-      </RegistryPanel>
+      )}
     </div>
   );
 }
