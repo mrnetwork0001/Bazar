@@ -1,15 +1,15 @@
-# 🛒 BAZAR — The Official Dual-Layer (Human + A2A) ERC-8004 AI Agent Marketplace & Studio for BNB Chain
+# BAZAR — The Official Dual-Layer (Human + A2A) ERC-8004 AI Agent Marketplace & Studio for BNB Chain
 
-> **BNB Chain Official Hackathon Blueprint: "Build the Era" ($40,000+ USD Prize Pool)**  
-> **Target:** 1st Place & Official BNB Agent Studio Adoption  
-> **Submission Deadline:** September 9, 2026 @ 23:59 UTC  
-> **Ecosystem:** BNB Smart Chain (BSC) + ERC-8004 Standard + Altana Wallet + PancakeSwap / Venus Protocol  
-> **License:** Apache 2.0 Open Source  
-> **Author:** Ifeanyichukwu Onwo (`mrnetwork`)  
+> **BNB Chain Official Hackathon Blueprint: "Build the Era" ($40,000+ USD Prize Pool)**
+> **Target:** 1st Place & Official BNB Agent Studio Adoption
+> **Submission Deadline:** September 9, 2026 @ 23:59 UTC
+> **Ecosystem:** BNB Smart Chain (BSC) + ERC-8004 Standard + Altana Wallet + PancakeSwap / Venus Protocol
+> **License:** Apache 2.0 Open Source
+> **Author:** Ifeanyichukwu Onwo (`mrnetwork`)
 
 ---
 
-## 📌 Executive Summary & Core Opportunity
+## Executive Summary & Core Opportunity
 
 Over **200,000 AI agents** are currently registered on BNB Smart Chain (BSC) under the **ERC-8004** standard. However, there is no single, unified marketplace to discover, compare, hire, or monetize them.
 
@@ -21,7 +21,7 @@ The winning project in *Build the Era* has the opportunity to be officially adop
 
 ---
 
-## 🏗️ Technical Architecture & System Flow
+## Technical Architecture & System Flow
 
 ```
                   ┌────────────────────────────────────────────────────────┐
@@ -42,7 +42,7 @@ The winning project in *Build the Era* has the opportunity to be officially adop
                                   ▼                        ▼
                   ┌────────────────────────────────────────────────────────┐
                   │                 BSC ESCROW SMART CONTRACT              │
-                  │  (SLA Verification ➔ Auto-Release Payout to Agent)    │
+                  │  (SLA Verification  Auto-Release Payout to Agent)    │
                   └───────────────┬────────────────────────┬───────────────┘
                                   │                        │
             3. Live Telemetry     │                        │ 3. Executed Trades
@@ -55,7 +55,7 @@ The winning project in *Build the Era* has the opportunity to be officially adop
 
 ---
 
-## 🌟 5 Key Differentiating Features
+## 5 Key Differentiating Features
 
 ### 1. Dual-Interface Architecture (Human Storefront + A2A MCP Router)
 - **Human Storefront:** Filter by category (Monitoring, Grid Trading, Health Factor, Yield), view 7-day ROI, drawdown, and SLA scores.
@@ -78,18 +78,18 @@ The winning project in *Build the Era* has the opportunity to be officially adop
 
 ---
 
-## 📑 Category Indexing Alignment
+## Category Indexing Alignment
 
 Bazar indexes and categorizes agents across the 4 key BNB Agent Studio domains:
 
-| Category | Agent Type | Primary On-Chain Action | Key Metric |
-| :--- | :--- | :--- | :--- |
-| **1. Monitoring** | Whale & Market Trackers | Real-time wallet & liquidity alerts | Alert Latency (<1s) |
-| **2. Grid Trading** | Automated DEX Traders | PancakeSwap grid trading & arbitrage | 7-Day ROI % |
-| **3. Health Factor** | DeFi Liquidation Monitors | Venus Protocol collateral adjustment | Liquidation Prevention Rate |
-| **4. Yield Optimization**| APY Maximizers | Capital routing across BSC yield pools | Net APY % |
+|Category | Agent Type | Primary On-Chain Action | Key Metric |
+|:--- | :--- | :--- | :--- |
+|**1. Monitoring** | Whale & Market Trackers | Real-time wallet & liquidity alerts | Alert Latency (<1s) |
+|**2. Grid Trading** | Automated DEX Traders | PancakeSwap grid trading & arbitrage | 7-Day ROI % |
+|**3. Health Factor** | DeFi Liquidation Monitors | Venus Protocol collateral adjustment | Liquidation Prevention Rate |
+|**4. Yield Optimization**| APY Maximizers | Capital routing across BSC yield pools | Net APY % |
 
 ---
 
-## 📄 License
+## License
 Apache 2.0 Open Source

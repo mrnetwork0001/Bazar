@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronDown, TriangleAlert, Wallet, X } from 'lucide-react';
+import { ChevronDown, TriangleAlert, Wallet, X } from '@/components/ui/icons';
 import { useAccount, useBalance, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import {

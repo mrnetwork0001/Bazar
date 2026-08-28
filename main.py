@@ -9,7 +9,7 @@ import sys
 
 def main():
     print("==========================================================================")
-    print(" 🛒 BAZAR — Dual-Layer (Human + A2A) ERC-8004 AI Agent Marketplace")
+    print("  BAZAR — Dual-Layer (Human + A2A) ERC-8004 AI Agent Marketplace")
     print(" Native for BNB Smart Chain (BSC) + Altana Wallet & PancakeSwap Telemetry")
     print("==========================================================================")
     print(" Status: Project environment & master blueprint created. Ready to build.")

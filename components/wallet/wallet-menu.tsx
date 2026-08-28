@@ -11,7 +11,7 @@ import {
   Network,
   Wallet,
   X,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { useAccount, useChainId } from 'wagmi';
 import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID } from '@/lib/constants';
 import { bscScanAddress, cn, shortAddress } from '@/lib/utils';
@@ -154,7 +154,7 @@ const ITEM =
   'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-300 transition-colors hover:bg-white/[0.07] hover:text-white ring-focus';
 
 /* ------------------------------------------------------------------ */
-/* NetworkChip — navbar / mobile panel network indicator                */
+/* NetworkChip - navbar / mobile panel network indicator                */
 /* ------------------------------------------------------------------ */
 
 export interface NetworkChipProps {
@@ -196,7 +196,7 @@ export function NetworkChip({ className }: NetworkChipProps) {
 }
 
 /* ------------------------------------------------------------------ */
-/* WalletMenu — connected dropdown                                     */
+/* WalletMenu - connected dropdown                                     */
 /* ------------------------------------------------------------------ */
 
 export interface WalletMenuProps {
@@ -326,7 +326,7 @@ export function WalletMenu({
 }
 
 /* ------------------------------------------------------------------ */
-/* WalletInstallHint — shown when no injected provider exists          */
+/* WalletInstallHint - shown when no injected provider exists          */
 /* ------------------------------------------------------------------ */
 
 const WALLETS = [

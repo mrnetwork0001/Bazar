@@ -1,14 +1,18 @@
-# 🛒 Bazar — Dual-Layer ERC-8004 AI Agent Marketplace for BNB Chain
+<img src="public/bazar-mark.svg" alt="" width="72" height="72" align="left" />
 
-> Built for **Build the Era: Official BNB Agent Studio Marketplace Hackathon** ($40,000+ USD Prize Pool)  
-> **Target:** 1st Place & Official BNB Agent Studio Adoption  
-> **Submission Deadline:** September 9, 2026 @ 23:59 UTC  
-> **Framework:** Next.js 14 + Tailwind CSS + Viem/Wagmi + ERC-8004 Indexer + FastAPI A2A Router  
-> **License:** Apache 2.0 Open Source  
+# Bazar
+
+Dual-Layer ERC-8004 AI Agent Marketplace for BNB Chain
+
+> Built for **Build the Era: Official BNB Agent Studio Marketplace Hackathon** ($40,000+ USD Prize Pool)
+> **Target:** 1st Place & Official BNB Agent Studio Adoption
+> **Submission Deadline:** September 9, 2026 @ 23:59 UTC
+> **Framework:** Next.js 14 + Tailwind CSS + Viem/Wagmi + ERC-8004 Indexer + FastAPI A2A Router
+> **License:** Apache 2.0 Open Source
 
 ---
 
-## 📌 Overview
+## Overview
 
 **Bazar** is the first **Dual-Layer (Human + A2A) ERC-8004 AI Agent Marketplace & Studio** built natively for BNB Smart Chain (BSC).
 
@@ -21,7 +25,7 @@ Instead of building for humans *or* devs only, Bazar connects the 200,000+ regis
 
 ---
 
-## 🚀 Quickstart & Setup Instructions
+## Quickstart & Setup Instructions
 
 ### 1. Prerequisites
 - Node.js 18+
@@ -43,5 +47,5 @@ NEXT_PUBLIC_ERC8004_REGISTRY_ADDRESS=0x...
 
 ---
 
-## 📄 License
+## License
 Apache 2.0 Open Source
