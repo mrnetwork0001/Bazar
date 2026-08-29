@@ -84,6 +84,13 @@ export interface A2AJobIntentRequest {
   hook?: Address;
   /** 56 (default) or 97. */
   chainId?: SupportedChainId;
+  /**
+   * True only when the caller actually sent a chainId. `chainId` itself is
+   * always populated (it defaults), so consumers that need to know whether the
+   * caller *chose* a chain - such as rejecting one that disagrees with the
+   * agent's registry chain - must read this rather than infer from presence.
+   */
+  chainIdExplicit?: boolean;
   /** Optional ERC-8004 identity of the calling agent, recorded on the intent. */
   callerAgentId?: string;
 }
@@ -241,6 +248,7 @@ export function validateJobIntentRequest(
     payer: payer as Address,
     description: (description as string).trim(),
     chainId: resolvedChainId,
+    chainIdExplicit: chainId !== undefined,
   };
   if (typeof expiresAt === 'string') value.expiresAt = expiresAt;
   if (evaluator !== undefined) value.evaluator = evaluator as Address;

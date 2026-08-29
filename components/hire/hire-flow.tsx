@@ -32,7 +32,6 @@ import {
   durationById,
   formatChainTimestamp,
   formatSeconds,
-  HIRE_CHAIN_IDS,
   HIRE_CHAIN_META,
   HIRE_DURATIONS,
   isSupportedHireChain,
@@ -218,19 +217,23 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
    * explicit choice outranks both.
    */
   const walletChainId = account.chainId ?? configChainId;
-  const [chainId, setChainId] = useState<SupportedChainId>(BSC_TESTNET);
-  const [chainChosen, setChainChosen] = useState(false);
 
-  useEffect(() => {
-    if (chainChosen) return;
-    if (account.status !== 'connected') return;
-    if (isSupportedHireChain(account.chainId)) setChainId(account.chainId);
-  }, [account.chainId, account.status, chainChosen]);
+  /**
+   * The settlement chain is NOT a free choice: it is the chain the agent's
+   * identity is attested on.
+   *
+   * An ERC-8004 token id means different things on different networks. Token
+   * 1776 resolves to 0x3C005172... on testnet and 0xFC619f08... on mainnet, so
+   * funding a testnet-registered agent through the mainnet kernel would send
+   * real U to an address the mainnet registry has never vouched for, and the
+   * agent the user meant to hire would have no claim on it. Every provider
+   * guard still passes in that case, because the lookup succeeds perfectly
+   * against the wrong chain.
+   */
+  const chainId: SupportedChainId = isSupportedHireChain(agent.chainId)
+    ? agent.chainId
+    : BSC_TESTNET;
 
-  const chooseChain = useCallback((next: SupportedChainId) => {
-    setChainChosen(true);
-    setChainId(next);
-  }, []);
 
   const { state: run, run: startRun, reset: resetRun } = useHireRun();
 
@@ -239,7 +242,6 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
     setBrief('');
     setBudgetText('');
     setDurationId(DEFAULT_DURATION_ID);
-    setChainChosen(false);
     resetRun();
   }, [resetKey, resetRun]);
 
@@ -365,66 +367,23 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
         {phase === 'brief' && (
           <div className="space-y-5">
-            {/* network */}
+            {/* network - determined by where the agent's identity is attested */}
             <section>
-              <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Settle on</h3>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {HIRE_CHAIN_IDS.map((id) => {
-                  const meta = HIRE_CHAIN_META[id];
-                  const selected = id === chainId;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => chooseChain(id)}
-                      aria-pressed={selected}
-                      className={cn(
-                        'ring-focus rounded-xl border p-3 text-left transition-colors',
-                        selected
-                          ? 'border-bnb/50 bg-bnb/[0.07]'
-                          : 'border-white/[0.08] bg-white/[0.02] hover:border-white/20',
-                      )}
-                    >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className={cn('text-sm font-semibold', selected ? 'text-white' : 'text-slate-300')}>
-                          {meta.name}
-                        </span>
-                        <Badge tone={meta.liveFunds ? 'rose' : 'emerald'}>
-                          {meta.liveFunds ? 'Real funds' : 'Rehearsal'}
-                        </Badge>
-                      </span>
-                      <span className="mt-1 block text-[11px] leading-relaxed text-slate-500">{meta.stake}</span>
-                    </button>
-                  );
-                })}
+              <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Settles on</h3>
+              <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium text-white">{chainMeta.name}</span>
+                  <Badge tone={chainMeta.liveFunds ? 'gold' : 'slate'}>
+                    {chainMeta.liveFunds ? 'Real funds' : 'Test funds'}
+                  </Badge>
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{chainMeta.stake}</p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  This is not a choice. {agent.name} holds ERC-8004 token #{agent.tokenId} on {chainMeta.name},
+                  and that is the only network whose registry vouches for the wallet the escrow pays. Settling
+                  elsewhere would pay whoever happens to hold the same token id on that other chain.
+                </p>
               </div>
-
-              {/* the real difference between the two, read live */}
-              <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                {policy.status === 'ready' ? (
-                  <>
-                    On {chainMeta.name} the evaluator policy needs{' '}
-                    <span className="tabular font-semibold text-slate-300">
-                      {policy.policy.voteQuorum} of {policy.policy.voterCount}
-                    </span>{' '}
-                    votes and holds a{' '}
-                    <span className="font-semibold text-slate-300">
-                      {formatSeconds(policy.policy.disputeWindow)}
-                    </span>{' '}
-                    dispute window, read live from OptimisticPolicy.{' '}
-                    {chainId === BSC_TESTNET
-                      ? 'A job you fund here can finish while you watch.'
-                      : 'A job you fund here is not settled until that window closes. Rehearsing? BSC Testnet runs the same contracts and the same five transactions.'}
-                  </>
-                ) : policy.status === 'loading' ? (
-                  <>Reading the settlement policy from {chainMeta.name}.</>
-                ) : (
-                  <>
-                    The settlement policy on {chainMeta.name} could not be read, so Bazar is not quoting how long
-                    settlement takes.
-                  </>
-                )}
-              </p>
             </section>
 
             {/* brief */}
@@ -612,15 +571,13 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
                   {provider.source === 'agent-wallet' ? 'getAgentWallet' : 'ownerOf'}
                 </span>
                 . On completion the kernel releases the escrow to it.
-                {provider.registryChainId !== chainId && (
-                  <>
-                    {' '}
-                    This agent is registered on chain {provider.registryChainId} and you are settling on {chainId}, so
-                    this is a rehearsal against the same wallet on a different network.
-                  </>
-                )}
               </p>
             )}
+
+            {/* The settlement chain is pinned to the agent's registry chain, so a
+                mismatch between the two is unreachable. This is where it used to
+                render as "this is a rehearsal" - which, on a mainnet hire of a
+                testnet-registered agent, told the user real funds were test funds. */}
 
             <section className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
               <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-500">

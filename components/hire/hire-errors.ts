@@ -220,11 +220,21 @@ export function describeWriteError(error: unknown, step: string): HireFailure {
           'This wallet cannot pay the gas for that transaction. Gas is paid in BNB, separately from the job budget, which is paid in U.',
       };
     }
-    if (lower.includes('chain') && lower.includes('mismatch')) {
+    // viem's ChainMismatchError reads "The current chain of the wallet (id: N)
+    // does not match the target chain for the transaction", so matching on the
+    // word "mismatch" never fired and a wrong-network failure fell through to
+    // the unknown branch with a raw viem string.
+    if (
+      lower.includes('chainmismatch') ||
+      (lower.includes('chain') && lower.includes('mismatch')) ||
+      (lower.includes('current chain') && lower.includes('does not match'))
+    ) {
       return {
         kind: 'network',
         title: 'Wrong network',
-        detail: 'Your wallet moved to a different network mid-flow. Switch back and retry this step.',
+        detail:
+          'Your wallet moved to a different network mid-flow. Switch back and retry this step. ' +
+          'Nothing was signed on the wrong chain.',
       };
     }
     if (
@@ -236,7 +246,11 @@ export function describeWriteError(error: unknown, step: string): HireFailure {
       return {
         kind: 'network',
         title: 'Could not reach the network',
-        detail: `The RPC endpoint did not answer while trying to ${step}. Nothing was lost - retry the step.`,
+        detail:
+          `The RPC endpoint did not answer while trying to ${step}. If your wallet had not yet ` +
+          'broadcast, nothing happened and you can retry. If it had, the transaction may still ' +
+          'confirm - check your wallet or BscScan before retrying, because repeating a broadcast ' +
+          'step can send it twice.',
       };
     }
 

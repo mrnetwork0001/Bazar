@@ -16,6 +16,8 @@ import { encodeFunctionData, getAddress, keccak256, stringToHex, toFunctionSelec
 import type { AbiFunction } from 'viem';
 import type { A2AErrorResponse, Address, IndexedAgent } from '@/lib/types';
 import { APP_URL } from '@/lib/constants';
+import { readAgentWallet } from '@/lib/chain/agent-wallet';
+import { EVALUATOR_ROUTER_ABI } from '@/lib/abi';
 import {
   DEFAULT_CHAIN_ID,
   PAYMENT_TOKEN_EIP712,
@@ -116,8 +118,16 @@ export function toUnixSeconds(date: Date): number {
 
 /* ------------------------------ intent build ---------------------------- */
 
-const FN = AGENTIC_COMMERCE_FUNCTION_SIGNATURES;
-const EV = AGENTIC_COMMERCE_EVENT_SIGNATURES;
+const FN = {
+  ...AGENTIC_COMMERCE_FUNCTION_SIGNATURES,
+  /** On the EvaluatorRouter. */
+  registerJob: 'registerJob(uint256,address)',
+} as const;
+const EV = {
+  ...AGENTIC_COMMERCE_EVENT_SIGNATURES,
+  /** Emitted by the EvaluatorRouter. */
+  JobRegistered: 'JobRegistered(uint256,address)',
+} as const;
 
 /** ERC-20 `approve(address,uint256)`, from the vendored ERC-20 ABI. */
 const APPROVE_SIGNATURE = 'approve(address,uint256)';
@@ -132,6 +142,8 @@ function abiFragment(abi: readonly unknown[], name: string): unknown[] {
 }
 
 const CREATE_JOB_ABI = abiFragment(AGENTIC_COMMERCE_ABI, 'createJob');
+/** `registerJob` is on the EvaluatorRouter, not the kernel. */
+const REGISTER_JOB_ABI = abiFragment(EVALUATOR_ROUTER_ABI, 'registerJob');
 const SET_BUDGET_ABI = abiFragment(AGENTIC_COMMERCE_ABI, 'setBudget');
 const FUND_ABI = abiFragment(AGENTIC_COMMERCE_ABI, 'fund');
 const APPROVE_ABI = abiFragment(ERC20_ABI, 'approve');
@@ -217,6 +229,8 @@ function buildTransactions(
   token: A2APaymentBlock,
 ): A2ATransactionStep[] {
   const kernel = deployment.agenticCommerce;
+  const router = deployment.evaluatorRouter;
+  const policy = deployment.optimisticPolicy;
   const unit = token.symbol ? `base units of ${token.symbol}` : 'base units of the payment token';
   const decimalsNote = token.decimals === null
     ? 'Read decimals() on payment.token to convert a human amount - Bazar could not read it while answering this request.'
@@ -253,6 +267,29 @@ function buildTransactions(
     },
     {
       step: 2,
+      call: 'registerJob',
+      actor: 'client',
+      to: router,
+      signature: FN.registerJob,
+      selector: selector(REGISTER_JOB_ABI),
+      abi: REGISTER_JOB_ABI,
+      args: [
+        { name: 'jobId', type: 'uint256', value: null, source: 'chain', note: 'The id createJob returned, also carried on the JobCreated event.' },
+        { name: 'policy', type: 'address', value: policy, source: 'bazar', note: 'The OptimisticPolicy this deployment settles under.' },
+      ],
+      calldata: null,
+      ready: false,
+      value: '0x0',
+      emits: EV.JobRegistered,
+      description:
+        'Binds the job to a settlement policy on the EvaluatorRouter. Easy to miss and not optional: fund() calls the hook, and the router reverts PolicyNotSet() until this has landed.',
+      reverts: [
+        'RouterNotEvaluator() / RouterNotHook() - the job was created with an evaluator or hook that is not this router.',
+        'AlreadyRegistered() - the job already has a policy.',
+      ],
+    },
+    {
+      step: 3,
       call: 'setBudget',
       actor: 'client',
       to: kernel,
@@ -276,7 +313,7 @@ function buildTransactions(
       ],
     },
     {
-      step: 3,
+      step: 4,
       call: 'approve',
       actor: 'client',
       to: deployment.paymentToken,
@@ -295,7 +332,7 @@ function buildTransactions(
       reverts: ["The token's own errors. fund reverts if the allowance or balance is short."],
     },
     {
-      step: 4,
+      step: 5,
       call: 'fund',
       actor: 'client',
       to: kernel,
@@ -314,6 +351,7 @@ function buildTransactions(
       description:
         'Moves the budget into kernel escrow and advances the job to FUNDED. No BNB is sent - value stays 0x0 and the transfer is an ERC-20 pull.',
       reverts: [
+        'PolicyNotSet() - registerJob was never called, so the hook has no policy to consult.',
         'ZeroBudget() - step 2 was skipped.',
         'BudgetMismatch() - expectedBudget disagrees with the stored budget.',
         "Unauthorized() - only the job's client may fund it.",
@@ -331,18 +369,32 @@ function buildTransactions(
 export interface IntentChainState {
   kernel: { paused: boolean; platformFeeBP: bigint; jobCounter: bigint } | null;
   token: { symbol: string; decimals: number } | null;
+  /**
+   * The agent's payable wallet, read from this chain's Identity Registry.
+   * Null when neither getAgentWallet nor ownerOf answered, which is a refusal
+   * to build signable calldata rather than a reason to fall back to the index.
+   */
+  providerAddress: Address | null;
 }
 
-export const NO_CHAIN_STATE: IntentChainState = { kernel: null, token: null };
+export const NO_CHAIN_STATE: IntentChainState = { kernel: null, token: null, providerAddress: null };
 
 /** Reads the kernel and the payment token for one intent. Never throws. */
-export async function readIntentChainState(chainId: SupportedChainId): Promise<IntentChainState> {
-  const [kernel, token] = await Promise.all([readKernelInfo(chainId), readPaymentToken(chainId)]);
+export async function readIntentChainState(
+  chainId: SupportedChainId,
+  tokenId?: string,
+): Promise<IntentChainState> {
+  const [kernel, token, providerAddress] = await Promise.all([
+    readKernelInfo(chainId),
+    readPaymentToken(chainId),
+    tokenId ? readAgentWallet(chainId, tokenId) : Promise.resolve(null),
+  ]);
   return {
     kernel: kernel.ok
       ? { paused: kernel.info.paused, platformFeeBP: kernel.info.platformFeeBP, jobCounter: kernel.info.jobCounter }
       : null,
     token: token.ok ? { symbol: token.token.symbol, decimals: token.token.decimals } : null,
+    providerAddress,
   };
 }
 
@@ -368,7 +420,18 @@ export function buildJobIntent(
   now: Date,
   chain: IntentChainState = NO_CHAIN_STATE,
 ): A2AJobIntentResponse {
-  const chainId = (request.chainId ?? agent.chainId ?? DEFAULT_CHAIN_ID) as SupportedChainId;
+  /**
+   * The settlement chain is the agent's registry chain, never the caller's
+   * preference.
+   *
+   * An ERC-8004 token id resolves to a different wallet on each network -
+   * token 1776 is 0x3C005172... on testnet and 0xFC619f08... on mainnet - so
+   * honouring a `chainId` that disagrees with the agent would encode signable
+   * calldata paying an address the target chain's registry has never vouched
+   * for. `buildJobIntent` therefore ignores a conflicting request chain; the
+   * caller-facing validation rejects it outright before reaching here.
+   */
+  const chainId = (agent.chainId ?? DEFAULT_CHAIN_ID) as SupportedChainId;
   const deployment = getDeployment(chainId);
 
   const expiryDate = request.expiresAt
@@ -376,9 +439,15 @@ export function buildJobIntent(
     : new Date(now.getTime() + DEFAULT_JOB_DURATION_MS);
   const expiredAt = toUnixSeconds(expiryDate);
 
-  // The ERC-8004 Identity Registry publishes the owner of the identity NFT and
-  // nothing else that can receive payment, so the owner is the provider.
-  const provider = normalizeAddress(agent.owner);
+  /**
+   * The provider is read from the Identity Registry onchain, not from the
+   * index. `agent.owner` is an indexer's claim about the chain; escrow pays a
+   * real address, so the claim is not good enough. `chain.providerAddress` is
+   * resolved by the caller via getAgentWallet() with an ownerOf() fallback on
+   * this chain's registry, and is null when neither answered - in which case
+   * the intent carries a blocker and no signable calldata.
+   */
+  const provider = normalizeAddress(chain.providerAddress ?? agent.owner);
   const evaluator = normalizeAddress(request.evaluator ?? deployment.evaluatorRouter);
   // NOT the zero address: `createJob` reverts HookRequired() on a zero hook.
   // The EvaluatorRouter is the hook every real job on both chains carries.
@@ -570,12 +639,28 @@ export async function processJobIntentRequest(input: unknown, now: Date = new Da
   if (!parsed.ok) return validationFailure(parsed.errors);
   const request = parsed.value;
 
-  const chainId = request.chainId ?? DEFAULT_CHAIN_ID;
-  const [resolved, chain] = await Promise.all([
-    resolveIndexedAgent(request.agentId, chainId),
-    readIntentChainState(chainId),
-  ]);
+  // The agent is resolved first: the settlement chain and the identity token to
+  // look the provider up with are both properties of the agent, not of the
+  // request. A caller-supplied chainId that disagrees is rejected outright
+  // rather than quietly honoured, because honouring it would encode calldata
+  // paying whoever holds the same token id on that other network.
+  const discoveryChainId = request.chainId ?? DEFAULT_CHAIN_ID;
+  const resolved = await resolveIndexedAgent(request.agentId, discoveryChainId);
   if (!('ok' in resolved)) return resolved;
+
+  const settlementChainId = (resolved.agent.chainId ?? DEFAULT_CHAIN_ID) as SupportedChainId;
+  if (request.chainIdExplicit && request.chainId !== settlementChainId) {
+    return validationFailure([
+      {
+        path: 'chainId',
+        message:
+          `Agent ${resolved.agent.slug} is registered on chain ${settlementChainId}, so it settles there. ` +
+          `Chain ${request.chainId} would pay whichever address holds token ${resolved.agent.tokenId} on that network.`,
+      },
+    ]);
+  }
+
+  const chain = await readIntentChainState(settlementChainId, resolved.agent.tokenId);
 
   const built = buildJobIntent(request, resolved.agent, now, chain);
   saveIntent(built.intent);
@@ -680,7 +765,7 @@ export function bazarAgentCard(chainId: SupportedChainId = DEFAULT_CHAIN_ID) {
         name: PAYMENT_TOKEN_EIP712.name,
       },
       /** The client sends all four, in this order. Bazar sends none of them. */
-      clientTransactions: [FN.createJob, FN.setBudget, `${APPROVE_SIGNATURE} on the payment token`, FN.fund],
+      clientTransactions: [FN.createJob, FN.registerJob, FN.setBudget, `${APPROVE_SIGNATURE} on the payment token`, FN.fund],
       custody: 'none',
       pricing: 'not-quoted',
       /** What Bazar actually observes, stated so nothing more is implied. */
@@ -690,7 +775,7 @@ export function bazarAgentCard(chainId: SupportedChainId = DEFAULT_CHAIN_ID) {
         webhooks: false,
         note: 'Bazar reads a job with getJob(uint256) when you ask it to, at GET /api/v1/a2a/jobs/{id}. It runs no background log listener, stores no job history and pushes no notifications. Nothing here is a settlement feed.',
       },
-      note: 'Bazar returns unsigned calldata. The client submits createJob, writes the budget with setBudget, approves the payment token to the kernel and calls fund. Bazar takes no fee and holds no funds; the kernel platform fee is 0 basis points on both deployments.',
+      note: 'Bazar returns unsigned calldata. The client submits createJob, registers the job with the EvaluatorRouter, writes the budget with setBudget, approves the payment token to the kernel and calls fund. Bazar takes no fee and holds no funds; the kernel platform fee is 0 basis points on both deployments.',
     },
   };
 }
