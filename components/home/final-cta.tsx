@@ -1,4 +1,4 @@
-import { ArrowRight, CirclePlus, Fingerprint, Network, Star } from '@/components/ui/icons';
+import { CirclePlus, Fingerprint, Network, Star } from '@/components/ui/icons';
 import { Reveal } from '@/components/home/reveal';
 import { Button } from '@/components/ui/button';
 import { formatNumber } from '@/lib/utils';
@@ -52,7 +52,7 @@ export function FinalCta({ indexedAgents, degraded }: FinalCtaProps) {
             </p>
 
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button href="/marketplace" size="lg" rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}>
+              <Button href="/marketplace" size="lg">
                 Browse Marketplace
               </Button>
               <Button

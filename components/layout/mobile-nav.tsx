@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, CirclePlus, Database } from '@/components/ui/icons';
+import { CirclePlus, Database } from '@/components/ui/icons';
 import { ConnectButton } from '@/components/wallet/connect-button';
 import { NetworkChip } from '@/components/wallet/wallet-menu';
 import { NAV_LINKS, SOCIAL_LINKS } from '@/lib/constants';
@@ -115,7 +115,6 @@ export function MobileNav({ open, onClose, pathname }: MobileNavProps) {
                 >
                   <Database className="h-3.5 w-3.5" aria-hidden />
                   8004scan index
-                  <ArrowUpRight className="h-3 w-3" aria-hidden />
                 </a>
               </div>
 

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, SearchX } from '@/components/ui/icons';
+import { SearchX } from '@/components/ui/icons';
 import { DEPLOYMENTS, type SupportedChainId } from '@/lib/chain/addresses';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,6 @@ export function UnresolvedAgent({ chainId, tokenId, className }: UnresolvedAgent
               href={tokenUrl}
               external
               variant="outline"
-              rightIcon={<ArrowUpRight className="h-4 w-4" aria-hidden />}
             >
               Check the registry on BscScan
             </Button>

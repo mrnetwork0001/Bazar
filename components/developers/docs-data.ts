@@ -10,15 +10,21 @@
  *      on 2026-08-28 and replayed through `mapAgent` - real registry rows, not
  *      invented ones. The page says which source it used.
  *
+ * The job examples have only one source: the live AgenticCommerce kernel. There
+ * is no captured job fixture and there will not be one - a fabricated job is
+ * exactly the thing this build refuses to render. When the chain cannot be
+ * reached the job section says so and shows nothing.
+ *
  * Every JSON body below is produced by the shipped code paths
- * (`buildAgentsResponse`, `buildJobIntent`, `bazarAgentCard`, `validationFailure`)
- * against the fixed `DOCS_CLOCK`, so the reference cannot drift from the API.
+ * (`buildAgentsResponse`, `buildJobIntent`, `bazarAgentCard`, `validationFailure`,
+ * `fetchJobView`) against the fixed `DOCS_CLOCK`, so the reference cannot drift
+ * from the API.
  *
  * Server-only: reaches into `lib/a2a/hire-service`, which imports `next/server`.
  * Never import it from a client component.
  */
 import type { A2AErrorResponse, IndexedAgent } from '@/lib/types';
-import { DEFAULT_CHAIN_ID } from '@/lib/chain/addresses';
+import { DEFAULT_CHAIN_ID, getDeployment } from '@/lib/chain/addresses';
 import { getMarketStats, queryAgents } from '@/lib/agents/repository';
 import { mapAgent } from '@/lib/indexer/map';
 import { SCAN_API_BASE, type ScanAgent } from '@/lib/indexer/scan-client';
@@ -31,8 +37,16 @@ import {
   explainCalldata,
   failure,
   indexUnavailable,
+  readIntentChainState,
   validationFailure,
+  type IntentChainState,
 } from '@/lib/a2a/hire-service';
+import {
+  fetchJobView,
+  jobReadFailure,
+  type JobViewEnvelope,
+} from '@/lib/a2a/job-view';
+import { readJobsByIds, readKernelInfo } from '@/lib/jobs/read';
 import {
   DEFAULT_JOB_DURATION_MS,
   MAX_DESCRIPTION_LENGTH,
@@ -156,6 +170,113 @@ export const ERROR_404_JSON = pretty(
 /** 503: the honest answer when the index cannot be reached. */
 export const ERROR_503_JSON = pretty(indexUnavailable('8004scan unreachable: fetch failed').body);
 
+/**
+ * The two failure envelopes of GET /jobs/{id}, rendered through the same
+ * `jobReadFailure` the route uses. The 404 is what the kernel really answers for
+ * an id it has never issued; the 503 is what a refused RPC really produces.
+ */
+function jobErrorJson(jobId: bigint, error: Parameters<typeof jobReadFailure>[2]): string {
+  const f = jobReadFailure(DEFAULT_CHAIN_ID, jobId, error);
+  return pretty({ ok: false, error: { code: f.code, message: f.message, details: f.details } });
+}
+
+export const JOB_404_JSON = jobErrorJson(999_999_999n, {
+  ok: false,
+  failure: 'not-found',
+  message: 'Job #999999999 has not been created on this chain.',
+});
+
+export const JOB_503_JSON = jobErrorJson(56_664n, {
+  ok: false,
+  failure: 'rpc-unreachable',
+  message: 'The BNB Chain RPC endpoint could not be reached.',
+});
+
+/* ------------------------------ live job -------------------------------- */
+
+/**
+ * One real job off the live kernel, for the GET /jobs/{id} reference.
+ *
+ * There is no fallback. If the chain does not answer, `ok` is false and the page
+ * renders the reason instead of a job - a documentation example that invented a
+ * jobId, a budget or a status would be the exact failure this build exists to
+ * avoid.
+ */
+export type LiveJobExample =
+  | {
+      ok: true;
+      chainId: number;
+      jobId: string;
+      /** Path the example body was actually fetched from. */
+      path: string;
+      json: string;
+      status: string;
+      statusLabel: string;
+      budgetLabel: string;
+      /** Highest job id the kernel has issued, read in the same pass. */
+      jobCounter: string;
+      /** Why this id and not another - stated so the choice is not silent. */
+      selection: string;
+    }
+  | { ok: false; reason: string };
+
+/** How far back from the head id to look for an illustrative job. */
+const JOB_LOOKBACK = 12;
+
+async function loadLiveJob(): Promise<LiveJobExample> {
+  const chainId = DEFAULT_CHAIN_ID;
+  const kernel = await readKernelInfo(chainId);
+  if (!kernel.ok) {
+    return { ok: false, reason: `${kernel.message} Bazar could not reach the AgenticCommerce kernel, so no job is shown here.` };
+  }
+
+  const head = kernel.info.jobCounter;
+  if (head <= 0n) {
+    return { ok: false, reason: 'The kernel has issued no jobs on this chain yet.' };
+  }
+
+  const ids: bigint[] = [];
+  for (let id = head; id > 0n && ids.length < JOB_LOOKBACK; id -= 1n) ids.push(id);
+  const batch = await readJobsByIds(chainId, ids);
+  if (!batch.ok) {
+    return { ok: false, reason: `${batch.message} Bazar could not read recent jobs, so no job is shown here.` };
+  }
+
+  // Newest first, already sorted by readJobsByIds. Prefer a job whose budget is
+  // actually escrowed, because that is the state the reference is explaining -
+  // but fall back to the newest job rather than skipping the section.
+  const escrowed = batch.jobs.find((j) => j.status === 'funded' || j.status === 'submitted');
+  const funded = batch.jobs.find((j) => j.budget > 0n);
+  const chosen = escrowed ?? funded ?? batch.jobs[0];
+  if (!chosen) {
+    return { ok: false, reason: 'The kernel returned no readable jobs in the last ' + JOB_LOOKBACK + ' ids.' };
+  }
+
+  const selection = escrowed
+    ? `The newest of the last ${JOB_LOOKBACK} jobs on this kernel that is still holding escrow.`
+    : funded
+      ? `The newest of the last ${JOB_LOOKBACK} jobs on this kernel that carries a budget.`
+      : `The newest job on this kernel (id ${head.toString()}).`;
+
+  const envelope = await fetchJobView(chainId, chosen.id);
+  if (!envelope.ok) {
+    return { ok: false, reason: `${envelope.message}` };
+  }
+
+  return {
+    ok: true,
+    chainId,
+    jobId: envelope.job.jobId,
+    path: `${API_BASE_PATH}/jobs/${envelope.job.jobId}?chainId=${chainId}`,
+    json: pretty(envelope satisfies JobViewEnvelope),
+    status: envelope.job.status,
+    statusLabel: envelope.job.statusLabel,
+    budgetLabel: envelope.job.budget.label,
+    jobCounter: head.toString(),
+    selection,
+  };
+}
+
 /* ------------------------------ live loader ----------------------------- */
 
 export interface ConsoleAgentOption {
@@ -196,6 +317,24 @@ export interface DocsExamples {
   intentJson: string;
   intentId: string;
   intentStatusJson: string;
+  /** Live chain state folded into the documented intent, or nulls when unread. */
+  intentChain: IntentChainState;
+
+  /** A real job read off the kernel while rendering, or the reason there is none. */
+  liveJob: LiveJobExample;
+  /** The kernel and payment-token facts the settlement section states. */
+  kernel: {
+    chainId: number;
+    address: string;
+    paymentToken: string;
+    tokenSymbol: string | null;
+    tokenDecimals: number | null;
+    paused: boolean | null;
+    platformFeeBP: string | null;
+    jobCounter: string | null;
+    /** False when the chain did not answer and every field above it is null. */
+    read: boolean;
+  };
   calldata: string;
   calldataSelector: string;
   calldataWords: CalldataWord[];
@@ -244,9 +383,9 @@ function describeCalldata(intent: A2AJobIntent, words: string[]): CalldataWord[]
       type: 'address',
       value: words[4] ?? '',
       note:
-        args.hook === '0x0000000000000000000000000000000000000000'
-          ? 'Zero address - no hook contract on this job.'
-          : 'Hook contract supplied in the request.',
+        args.hook.toLowerCase() === intent.contracts.evaluatorRouter.toLowerCase()
+          ? 'The chain EvaluatorRouter, doubling as the hook. Not optional: createJob reverts HookRequired() on a zero hook, and this is the hook every real job on both deployments carries.'
+          : 'Hook contract supplied in the request. It must be non-zero and must implement the kernel hook interface.',
     },
   ];
   const tail: CalldataWord[] = [];
@@ -277,9 +416,11 @@ function describeCalldata(intent: A2AJobIntent, words: string[]): CalldataWord[]
  * so no section opens its own fetch.
  */
 export async function getDocsExamples(): Promise<DocsExamples> {
-  const [page, stats] = await Promise.all([
+  const [page, stats, intentChain, liveJob] = await Promise.all([
     queryAgents({ sort: 'reputation', limit: SAMPLE_LIMIT }),
     getMarketStats(),
+    readIntentChainState(DEFAULT_CHAIN_ID),
+    loadLiveJob(),
   ]);
 
   const live = !page.degraded && page.agents.length > 0;
@@ -317,7 +458,7 @@ export async function getDocsExamples(): Promise<DocsExamples> {
 
   /* --- POST /hire ----------------------------------------------------- */
   const intentRequest = { ...SAMPLE_JOB_INTENT_REQUEST, agentId: primary.slug };
-  const { intent } = buildJobIntent(intentRequest, primary, DOCS_CLOCK);
+  const { intent } = buildJobIntent(intentRequest, primary, DOCS_CLOCK, intentChain);
   const intentJson = pretty({ ok: true, intent });
   const parts = explainCalldata(intent.createJob.calldata);
 
@@ -328,7 +469,8 @@ export async function getDocsExamples(): Promise<DocsExamples> {
     settlement: {
       source: 'bazar-memory',
       onChain: false,
-      note: 'Settlement is not tracked here. Read authoritative job state with getJob(jobId) on the ERC-8183 AgenticCommerce kernel at data.contracts.agenticCommerce.',
+      readJob: intent.readJob.urlTemplate,
+      note: 'Settlement is not tracked here - this is the plan Bazar built, not a record of what happened. For authoritative state, substitute the jobId createJob returned into readJob and call it: that route runs a live getJob(uint256) against the kernel at data.contracts.agenticCommerce. Bazar runs no log listener either way.',
     },
   });
 
@@ -373,6 +515,19 @@ export async function getDocsExamples(): Promise<DocsExamples> {
     intentJson,
     intentId: intent.id,
     intentStatusJson,
+    intentChain,
+    liveJob,
+    kernel: {
+      chainId: DEFAULT_CHAIN_ID,
+      address: getDeployment(DEFAULT_CHAIN_ID).agenticCommerce,
+      paymentToken: getDeployment(DEFAULT_CHAIN_ID).paymentToken,
+      tokenSymbol: intentChain.token?.symbol ?? null,
+      tokenDecimals: intentChain.token?.decimals ?? null,
+      paused: intentChain.kernel?.paused ?? null,
+      platformFeeBP: intentChain.kernel ? intentChain.kernel.platformFeeBP.toString() : null,
+      jobCounter: intentChain.kernel ? intentChain.kernel.jobCounter.toString() : null,
+      read: intentChain.kernel !== null,
+    },
     calldata: intent.createJob.calldata,
     calldataSelector: parts.selector,
     calldataWords: describeCalldata(intent, parts.words),

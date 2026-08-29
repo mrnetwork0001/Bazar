@@ -4,9 +4,10 @@ import { SectionHeading } from '@/components/home/section-heading';
 import { CodeBlock } from '@/components/developers/code-block';
 
 /**
- * Error reference, cross-checked line by line against `lib/a2a/schema.ts` and
- * the five route handlers. Every code listed is returned by shipped code - the
- * "documented only" tier is gone along with the codes that populated it.
+ * Error reference, cross-checked line by line against `lib/a2a/schema.ts`,
+ * `lib/a2a/job-view.ts` and the six route handlers. Every code listed is
+ * returned by shipped code - the "documented only" tier is gone along with the
+ * codes that populated it.
  */
 
 export interface ErrorCodeDoc {
@@ -21,9 +22,30 @@ export const ERROR_CODES: ErrorCodeDoc[] = [
   {
     code: 'VALIDATION_ERROR',
     status: 400,
-    routes: 'POST /hire · GET /agents · GET /agents/{id}',
-    when: 'Unparseable JSON, a missing or malformed body field, an agentId that is not a recognisable reference, an agentId on a chain other than 56 or 97 (Bazar indexes BNB Chain only, and refuses a foreign identity rather than resolving it), an expiresAt in the past or beyond 365 days, or an invalid query parameter.',
+    routes: 'POST /hire · GET /agents · GET /agents/{id} · GET /jobs/{id}',
+    when: 'Unparseable JSON, a missing or malformed body field, an agentId that is not a recognisable reference, an agentId on a chain other than 56 or 97 (Bazar indexes BNB Chain only, and refuses a foreign identity rather than resolving it), an expiresAt outside the window the kernel enforces, a zero evaluator or hook (createJob reverts ZeroAddress() / HookRequired() on those, so Bazar refuses to encode them), a jobId that is not a positive base-ten integer, or an invalid query parameter.',
     details: 'Array of { path, message }',
+  },
+  {
+    code: 'JOB_NOT_FOUND',
+    status: 404,
+    routes: 'GET /jobs/{id}',
+    when: 'The kernel answered and has never issued that job id. getJob returns an all-zero tuple rather than reverting for an unissued id, so this is the chain saying the job does not exist - not Bazar failing to look. Unlike a 503, retrying will not change it.',
+    details: '{ jobId, chainId, kernel, failure, rpcHost }',
+  },
+  {
+    code: 'CHAIN_UNAVAILABLE',
+    status: 503,
+    routes: 'GET /jobs/{id}',
+    when: 'The BNB Chain RPC could not be reached, or refused the request. Bazar cannot say whether the job exists, so it does not answer 404. Back off and retry.',
+    details: '{ jobId, chainId, kernel, failure, rpcHost }',
+  },
+  {
+    code: 'CHAIN_READ_FAILED',
+    status: 502,
+    routes: 'GET /jobs/{id}',
+    when: 'The node answered but the call reverted or the return data would not decode - a contract upgrade or a wrong deployment address would look like this. Distinct from 503 because the transport is fine.',
+    details: '{ jobId, chainId, kernel, failure, rpcHost }',
   },
   {
     code: 'AGENT_NOT_FOUND',
@@ -87,9 +109,17 @@ export interface ErrorCodesProps {
   error400Json: string;
   error404Json: string;
   error503Json: string;
+  job404Json: string;
+  job503Json: string;
 }
 
-export function ErrorCodes({ error400Json, error404Json, error503Json }: ErrorCodesProps) {
+export function ErrorCodes({
+  error400Json,
+  error404Json,
+  error503Json,
+  job404Json,
+  job503Json,
+}: ErrorCodesProps) {
   return (
     <section id="errors" className="scroll-mt-24">
       <SectionHeading
@@ -120,6 +150,14 @@ export function ErrorCodes({ error400Json, error404Json, error503Json }: ErrorCo
             The one to handle carefully is <code className="font-mono text-amber-300">503 INDEX_UNAVAILABLE</code>.
             Bazar has no local copy of the registry, so when the index is unreachable it says so instead of returning a
             plausible-looking empty page. Back off and retry rather than concluding the marketplace is empty.
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-slate-500">
+            The same distinction runs through the job route, one layer down.{' '}
+            <code className="font-mono text-slate-300">404 JOB_NOT_FOUND</code> is the kernel&apos;s answer;{' '}
+            <code className="font-mono text-amber-300">503 CHAIN_UNAVAILABLE</code> means Bazar never got to ask. Treat
+            them as opposites: retry the 503 forever, never retry the 404. Every failure body carries{' '}
+            <code className="font-mono text-slate-300">details.failure</code>, the internal classification the read
+            layer produced, so you can tell a refused RPC from an unreachable one without parsing prose.
           </p>
         </div>
 
@@ -196,6 +234,20 @@ export function ErrorCodes({ error400Json, error404Json, error503Json }: ErrorCo
           lang="json"
           title="503 · INDEX_UNAVAILABLE"
           copyLabel="503 example"
+          scroll="max-h-64"
+        />
+        <CodeBlock
+          code={job404Json}
+          lang="json"
+          title="404 · JOB_NOT_FOUND - GET /jobs/{id}"
+          copyLabel="job 404 example"
+          scroll="max-h-64"
+        />
+        <CodeBlock
+          code={job503Json}
+          lang="json"
+          title="503 · CHAIN_UNAVAILABLE - GET /jobs/{id}"
+          copyLabel="job 503 example"
           scroll="max-h-64"
         />
       </div>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
-import { ArrowRight, BadgeCheck, CircleDashed, Coins, HeartPulse, MessageSquare, Star } from '@/components/ui/icons';
+import { BadgeCheck, CircleDashed, Coins, HeartPulse, MessageSquare, Star } from '@/components/ui/icons';
 import type { IndexedAgent } from '@/lib/types';
 import { CATEGORY_MAP } from '@/lib/data/categories';
 import { Badge } from '@/components/ui/badge';
@@ -213,10 +213,6 @@ export function AgentCard({ agent, compact, index }: AgentCardProps) {
           </div>
           <FeedbackLine agent={agent} className="justify-end" />
         </div>
-        <ArrowRight
-          className="h-4 w-4 shrink-0 text-slate-500 transition-all group-hover:translate-x-0.5 group-hover:text-bnb"
-          aria-hidden
-        />
       </Link>
     );
   }
@@ -343,7 +339,6 @@ export function AgentCard({ agent, compact, index }: AgentCardProps) {
           </span>
           <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-bnb transition-transform duration-200 group-hover:translate-x-0.5">
             View agent
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </span>
         </div>
       </article>

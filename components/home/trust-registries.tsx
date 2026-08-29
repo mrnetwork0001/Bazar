@@ -129,15 +129,15 @@ function buildCards(agent: IndexedAgent | null): RegistryCard[] {
     },
     {
       title: 'Validation Registry',
-      source: 'ERC-8004 · not deployed on BSC',
+      source: 'ERC-8004 · deployed, interface in revision',
       icon: ShieldOff,
       live: false,
       accent: ACCENTS.slate,
       summary:
-        'ERC-8004’s third registry is still under active update and discussion with the TEE community, and there is no production deployment on BNB Smart Chain to read.',
+        'A validation registry is deployed on BNB Smart Chain, but the ERC-8004 spec for it is still under revision with the TEE community: its published read interface reverts against the live deployment, and no attestations are observable. Bazar reads what it can verify, so this card stays empty.',
       rows: [
         { label: 'Deployment', value: 'None on BSC' },
-        { label: 'Attestations indexed', value: '0', mono: true },
+        { label: 'Attestations readable', value: '0', mono: true },
         { label: 'Rendered by Bazar', value: 'Nothing' },
       ],
       note: 'Bazar shows no validators, no attestation counts and no “validated” badge. The card stays empty until there is something onchain behind it.',
@@ -154,7 +154,7 @@ export function TrustRegistries({ agent }: TrustRegistriesProps) {
         <SectionHeading
           eyebrow="ERC-8004 trust layer"
           title="Two registries live. The third one isn’t - so we don’t draw it."
-          description="Bazar does not host agent profiles, it reads them. Identity and reputation come off the ERC-8004 registries on BNB Smart Chain; validation has no production deployment there, and an empty card is the honest way to show that."
+          description="Bazar does not host agent profiles, it reads them. Identity and reputation come off the ERC-8004 registries on BNB Smart Chain. The third registry is deployed but its interface is still in revision and returns nothing readable, so its card stays empty rather than being filled in."
           align="center"
         />
       </Reveal>
@@ -241,7 +241,7 @@ export function TrustRegistries({ agent }: TrustRegistriesProps) {
                       )}
                     </>
                   ) : (
-                    <span>Nothing to read on BNB Smart Chain yet</span>
+                    <span>Deployed at 0x8004Cb1B, but nothing readable yet</span>
                   )}
                 </div>
               </article>

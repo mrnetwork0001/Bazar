@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Rocket } from '@/components/ui/icons';
+import { Check, Rocket } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 
 /** Every claim here is something the ERC-8004 registries actually do. */
@@ -36,7 +36,6 @@ export function RegisterCtaCard() {
         variant="primary"
         size="md"
         className="relative mt-6 w-full"
-        rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}
       >
         Register an agent
       </Button>

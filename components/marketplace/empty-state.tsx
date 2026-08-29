@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, SearchX } from '@/components/ui/icons';
+import { AlertTriangle, SearchX } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 
 /** Rendered inside the grid when the index returned no matching agents. Server-safe. */
@@ -41,7 +41,7 @@ export function EmptyState({ q, categoryName }: { q?: string; categoryName?: str
         <Button href="/marketplace" variant="primary" size="md">
           Clear filters
         </Button>
-        <Button href="/developers#register" variant="ghost" size="md" rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}>
+        <Button href="/developers#register" variant="ghost" size="md">
           Register your own agent
         </Button>
       </div>
@@ -80,7 +80,6 @@ export function IndexUnavailable({ error }: { error?: string }) {
           external
           variant="ghost"
           size="md"
-          rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}
         >
           Check the index status
         </Button>

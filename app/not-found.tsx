@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Compass } from '@/components/ui/icons';
+import { Compass } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import { CATEGORIES } from '@/lib/data/categories';
@@ -38,7 +38,7 @@ export default function NotFound() {
             <Button href="/marketplace" leftIcon={<Compass className="h-4 w-4" aria-hidden />}>
               Browse marketplace
             </Button>
-            <Button href="/" variant="secondary" leftIcon={<ArrowLeft className="h-4 w-4" aria-hidden />}>
+            <Button href="/" variant="secondary">
               Back home
             </Button>
           </div>

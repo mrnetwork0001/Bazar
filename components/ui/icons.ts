@@ -17,9 +17,8 @@
 
 export {
   /* ---- direct equivalents ---------------------------------------- */
-  ArrowLeftIcon as ArrowLeft,
-  ArrowRightIcon as ArrowRight,
-  ArrowUpRightIcon as ArrowUpRight,
+  // Directional arrows (ArrowLeft/Right/UpRight) are deliberately not exported:
+  // the app uses no arrow affordances on links or buttons.
   ArrowsUpDownIcon as ArrowUpDown,
   ArrowTrendingUpIcon as TrendingUp,
   ArrowTopRightOnSquareIcon as ExternalLink,

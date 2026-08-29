@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowUpRight, Bot, CircleDashed, Fingerprint, Hash, Link2, Network, Receipt, ShieldCheck, User } from '@/components/ui/icons';
+import { Bot, CircleDashed, Fingerprint, Hash, Link2, Network, Receipt, ShieldCheck, User } from '@/components/ui/icons';
 import type { Address, IndexedAgent } from '@/lib/types';
 import { DEPLOYMENTS, type SupportedChainId } from '@/lib/chain/addresses';
 import { CopyButton } from '@/components/agents/copy-button';
@@ -39,7 +39,6 @@ function RecordRow({ icon, label, display, copyValue, href, linkLabel, hint }: R
             title={linkLabel ?? `Open ${label} on BscScan`}
             className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.03] text-slate-400 transition-colors hover:border-bnb/40 hover:bg-bnb/10 hover:text-bnb ring-focus"
           >
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
           </a>
         )}
       </div>

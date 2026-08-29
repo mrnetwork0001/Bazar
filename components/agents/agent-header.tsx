@@ -1,5 +1,4 @@
 import {
-  ArrowUpRight,
   BadgeCheck,
   CalendarClock,
   CircleDashed,
@@ -156,7 +155,6 @@ export function AgentHeader({ agent, className }: AgentHeaderProps) {
                 className="inline-flex min-w-0 items-center gap-1 truncate rounded font-mono text-slate-300 transition-colors hover:text-bnb ring-focus"
               >
                 <span className="truncate">{ownerDisplay}</span>
-                <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden />
               </a>
             </MetaItem>
             <span aria-hidden className="text-slate-700">

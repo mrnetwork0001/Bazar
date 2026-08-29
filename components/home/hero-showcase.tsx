@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Network, Star } from '@/components/ui/icons';
+import { Network, Star } from '@/components/ui/icons';
 import { CodeBlock, Terminal } from '@/components/home/code';
 import { Badge } from '@/components/ui/badge';
 import { CATEGORY_MAP } from '@/lib/data/categories';
@@ -213,7 +213,6 @@ function ShowcaseCard({ agent }: { agent: IndexedAgent }) {
         </ul>
         <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-bnb transition-transform duration-200 group-hover:translate-x-0.5">
           View
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </span>
       </div>
     </Link>

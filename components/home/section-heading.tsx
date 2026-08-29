@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { ArrowRight } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
 export interface SectionHeadingProps {
@@ -50,7 +49,6 @@ export function SectionHeading({
           className="group inline-flex shrink-0 items-center gap-1.5 rounded-md text-sm font-medium text-bnb ring-focus hover:text-bnb-300"
         >
           {action.label}
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
         </Link>
       )}
     </div>

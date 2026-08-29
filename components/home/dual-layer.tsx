@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import {
-  ArrowRight,
   Braces,
   Fingerprint,
   MousePointerClick,
@@ -175,7 +174,7 @@ export function DualLayer({ indexedAgents, x402Agents, degraded }: DualLayerProp
               <PointList points={humanPoints} accentClass="bg-bnb/10 text-bnb" />
 
               <div className="mt-8">
-                <Button href="/marketplace" rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}>
+                <Button href="/marketplace">
                   Browse Marketplace
                 </Button>
               </div>
@@ -212,7 +211,7 @@ export function DualLayer({ indexedAgents, x402Agents, degraded }: DualLayerProp
               <PointList points={agentPoints} accentClass="bg-violet-400/10 text-violet-300" />
 
               <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-                <Button href="/developers" variant="secondary" rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}>
+                <Button href="/developers" variant="secondary">
                   Read the API docs
                 </Button>
                 <Link

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { ArrowUpRight } from '@/components/ui/icons';
 import { SocialLinks } from '@/components/layout/social-icons';
 import { Logo } from '@/components/layout/logo';
 import { SOCIAL_LINKS } from '@/lib/constants';
@@ -95,7 +94,6 @@ function FooterAnchor({ link }: { link: FooterLink }) {
     return (
       <a href={link.href} target="_blank" rel="noreferrer" className={className}>
         {link.label}
-        <ArrowUpRight className="h-3 w-3 shrink-0 text-slate-600" aria-hidden />
       </a>
     );
   }

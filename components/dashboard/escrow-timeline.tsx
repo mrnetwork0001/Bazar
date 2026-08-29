@@ -1,47 +1,27 @@
 import { Check, RotateCcw, TriangleAlert } from '@/components/ui/icons';
-import type { JobState } from '@/lib/jobs/lifecycle';
+import { JOB_LIFECYCLE_NODES, lifecycleIndex, type JobLifecycleNodeId, type JobStatus } from '@/lib/jobs/lifecycle';
 import { cn } from '@/lib/utils';
 
 /**
- * The ERC-8183 job lifecycle, as the AgenticCommerce kernel actually models it.
+ * The lifecycle rail, rendered from a job's real `IACP.JobStatus`.
  *
- * `created` and `funded` are separate on purpose: opening a job and locking its
- * budget are two distinct calls, and a job can sit unfunded. Evaluation is a
- * single node because accept and reject are the same step with two verdicts.
+ * The five nodes and the status -> node mapping both come from
+ * `lib/jobs/lifecycle`; this file adds nothing to them. That matters because
+ * the nodes are NOT the onchain enum: `open`, `funded` and `submitted` are
+ * statuses, while `evaluated` and `settled` are the same terminal node reached
+ * three different ways (completed, rejected, expired). Duplicating either list
+ * here is how the rail and the chain come to disagree.
+ *
+ * The captions below are the only thing this module decides, and every one of
+ * them is a statement about state the kernel actually reports. Nothing implies
+ * a step happened without evidence - see `deriveJobTimeline` for the case that
+ * matters most, `submitted` on a job whose `submittedAt` is 0.
  */
-export const JOB_LIFECYCLE = [
-  {
-    id: 'created',
-    title: 'Job created',
-    description: 'The client opens a job against the agent on the AgenticCommerce kernel.',
-  },
-  {
-    id: 'funded',
-    title: 'Funded',
-    description: 'The job budget is locked in the kernel until the job settles.',
-  },
-  {
-    id: 'submitted',
-    title: 'Work submitted',
-    description: 'The agent submits its deliverable reference on chain.',
-  },
-  {
-    id: 'evaluated',
-    title: 'Evaluated',
-    description: 'The evaluator router accepts or rejects the submitted work.',
-  },
-  {
-    id: 'settled',
-    title: 'Settled',
-    description: 'Payment is released to the agent, or the client claims a refund.',
-  },
-] as const;
 
 export type StepState = 'done' | 'current' | 'upcoming' | 'failed' | 'refunded';
-type StepId = (typeof JOB_LIFECYCLE)[number]['id'];
 
 export interface TimelineStep {
-  id: StepId;
+  id: JobLifecycleNodeId;
   title: string;
   description: string;
   state: StepState;
@@ -50,75 +30,80 @@ export interface TimelineStep {
 }
 
 function progressTo(currentIdx: number): StepState[] {
-  return JOB_LIFECYCLE.map((_, i): StepState => (i < currentIdx ? 'done' : i === currentIdx ? 'current' : 'upcoming'));
+  return JOB_LIFECYCLE_NODES.map((_, i): StepState =>
+    i < currentIdx ? 'done' : i === currentIdx ? 'current' : 'upcoming',
+  );
 }
 
-/** Map an ERC-8183 job state onto the five lifecycle nodes. */
-export function deriveJobTimeline(state: JobState): TimelineStep[] {
+/**
+ * Map an ERC-8183 job status onto the five lifecycle nodes.
+ *
+ * `rejected` deliberately does NOT mark the `submitted` node done. A job can be
+ * rejected straight out of OPEN - that is the kernel's cancel-an-open-job path,
+ * and 15 of 22 REJECTED jobs sampled onchain had `submittedAt == 0`. Lighting
+ * the submission node for those would claim a deliverable that was never sent.
+ * Callers that know `submittedAt` pass it so the node can be lit only when the
+ * chain says something was actually submitted.
+ */
+export function deriveJobTimeline(status: JobStatus, submittedAt = 0): TimelineStep[] {
   let states: StepState[];
-  const captions: Partial<Record<StepId, string>> = {};
+  const captions: Partial<Record<JobLifecycleNodeId, string>> = {};
+  const didSubmit = submittedAt > 0;
 
-  switch (state) {
-    case 'created':
+  switch (status) {
+    case 'open':
       states = progressTo(1);
-      captions.created = 'Job opened on the kernel';
-      captions.funded = 'Awaiting the client deposit';
+      captions.open = 'Job opened on the kernel';
+      captions.funded = 'Awaiting the client deposit - nothing is escrowed yet';
       break;
     case 'funded':
       states = progressTo(2);
-      captions.funded = 'Budget locked in escrow';
-      captions.submitted = 'Agent is working on the task';
+      captions.funded = 'Budget locked in kernel escrow';
+      captions.submitted = 'No deliverable submitted yet';
       break;
     case 'submitted':
       states = progressTo(3);
-      captions.submitted = 'Deliverable reference submitted';
+      captions.submitted = 'Deliverable hash recorded onchain';
       captions.evaluated = 'Awaiting the evaluator router';
       break;
+    // COMPLETED is the end of the line: the kernel emits PaymentReleased in the
+    // same transaction that sets it, so there is no separate "released" status.
     case 'completed':
-      states = progressTo(4);
+      states = JOB_LIFECYCLE_NODES.map((): StepState => 'done');
       captions.evaluated = 'Evaluator accepted the work';
-      captions.settled = 'Payment is releasable';
+      captions.settled = 'Escrow released to the provider in the same transaction';
       break;
     case 'rejected':
-      states = ['done', 'done', 'done', 'failed', 'upcoming'];
-      captions.evaluated = 'Evaluator rejected the work';
-      captions.settled = 'The client can claim a refund';
+      states = ['done', 'done', didSubmit ? 'done' : 'upcoming', 'failed', 'failed'];
+      captions.submitted = didSubmit ? 'Deliverable hash recorded onchain' : 'Rejected before any deliverable was sent';
+      captions.evaluated = didSubmit ? 'Evaluator rejected the deliverable' : 'Cancelled by the client while still open';
+      captions.settled = 'Escrow left the kernel; the job is closed';
       break;
-    case 'refunded':
-      states = ['done', 'done', 'done', 'failed', 'refunded'];
-      captions.evaluated = 'Evaluator rejected the work';
-      captions.settled = 'Refund claimed by the client';
+    // EXPIRED is reached by claimRefund on an expired escrow: the kernel emits
+    // Refunded and JobExpired together, so the job never sits on a "refunded"
+    // status of its own.
+    case 'expired':
+      states = ['done', 'done', didSubmit ? 'done' : 'upcoming', 'upcoming', 'refunded'];
+      captions.submitted = didSubmit ? 'Deliverable hash recorded onchain' : 'No deliverable was submitted';
+      captions.evaluated = 'The expiry passed before the job was evaluated';
+      captions.settled = 'Budget refunded to the client';
       break;
-    case 'released':
+    case 'unknown':
     default:
-      states = JOB_LIFECYCLE.map((): StepState => 'done');
-      captions.evaluated = 'Evaluator accepted the work';
-      captions.settled = 'Payment released to the agent';
+      // The kernel returned a status this build cannot identify. Highlight
+      // nothing rather than guessing at a position on the rail.
+      states = JOB_LIFECYCLE_NODES.map((): StepState => 'upcoming');
+      captions.settled = 'Unrecognised onchain status - read getJob(jobId) directly';
       break;
   }
 
-  return JOB_LIFECYCLE.map((step, i) => ({
-    id: step.id,
-    title: step.title,
-    description: step.description,
-    state: states[i],
-    caption: captions[step.id],
+  return JOB_LIFECYCLE_NODES.map((node, i) => ({
+    id: node.id,
+    title: node.title,
+    description: node.description,
+    state: states[i] ?? 'upcoming',
+    caption: captions[node.id],
   }));
-}
-
-/** The lifecycle node a job has actually reached, for the compact rail. */
-const STATE_NODE: Record<JobState, number> = {
-  created: 0,
-  funded: 1,
-  submitted: 2,
-  completed: 3,
-  rejected: 3,
-  released: 4,
-  refunded: 4,
-};
-
-export function lifecycleIndex(state: JobState): number {
-  return STATE_NODE[state];
 }
 
 const DOT: Record<StepState, string> = {
@@ -140,7 +125,7 @@ const CAPTION: Record<StepState, string> = {
 const STATE_LABEL: Record<StepState, string> = {
   done: 'completed',
   current: 'in progress',
-  upcoming: 'upcoming',
+  upcoming: 'not reached',
   failed: 'rejected',
   refunded: 'refunded',
 };
@@ -161,16 +146,23 @@ function StepGlyph({ state }: { state: StepState }) {
   }
 }
 
+export interface JobLifecycleProps {
+  status: JobStatus;
+  /** Unix seconds from `getJob`. 0 means nothing was ever submitted. */
+  submittedAt?: number;
+  className?: string;
+}
+
 /** Full five-node lifecycle rail, used inside a job's expanded panel. */
-export function JobLifecycle({ state, className }: { state: JobState; className?: string }) {
-  const steps = deriveJobTimeline(state);
+export function JobLifecycle({ status, submittedAt = 0, className }: JobLifecycleProps) {
+  const steps = deriveJobTimeline(status, submittedAt);
   return (
     <ol className={cn('grid gap-4 sm:grid-cols-5 sm:gap-3', className)} aria-label="ERC-8183 job lifecycle">
       {steps.map((step, i) => {
         const next = steps[i + 1];
         const lineLit = step.state === 'done' && !!next && next.state !== 'upcoming';
-        const lineFailed = lineLit && next.state === 'failed';
-        const lineRefunded = lineLit && next.state === 'refunded';
+        const lineFailed = lineLit && next?.state === 'failed';
+        const lineRefunded = lineLit && next?.state === 'refunded';
         return (
           <li
             key={step.id}
@@ -220,14 +212,28 @@ export function JobLifecycle({ state, className }: { state: JobState; className?
 }
 
 /**
- * Compact five-dot rail for the ledger table. It shows the job's position in
- * the lifecycle - a state machine, not a metric. It deliberately replaces the
- * old SLA progress bar, which had no onchain source.
+ * Compact five-dot rail for a job row. It shows the job's position in the
+ * lifecycle - a state machine, not a metric.
+ *
+ * A status this build cannot identify has no position on the rail
+ * (`lifecycleIndex` returns -1), so the counter is omitted entirely rather than
+ * rendering a made-up step number.
  */
-export function LifecycleRail({ state, className }: { state: JobState; className?: string }) {
-  const steps = deriveJobTimeline(state);
-  const idx = lifecycleIndex(state);
-  const label = `${JOB_LIFECYCLE[idx].title} - step ${idx + 1} of ${JOB_LIFECYCLE.length}`;
+export function LifecycleRail({
+  status,
+  submittedAt = 0,
+  className,
+}: {
+  status: JobStatus;
+  submittedAt?: number;
+  className?: string;
+}) {
+  const steps = deriveJobTimeline(status, submittedAt);
+  const idx = lifecycleIndex(status);
+  const node = idx >= 0 ? JOB_LIFECYCLE_NODES[idx] : undefined;
+  const label = node
+    ? `${node.title} - step ${idx + 1} of ${JOB_LIFECYCLE_NODES.length}`
+    : 'Unrecognised status - no position on the lifecycle';
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
@@ -248,7 +254,7 @@ export function LifecycleRail({ state, className }: { state: JobState; className
         ))}
       </span>
       <span className="shrink-0 font-mono text-[11px] tabular text-slate-500">
-        {idx + 1}/{JOB_LIFECYCLE.length}
+        {node ? `${idx + 1}/${JOB_LIFECYCLE_NODES.length}` : '?/5'}
       </span>
     </div>
   );

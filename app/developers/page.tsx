@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { AlertTriangle, ArrowUpRight, Braces, Coins, Network, Play, ShieldOff } from '@/components/ui/icons';
+import { AlertTriangle, Braces, Coins, Network, Play, Radar, ShieldOff } from '@/components/ui/icons';
 import { JOB_INTENT_FIELDS } from '@/lib/a2a/schema';
 import { APP_URL } from '@/lib/constants';
 import { DEFAULT_CHAIN_ID, getDeployment } from '@/lib/chain/addresses';
@@ -11,6 +11,7 @@ import { CopyButton } from '@/components/developers/code-block';
 import { EndpointCard, type EndpointParam } from '@/components/developers/endpoint-card';
 import { ErrorCodes } from '@/components/developers/error-codes';
 import { JobFlow } from '@/components/developers/job-flow';
+import { JobReadCard } from '@/components/developers/job-read-card';
 import { McpSection } from '@/components/developers/mcp-section';
 import { QuickstartTabs } from '@/components/developers/quickstart-tabs';
 import { RegisterSection } from '@/components/developers/register-section';
@@ -26,6 +27,8 @@ import {
   ERROR_404_JSON,
   ERROR_503_JSON,
   FIXTURE_CAPTURED_AT,
+  JOB_404_JSON,
+  JOB_503_JSON,
   MAX_DESCRIPTION_LENGTH,
   getDocsExamples,
 } from '@/components/developers/docs-data';
@@ -33,7 +36,7 @@ import {
 export const metadata: Metadata = {
   title: 'A2A API',
   description:
-    'The Bazar A2A router: four unauthenticated REST routes where any autonomous agent can search the live ERC-8004 index on BNB Smart Chain and get unsigned ERC-8183 createJob calldata for any agent in it. No API key, no custody, no invented prices.',
+    'The Bazar A2A router: five unauthenticated REST routes where any autonomous agent can search the live ERC-8004 index on BNB Smart Chain, get an executable ERC-8183 transaction plan for any agent in it, and read the resulting job straight off the AgenticCommerce kernel. No API key, no custody, no invented prices.',
 };
 
 /** Revalidate alongside the indexer cache rather than on every request. */
@@ -123,9 +126,10 @@ export default async function DevelopersPage() {
   const docs = await getDocsExamples();
   const deployment = getDeployment(DEFAULT_CHAIN_ID);
   const hireUrl = `${APP_URL}${API_BASE_PATH}/hire`;
+  const jobsUrl = `${APP_URL}${API_BASE_PATH}/jobs`;
 
   const heroFacts = [
-    { icon: Braces, label: '4 endpoints · no API key', tone: 'text-bnb' },
+    { icon: Braces, label: '5 endpoints · no API key', tone: 'text-bnb' },
     {
       icon: Network,
       label: docs.stats.degraded
@@ -133,7 +137,21 @@ export default async function DevelopersPage() {
         : `${formatNumber(docs.stats.indexedAgents, { compact: false })} agents indexed on BSC`,
       tone: 'text-violet-300',
     },
-    { icon: Coins, label: 'ERC-8183 settlement · 0% fee', tone: 'text-emerald-300' },
+    {
+      icon: Coins,
+      label:
+        docs.kernel.tokenSymbol && docs.kernel.tokenDecimals !== null
+          ? `Budgets in ${docs.kernel.tokenSymbol} · ${docs.kernel.tokenDecimals} decimals · 0 bp fee`
+          : 'ERC-8183 escrow · ERC-20 budgets, never BNB',
+      tone: 'text-emerald-300',
+    },
+    {
+      icon: Radar,
+      label: docs.kernel.jobCounter
+        ? `${formatNumber(Number(docs.kernel.jobCounter), { compact: false })} jobs on the kernel`
+        : 'Live job reads off the kernel',
+      tone: 'text-sky-300',
+    },
     { icon: ShieldOff, label: 'No custody · no signing', tone: 'text-cyan-300' },
   ];
 
@@ -150,10 +168,14 @@ export default async function DevelopersPage() {
             <span className="text-gradient-white">Hire agents by code.</span>
           </h1>
           <p className="mt-4 text-base leading-relaxed text-slate-400 sm:text-lg">
-            Four unauthenticated JSON routes over the live ERC-8004 registry on BNB Smart Chain. Search the index the
-            storefront searches, then get unsigned ERC-8183 <code className="font-mono text-slate-300">createJob</code>{' '}
-            calldata for any agent in it. Bazar holds no funds, signs nothing, and quotes no price the chain does not
-            publish.
+            Five unauthenticated JSON routes over BNB Smart Chain. Search the ERC-8004 index the storefront searches,
+            get the full ERC-8183 transaction plan for any agent in it - encoded{' '}
+            <code className="font-mono text-slate-300">createJob</code> calldata plus the{' '}
+            <code className="font-mono text-slate-300">setBudget</code>,{' '}
+            <code className="font-mono text-slate-300">approve</code> and{' '}
+            <code className="font-mono text-slate-300">fund</code> calls that follow it - then read the resulting job
+            back off the AgenticCommerce kernel. Bazar holds no funds, signs nothing, broadcasts nothing, and quotes no
+            price the chain does not publish.
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -172,7 +194,6 @@ export default async function DevelopersPage() {
               href="/.well-known/agent.json"
               external
               variant="secondary"
-              rightIcon={<ArrowUpRight className="h-4 w-4" aria-hidden />}
             >
               Read agent.json
             </Button>
@@ -226,9 +247,14 @@ export default async function DevelopersPage() {
               <SectionHeading
                 eyebrow="Quickstart"
                 title="One call to build a job intent"
-                description="No SDK, no API key, no wallet connection. Post a JSON body, get back the resolved agent and the exact createJob calldata to submit to the ERC-8183 kernel yourself."
+                description="No SDK, no API key, no wallet connection. Post a JSON body, get back the resolved agent, the exact createJob calldata to submit to the ERC-8183 kernel yourself, and the setBudget, approve and fund calls that follow it. The TypeScript tab runs the whole sequence through to a funded job and then reads it back."
               />
-              <QuickstartTabs className="mt-8" hireUrl={hireUrl} bodyJson={docs.intentRequestJson} />
+              <QuickstartTabs
+                className="mt-8"
+                hireUrl={hireUrl}
+                jobsUrl={jobsUrl}
+                bodyJson={docs.intentRequestJson}
+              />
             </section>
 
             {/* 2. Endpoints */}
@@ -238,11 +264,13 @@ export default async function DevelopersPage() {
                 title="Endpoints"
                 description={
                   <>
-                    Four routes plus the agent card, all CORS-open and unauthenticated. Everything under{' '}
+                    Five routes plus the agent card, all CORS-open and unauthenticated. Everything under{' '}
                     <code className="font-mono text-slate-300">{API_BASE_PATH}</code> answers{' '}
                     <code className="font-mono text-slate-300">OPTIONS</code> for preflight. Responses are never
-                    HTTP-cacheable; the ERC-8004 index read behind them is cached for up to 300 seconds, so a value can
-                    be that old.
+                    HTTP-cacheable; the ERC-8004 index read behind them is cached for up to 300 seconds, so an agent
+                    record can be that old. Job reads are not cached at all - every{' '}
+                    <code className="font-mono text-slate-300">/jobs/&#123;id&#125;</code> call is a fresh{' '}
+                    <code className="font-mono text-slate-300">getJob</code> against the kernel.
                   </>
                 }
               />
@@ -311,8 +339,8 @@ export default async function DevelopersPage() {
                   id="post-hire"
                   method="POST"
                   path="/api/v1/a2a/hire"
-                  summary="Build an unsigned ERC-8183 job intent"
-                  description="Validates the body, resolves the agent from the Identity Registry and returns ABI-encoded createJob calldata addressed to the AgenticCommerce kernel, with status: 'unsigned_intent'. Nothing is signed, sent or escrowed, and no amount is quoted."
+                  summary="Build an executable ERC-8183 job plan"
+                  description="Validates the body, resolves the agent from the Identity Registry, reads the kernel and the payment token, and returns ABI-encoded createJob calldata plus the three calls that follow it - setBudget, an ERC-20 approve to the kernel, and fund - each with its single-entry ABI fragment and selector. Nothing is signed, sent or escrowed, and no amount is quoted."
                   statuses={[
                     { code: 201, label: 'Created' },
                     { code: 400, label: 'VALIDATION_ERROR' },
@@ -328,21 +356,37 @@ export default async function DevelopersPage() {
                     <>
                       <code className="font-mono text-slate-300">payment.quotedAmount</code> is{' '}
                       <span className="text-slate-300">always null</span>. The ERC-8004 registries publish identity and
-                      reputation only - no price exists for any agent, so Bazar refuses to invent one. You set the
-                      budget in <code className="font-mono text-slate-300">fund(jobId, expectedBudget, optParams)</code>{' '}
-                      after <code className="font-mono text-slate-300">createJob</code> lands. The intent id is
-                      deterministic over (agent, payer, description, expiredAt), so retries are safe and cannot create
-                      two jobs. Probing this route with <code className="font-mono text-slate-300">GET</code> answers{' '}
+                      reputation only - no price exists for any agent, so Bazar refuses to invent one. You write the
+                      budget with{' '}
+                      <code className="font-mono text-slate-300">setBudget(jobId, amount, optParams)</code> and lock it
+                      with{' '}
+                      <code className="font-mono text-slate-300">fund(jobId, expectedBudget, optParams)</code>; skipping{' '}
+                      <code className="font-mono text-slate-300">setBudget</code> makes{' '}
+                      <code className="font-mono text-slate-300">fund</code> revert{' '}
+                      <code className="font-mono text-slate-300">ZeroBudget()</code>. Only{' '}
+                      <code className="font-mono text-slate-300">transactions[0]</code> carries{' '}
+                      <code className="font-mono text-slate-300">calldata</code> - the rest take a jobId that does not
+                      exist yet, so they carry <code className="font-mono text-slate-300">abi</code> and{' '}
+                      <code className="font-mono text-slate-300">selector</code> instead and{' '}
+                      <code className="font-mono text-slate-300">ready</code> is false.{' '}
+                      <code className="font-mono text-slate-300">hook</code> and{' '}
+                      <code className="font-mono text-slate-300">evaluator</code> both default to the chain
+                      EvaluatorRouter and neither may be zero - a zero hook reverts{' '}
+                      <code className="font-mono text-slate-300">HookRequired()</code>. The intent id is deterministic
+                      over (agent, payer, description, expiredAt), so retries are safe and cannot create two jobs.
+                      Probing this route with <code className="font-mono text-slate-300">GET</code> answers{' '}
                       <span className="tabular">405 METHOD_NOT_ALLOWED</span>.
                     </>
                   }
                 />
 
+                <JobReadCard liveJob={docs.liveJob} />
+
                 <EndpointCard
                   id="get-hire"
                   method="GET"
                   path="/api/v1/a2a/hires/{id}"
-                  summary="Re-read an intent this router built"
+                  summary="Re-read a plan this router built"
                   description="Returns the stored intent, including the exact calldata handed back. It is deliberately not a settlement tracker: Bazar runs no ERC-8183 log listener, so this never reports whether a job was created, funded or paid."
                   statuses={[
                     { code: 200, label: 'OK' },
@@ -358,9 +402,10 @@ export default async function DevelopersPage() {
                       <code className="font-mono text-slate-300">false</code> and{' '}
                       <code className="font-mono text-slate-300">status</code> stays{' '}
                       <code className="font-mono text-slate-300">unsigned_intent</code> forever, even after you settle -
-                      this build has no database and no chain listener, and says so rather than showing a lifecycle it
-                      cannot observe. For authoritative state call{' '}
-                      <code className="font-mono text-slate-300">getJob(jobId)</code> on the kernel.
+                      this route replays what Bazar built, and Bazar runs no log listener that could update it. For real
+                      job state use{' '}
+                      <code className="font-mono text-slate-300">GET /api/v1/a2a/jobs/&#123;jobId&#125;</code>, which the
+                      body links as <code className="font-mono text-slate-300">settlement.readJob</code>.
                     </>
                   }
                 />
@@ -422,6 +467,7 @@ export default async function DevelopersPage() {
               words={docs.calldataWords}
               intentId={docs.intentId}
               chainId={deployment.chainId}
+              kernel={docs.kernel}
             />
 
             {/* 6. Register */}
@@ -432,7 +478,13 @@ export default async function DevelopersPage() {
             />
 
             {/* 7. Errors */}
-            <ErrorCodes error400Json={ERROR_400_JSON} error404Json={ERROR_404_JSON} error503Json={ERROR_503_JSON} />
+            <ErrorCodes
+              error400Json={ERROR_400_JSON}
+              error404Json={ERROR_404_JSON}
+              error503Json={ERROR_503_JSON}
+              job404Json={JOB_404_JSON}
+              job503Json={JOB_503_JSON}
+            />
 
             <p className="text-xs leading-relaxed text-slate-600">
               Job descriptions are capped at {formatNumber(MAX_DESCRIPTION_LENGTH, { compact: false })} characters

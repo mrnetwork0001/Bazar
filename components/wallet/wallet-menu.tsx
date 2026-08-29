@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import {
-  ArrowUpRight,
   Check,
   Copy,
   Download,
@@ -282,7 +281,6 @@ export function WalletMenu({
         >
           <ExternalLink className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
           <span className="flex-1">View on BscScan</span>
-          <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-600" aria-hidden />
         </a>
       </div>
 
@@ -384,7 +382,6 @@ export function WalletInstallHint({ open, onClose, containerRef, fullWidth }: Wa
               </span>
               <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-bnb">
                 Install
-                <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5" aria-hidden />
               </span>
             </a>
           </li>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, Grid3x3, HeartPulse, Scale, TrendingUp, type AppIcon } from '@/components/ui/icons';
+import { Grid3x3, HeartPulse, Scale, TrendingUp, type AppIcon } from '@/components/ui/icons';
 import type { CategoryCounts } from '@/components/home/home-data';
 import { Reveal } from '@/components/home/reveal';
 import { SectionHeading } from '@/components/home/section-heading';
@@ -82,10 +82,6 @@ export function CategoryGrid({ counts, unclassified, sampleSize, degraded }: Cat
                   >
                     <Icon className="h-5 w-5" aria-hidden />
                   </span>
-                  <ArrowUpRight
-                    className="h-4 w-4 text-slate-500 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
-                    aria-hidden
-                  />
                 </div>
 
                 <h3 className="relative mt-5 text-lg font-semibold text-white">{cat.name}</h3>

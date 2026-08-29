@@ -1,6 +1,6 @@
-import { ArrowUpRight, Coins, Fingerprint, Gavel, Scale, Vault } from '@/components/ui/icons';
+import { Coins, Fingerprint, Gavel, Scale, Vault } from '@/components/ui/icons';
 import { GlassCard } from '@/components/ui/glass-card';
-import { getDeployment } from '@/lib/chain/addresses';
+import { getDeployment, type SupportedChainId } from '@/lib/chain/addresses';
 import { cn, shortAddress } from '@/lib/utils';
 
 type IconType = typeof Vault;
@@ -22,8 +22,15 @@ interface ContractEntry {
  * APR to read, so there was nothing honest to render. Verifiable contract
  * addresses are the thing a reader can actually check.
  */
-export function SettlementContracts({ className }: { className?: string }) {
-  const d = getDeployment();
+export function SettlementContracts({
+  chainId,
+  className,
+}: {
+  /** Which deployment to show. Defaults to the configured chain. */
+  chainId?: SupportedChainId;
+  className?: string;
+}) {
+  const d = getDeployment(chainId);
 
   const entries: ContractEntry[] = [
     {
@@ -34,7 +41,7 @@ export function SettlementContracts({ className }: { className?: string }) {
     },
     {
       label: 'AgenticCommerce kernel',
-      role: 'ERC-8183 job escrow: create, fund, submit, release',
+      role: 'ERC-8183 job escrow: create, fund, submit, release. Every job on this page is a getJob read from here',
       address: d.agenticCommerce,
       icon: Vault,
     },
@@ -70,7 +77,7 @@ export function SettlementContracts({ className }: { className?: string }) {
           Settlement contracts
         </h2>
         <p className="mt-0.5 text-xs leading-snug text-slate-500">
-          {d.name} · chain {d.chainId}. Bazar reads the registry today and settles through the kernel in Phase 2.
+          {d.name} · chain {d.chainId}. Bazar reads all five live; jobs on this page come from the kernel.
         </p>
       </div>
 
@@ -92,7 +99,6 @@ export function SettlementContracts({ className }: { className?: string }) {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1 text-sm text-white">
                     {entry.label}
-                    <ArrowUpRight className="h-3 w-3 shrink-0 text-slate-500" aria-hidden />
                   </span>
                   <span className="mt-0.5 block text-xs leading-snug text-slate-500">{entry.role}</span>
                   <span className="mt-1 block font-mono text-[11px] tabular text-slate-400">

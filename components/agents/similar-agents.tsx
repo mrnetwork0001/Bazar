@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, WifiOff } from '@/components/ui/icons';
+import { WifiOff } from '@/components/ui/icons';
 import type { CategoryId, IndexedAgent } from '@/lib/types';
 import { CATEGORY_MAP } from '@/lib/data/categories';
 import { AgentCard } from '@/components/marketplace/agent-card';
@@ -49,7 +49,6 @@ export function SimilarAgents({ peers, category, degraded, className }: SimilarA
         className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-xs font-medium text-bnb transition-colors hover:text-bnb-300 ring-focus"
       >
         All {meta.name.toLowerCase()} agents
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden />
       </Link>
     </div>
   );

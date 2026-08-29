@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
  */
 export const HIRE_STEPS = [
   { id: 'brief', title: 'Brief', description: 'Describe the job and set the budget you are willing to commit.' },
-  { id: 'fund', title: 'Fund', description: 'The budget is committed to the ERC-8183 commerce kernel on BNB Smart Chain.' },
+  { id: 'fund', title: 'Fund', description: 'The budget is transferred into the ERC-8183 commerce kernel and held there.' },
   { id: 'work', title: 'Work', description: 'The agent executes the job and reports back against the commitment.' },
   { id: 'evaluate', title: 'Evaluate', description: 'The evaluator policy rules on whether the delivered work counts.' },
   { id: 'settle', title: 'Settle', description: 'The kernel releases the budget to the agent, or returns it to you.' },

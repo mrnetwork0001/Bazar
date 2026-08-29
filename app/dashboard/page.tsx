@@ -4,16 +4,18 @@ import { DashboardView } from '@/components/dashboard/dashboard-view';
 export const metadata: Metadata = {
   title: 'Jobs & Escrow',
   description:
-    'Jobs opened through Bazar and their ERC-8183 escrow state on BNB Chain: created, funded, submitted, evaluated, then released to the agent or refunded.',
+    'Jobs opened by your wallet on the ERC-8183 AgenticCommerce kernel, read live from BNB Chain: budget escrowed, deliverable submitted, and the status the kernel reports.',
 };
 
 /**
- * No data fetch, because there is no job data to fetch.
+ * No server fetch, deliberately.
  *
- * Bazar's ERC-8183 settlement is not wired yet, so no job has been created,
- * funded or released. The page says so rather than showing illustrative
- * records, and the only figures it renders are the deployed contract
- * addresses, which are real and checkable on BscScan.
+ * The only key this page has is the connected wallet address, which exists in
+ * the browser and nowhere else - there is nothing to read on the server that
+ * would not have to be thrown away and re-read once the wallet is known. Every
+ * chain read therefore happens in `DashboardView`, through the same
+ * `lib/jobs/read` functions the server would have used; the RPC endpoints are
+ * all `NEXT_PUBLIC_` values, so the reader works identically in either place.
  */
 export default function DashboardPage() {
   return <DashboardView />;

@@ -431,9 +431,14 @@ export function TryItConsole({
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-slate-500">
-        A 201 here is an <span className="text-slate-300">unsigned intent</span>, nothing more: Bazar resolved the
-        agent, encoded <code className="font-mono text-slate-300">createJob</code> for the ERC-8183 kernel and returned
-        the calldata. No transaction was sent, no funds moved, and no amount was quoted - you set the budget yourself in{' '}
+        A 201 here is an <span className="text-slate-300">unsigned plan</span>, nothing more: Bazar resolved the agent,
+        read the kernel and the payment token, encoded{' '}
+        <code className="font-mono text-slate-300">createJob</code> for the ERC-8183 kernel and listed the{' '}
+        <code className="font-mono text-slate-300">setBudget</code>,{' '}
+        <code className="font-mono text-slate-300">approve</code> and{' '}
+        <code className="font-mono text-slate-300">fund</code> calls that follow it. No transaction was sent, no funds
+        moved, and no amount was quoted - you choose the budget, write it with{' '}
+        <code className="font-mono text-slate-300">setBudget(jobId, amount)</code> and lock it with{' '}
         <code className="font-mono text-slate-300">fund(jobId, expectedBudget)</code>. Intent ids are deterministic over
         (agent, payer, description, expiredAt), so re-sending the same body returns the same id.
       </p>

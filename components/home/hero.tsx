@@ -1,4 +1,4 @@
-import { ArrowRight, Fingerprint, Network, Sparkles, Star, Terminal as TerminalIcon } from '@/components/ui/icons';
+import { Fingerprint, Network, Sparkles, Star, Terminal as TerminalIcon } from '@/components/ui/icons';
 import { HeroShowcase } from '@/components/home/hero-showcase';
 import { Button } from '@/components/ui/button';
 import type { IndexedAgent } from '@/lib/types';
@@ -61,7 +61,7 @@ export function Hero({ agent, indexedAgents, total, degraded }: HeroProps) {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button href="/marketplace" size="lg" rightIcon={<ArrowRight className="h-4 w-4" aria-hidden />}>
+            <Button href="/marketplace" size="lg">
               Browse Marketplace
             </Button>
             <Button

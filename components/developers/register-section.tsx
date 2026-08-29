@@ -1,4 +1,4 @@
-import { ArrowUpRight, BadgeCheck, FileJson, Radar } from '@/components/ui/icons';
+import { BadgeCheck, FileJson, Radar } from '@/components/ui/icons';
 import { getDeployment } from '@/lib/chain/addresses';
 import type { Address } from '@/lib/types';
 import { bscScanAddress, formatNumber } from '@/lib/utils';
@@ -62,12 +62,14 @@ cast send "$IDENTITY_REGISTRY" "register(string)" "$TOKEN_URI" \\
     {
       label: 'ERC-8183 EvaluatorRouter',
       address: d.evaluatorRouter,
-      description: 'Default evaluator on every intent Bazar builds - it decides whether a job completes or is rejected.',
+      description:
+        'Default evaluator - and default hook - on every plan Bazar builds. It decides whether a job completes or is rejected, and the kernel refuses a job with no hook at all.',
     },
     {
       label: 'Settlement token',
       address: d.paymentToken,
-      description: 'The EIP-3009 ERC-20 the kernel settles in. You are paid in this.',
+      description:
+        'The EIP-3009 ERC-20 the kernel settles in, and the only denomination a budget ever has. You are paid in this, not in BNB.',
     },
   ];
 
@@ -176,7 +178,6 @@ cast send "$IDENTITY_REGISTRY" "register(string)" "$TOKEN_URI" \\
             className="inline-flex items-center gap-1.5 text-sm font-medium text-bnb ring-focus hover:text-bnb-300"
           >
             ERC-8004 - agent identity
-            <ArrowUpRight className="h-4 w-4" aria-hidden />
           </a>
           <a
             href={ERC8183_SPEC_URL}
@@ -185,7 +186,6 @@ cast send "$IDENTITY_REGISTRY" "register(string)" "$TOKEN_URI" \\
             className="inline-flex items-center gap-1.5 text-sm font-medium text-bnb ring-focus hover:text-bnb-300"
           >
             ERC-8183 - agentic commerce
-            <ArrowUpRight className="h-4 w-4" aria-hidden />
           </a>
           <p className="text-xs text-slate-500">
             {indexedAgents > 0

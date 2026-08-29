@@ -1,11 +1,24 @@
-import { ArrowUpRight, Coins, FileSignature, PackageCheck, ShieldCheck, Undo2, type AppIcon } from '@/components/ui/icons';
-import { ERC8183_EVENT_SIGNATURES, ERC8183_FUNCTION_SIGNATURES } from '@/lib/a2a/erc8183-abi';
+import {
+  Banknote,
+  Coins,
+  FileSignature,
+  PackageCheck,
+  ShieldCheck,
+  Undo2,
+  type AppIcon,
+} from '@/components/ui/icons';
+import {
+  AGENTIC_COMMERCE_EVENT_SIGNATURES as ERC8183_EVENT_SIGNATURES,
+  AGENTIC_COMMERCE_FUNCTION_SIGNATURES as ERC8183_FUNCTION_SIGNATURES,
+  MAX_EXPIRY_SECONDS,
+  MIN_EXPIRY_SECONDS,
+} from '@/lib/abi';
 import { getDeployment, PAYMENT_TOKEN_EIP712 } from '@/lib/chain/addresses';
 import { bscScanAddress, shortAddress } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeading } from '@/components/home/section-heading';
 import { CodeBlock, CopyButton } from '@/components/developers/code-block';
-import type { CalldataWord } from '@/components/developers/docs-data';
+import type { CalldataWord, DocsExamples } from '@/components/developers/docs-data';
 
 /**
  * The payment half of an A2A job: what the router hands back, what the calling
@@ -17,27 +30,37 @@ import type { CalldataWord } from '@/components/developers/docs-data';
  */
 
 /**
- * The kernel on BscScan, not a GitHub blob. Bazar's ABI is a transcription; the
- * deployed contract is the thing a reader can actually verify these selectors
- * against, and the repository is not published yet.
+ * The kernel on BscScan. Bazar's ABI is now the artifact the official BNB Agent
+ * Studio SDK publishes, vendored verbatim in `lib/abi/`, and every signature
+ * below is derived from it with viem rather than typed out - but the deployed
+ * contract is still the thing a reader can verify these selectors against.
  */
 const ABI_SOURCE = `${bscScanAddress(getDeployment().agenticCommerce, getDeployment().chainId)}#code`;
 
 const SIGNATURES = [
-  '// AgenticCommerce kernel - functions Bazar references',
+  '// AgenticCommerce kernel - derived from the vendored SDK ABI, not transcribed',
   `function ${ERC8183_FUNCTION_SIGNATURES.createJob} returns (uint256 jobId)`,
+  `function ${ERC8183_FUNCTION_SIGNATURES.setBudget}`,
   `function ${ERC8183_FUNCTION_SIGNATURES.fund}`,
+  `function ${ERC8183_FUNCTION_SIGNATURES.submit}`,
   `function ${ERC8183_FUNCTION_SIGNATURES.complete}`,
   `function ${ERC8183_FUNCTION_SIGNATURES.reject}`,
   `function ${ERC8183_FUNCTION_SIGNATURES.claimRefund}`,
   `function ${ERC8183_FUNCTION_SIGNATURES.getJob} view`,
+  `function ${ERC8183_FUNCTION_SIGNATURES.jobCounter} view`,
+  '',
+  '// the ERC-20 call in the middle - on the payment token, not the kernel',
+  'function approve(address spender, uint256 amount) returns (bool)',
   '',
   '// events',
   `event ${ERC8183_EVENT_SIGNATURES.JobCreated}`,
+  `event ${ERC8183_EVENT_SIGNATURES.BudgetSet}`,
   `event ${ERC8183_EVENT_SIGNATURES.JobFunded}`,
   `event ${ERC8183_EVENT_SIGNATURES.JobSubmitted}`,
   `event ${ERC8183_EVENT_SIGNATURES.JobCompleted}`,
   `event ${ERC8183_EVENT_SIGNATURES.PaymentReleased}`,
+  `event ${ERC8183_EVENT_SIGNATURES.Refunded}`,
+  `event ${ERC8183_EVENT_SIGNATURES.JobExpired}`,
 ].join('\n');
 
 interface Step {
@@ -54,21 +77,29 @@ const STEPS: Step[] = [
     icon: FileSignature,
     title: 'createJob',
     actor: 'Your agent',
-    body: 'POST /hire answers 201 with ABI-encoded createJob calldata addressed to the kernel. Send it yourself - Bazar holds no key and never broadcasts. The returned jobId is the handle for everything after.',
+    body: 'POST /hire answers 201 with ABI-encoded createJob calldata addressed to the kernel. Send it yourself - Bazar holds no key and never broadcasts. The jobId it returns is the handle for everything after.',
     emits: 'JobCreated',
     accent: 'bg-bnb/10 text-bnb',
   },
   {
     icon: Coins,
-    title: 'fund',
+    title: 'setBudget',
     actor: 'Your agent',
-    body: 'Approve the payment token to the kernel, then call fund(jobId, expectedBudget, optParams). You choose expectedBudget: there is no onchain price for an ERC-8004 agent, so nothing - Bazar included - can quote one for you.',
-    emits: 'JobFunded',
+    body: 'Write your budget onto the job. This is the step people skip: fund reverts ZeroBudget() without it, because the amount lives on the job rather than being a fund argument. You choose the number - no onchain price exists for an ERC-8004 agent, so nothing, Bazar included, can quote one.',
+    emits: 'BudgetSet',
     accent: 'bg-cyan-400/10 text-cyan-300',
   },
   {
+    icon: Banknote,
+    title: 'approve → fund',
+    actor: 'Your agent',
+    body: 'fund pulls the budget with an ERC-20 transferFrom, so approve the kernel on the payment token first, then call fund(jobId, expectedBudget, optParams). expectedBudget asserts the stored budget rather than setting it - a mismatch reverts BudgetMismatch(). No BNB moves; value stays 0x0.',
+    emits: 'Approval + JobFunded',
+    accent: 'bg-sky-400/10 text-sky-300',
+  },
+  {
     icon: PackageCheck,
-    title: 'Provider submits',
+    title: 'submit',
     actor: 'The hired agent',
     body: 'The provider does the work and records a deliverable hash against the jobId. Bazar is not in this path at all - it introduced the two parties and stepped out.',
     emits: 'JobSubmitted',
@@ -78,7 +109,7 @@ const STEPS: Step[] = [
     icon: ShieldCheck,
     title: 'complete',
     actor: 'Evaluator',
-    body: 'The evaluator accepts the deliverable and the kernel releases the funded budget to the provider. reject(jobId, reason) is the mirror path, and claimRefund(jobId) returns the budget once expiredAt passes.',
+    body: 'The evaluator accepts the deliverable and the kernel releases the escrow to the provider in the same transaction - there is no separate "released" state to wait for. reject is the mirror path, and claimRefund(jobId) returns the budget once expiredAt passes with the escrow still held.',
     emits: 'JobCompleted + PaymentReleased',
     accent: 'bg-emerald-400/10 text-emerald-300',
   },
@@ -90,20 +121,24 @@ export interface JobFlowProps {
   words: CalldataWord[];
   intentId: string;
   chainId: number;
+  /** Live kernel and payment-token state, read while the page rendered. */
+  kernel: DocsExamples['kernel'];
 }
 
-export function JobFlow({ calldata, selector, words, intentId, chainId }: JobFlowProps) {
+export function JobFlow({ calldata, selector, words, intentId, chainId, kernel }: JobFlowProps) {
   const deployment = getDeployment(chainId);
+  const tokenSymbol = kernel.tokenSymbol;
+  const tokenDecimals = kernel.tokenDecimals;
 
   return (
     <section id="settlement" className="scroll-mt-24">
       <SectionHeading
         eyebrow="Settlement - ERC-8183"
         title="From intent to payout, without a middleman"
-        description="Bazar never custodies funds, never asks for a key and never quotes a price. It resolves the provider from the ERC-8004 Identity Registry, encodes one unsigned transaction for the ERC-8183 AgenticCommerce kernel, and hands it back."
+        description="Bazar never custodies funds, never asks for a key and never quotes a price. It resolves the provider from the ERC-8004 Identity Registry, encodes the createJob transaction for the ERC-8183 AgenticCommerce kernel, and hands back the three calls that follow it with their ABI fragments. You send all four. Bazar sends none."
       />
 
-      <ol className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <ol className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
@@ -212,7 +247,10 @@ export function JobFlow({ calldata, selector, words, intentId, chainId }: JobFlo
               {
                 label: `Payment token - ${PAYMENT_TOKEN_EIP712.name}`,
                 address: deployment.paymentToken,
-                note: 'EIP-3009 ERC-20 the kernel settles in. Approve it before calling fund.',
+                note:
+                  tokenSymbol && tokenDecimals !== null
+                    ? `The ERC-20 every budget is denominated in: symbol ${tokenSymbol}, ${tokenDecimals} decimals, read off the token while this page rendered. A budget is never in BNB, and no transaction in this flow carries native value. Approve the kernel on it before calling fund.`
+                    : 'The ERC-20 every budget is denominated in - never BNB. Bazar could not read its symbol and decimals while this page rendered and will not guess them; read symbol() and decimals() yourself. Approve the kernel on it before calling fund.',
               },
             ].map((row) => (
               <div key={row.label}>
@@ -245,13 +283,41 @@ export function JobFlow({ calldata, selector, words, intentId, chainId }: JobFlo
             scroll="max-h-72"
           />
 
+          <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.08] bg-ink/50 p-3">
+            {[
+              {
+                label: 'Kernel paused',
+                value: kernel.paused === null ? 'unread' : kernel.paused ? 'yes' : 'no',
+              },
+              {
+                label: 'Platform fee',
+                value: kernel.platformFeeBP === null ? 'unread' : `${kernel.platformFeeBP} bp`,
+              },
+              { label: 'Jobs issued', value: kernel.jobCounter ?? 'unread' },
+              {
+                label: 'Expiry window',
+                value: `${MIN_EXPIRY_SECONDS}s - ${MAX_EXPIRY_SECONDS}s`,
+              },
+            ].map((row) => (
+              <div key={row.label}>
+                <dt className="text-[10px] font-medium uppercase tracking-wider text-slate-500">{row.label}</dt>
+                <dd className="tabular mt-0.5 font-mono text-sm text-slate-200">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+            {kernel.read
+              ? 'Read off the kernel while this page rendered. A 0 bp platform fee means the budget you fund is the budget the provider receives - there is no fee arithmetic to do.'
+              : 'The kernel did not answer while this page rendered, so those four figures are marked unread rather than filled in. The expiry window is the bound the kernel enforces on expiredAt, measured from the block that mines createJob.'}
+          </p>
+
           <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-slate-500">
             <Undo2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-600" aria-hidden />
             <span>
-              <code className="font-mono text-slate-400">getJob(uint256)</code> is listed for reference but is not in
-              Bazar&apos;s typed ABI: its return struct belongs to the kernel implementation, and publishing a guessed
-              tuple would be the kind of invented contract this build exists to remove. Decode it with the BNB Agent
-              Studio SDK.
+              <code className="font-mono text-slate-400">getJob(uint256)</code> is no longer listed for reference only.
+              Bazar&apos;s ABI is the artifact the BNB Agent Studio SDK publishes, vendored verbatim, so the return
+              tuple is the real one and Bazar calls it: <code className="font-mono text-slate-400">GET /api/v1/a2a/jobs/&#123;id&#125;</code>{' '}
+              is that call. It reads on request only - there is no log listener behind it and no job history stored.
             </span>
           </p>
 
@@ -262,7 +328,6 @@ export function JobFlow({ calldata, selector, words, intentId, chainId }: JobFlo
             className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-bnb ring-focus hover:text-bnb-300"
           >
             Read the deployed kernel on BscScan
-            <ArrowUpRight className="h-4 w-4" aria-hidden />
           </a>
         </div>
       </div>

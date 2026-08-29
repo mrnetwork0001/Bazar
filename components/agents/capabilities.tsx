@@ -1,4 +1,4 @@
-import { ArrowUpRight, Layers, Radio, ShieldCheck, Tag, Terminal } from '@/components/ui/icons';
+import { Layers, Radio, ShieldCheck, Tag, Terminal } from '@/components/ui/icons';
 import type { IndexedAgent } from '@/lib/types';
 import type { AgentEndpoint } from '@/components/agents/agent-detail';
 import { CATEGORY_MAP } from '@/lib/data/categories';
@@ -53,7 +53,6 @@ function EndpointCard({ endpoint }: { endpoint: AgentEndpoint }) {
             className="mt-1 inline-flex max-w-full items-center gap-1 rounded font-mono text-[11px] text-slate-400 transition-colors hover:text-bnb ring-focus"
           >
             <span className="truncate">{displayUrl(endpoint.url)}</span>
-            <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden />
           </a>
         ) : (
           <p className="mt-1 truncate font-mono text-[11px] text-slate-400" title={endpoint.url}>

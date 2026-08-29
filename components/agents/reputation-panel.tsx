@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Activity, ArrowUpRight, MessageSquare, Star, Trophy } from '@/components/ui/icons';
+import { Activity, MessageSquare, Star, Trophy } from '@/components/ui/icons';
 import type { IndexedAgent } from '@/lib/types';
 import { DEPLOYMENTS, type SupportedChainId } from '@/lib/chain/addresses';
 import type { ScoreDimension } from '@/components/agents/agent-detail';
@@ -280,7 +280,6 @@ export function ReputationPanel({ agent, scores, scoredAt, className }: Reputati
                 className="inline-flex items-center gap-0.5 text-slate-400 transition-colors hover:text-bnb ring-focus"
               >
                 Source: 8004scan
-                <ArrowUpRight className="h-3 w-3" aria-hidden />
               </a>
             </>
           }
