@@ -136,7 +136,7 @@ function buildCards(agent: IndexedAgent | null): RegistryCard[] {
       summary:
         'A validation registry is deployed on BNB Smart Chain, but the ERC-8004 spec for it is still under revision with the TEE community: its published read interface reverts against the live deployment, and no attestations are observable. Bazar reads what it can verify, so this card stays empty.',
       rows: [
-        { label: 'Deployment', value: 'None on BSC' },
+        { label: 'Deployment', value: '0x8004Cb1B', mono: true },
         { label: 'Attestations readable', value: '0', mono: true },
         { label: 'Rendered by Bazar', value: 'Nothing' },
       ],

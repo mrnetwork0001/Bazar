@@ -50,6 +50,19 @@ export function deriveJobTimeline(status: JobStatus, submittedAt = 0): TimelineS
   const captions: Partial<Record<JobLifecycleNodeId, string>> = {};
   const didSubmit = submittedAt > 0;
 
+  /**
+   * Whether escrow was ever actually held.
+   *
+   * A terminal status alone cannot tell us: a REJECTED job may have been
+   * cancelled straight out of OPEN, before any budget was locked. The one
+   * sound inference is that submission requires FUNDED - the kernel's status
+   * gate rejects `submit` on an open job - so a recorded `submittedAt` proves
+   * the escrow was held. Without that proof the node stays `upcoming` rather
+   * than claiming money moved, which is the honest reading of "we do not
+   * know from this record".
+   */
+  const escrowWasHeld = didSubmit;
+
   switch (status) {
     case 'open':
       states = progressTo(1);
@@ -74,10 +87,21 @@ export function deriveJobTimeline(status: JobStatus, submittedAt = 0): TimelineS
       captions.settled = 'Escrow released to the provider in the same transaction';
       break;
     case 'rejected':
-      states = ['done', 'done', didSubmit ? 'done' : 'upcoming', 'failed', 'failed'];
+      // A job can be rejected while still OPEN - the client cancelling before
+      // funding - so the funded node must reflect whether escrow was ever held
+      // rather than assuming every rejection passed through funding.
+      states = [
+        'done',
+        escrowWasHeld ? 'done' : 'upcoming',
+        didSubmit ? 'done' : 'upcoming',
+        'failed',
+        'failed',
+      ];
       captions.submitted = didSubmit ? 'Deliverable hash recorded onchain' : 'Rejected before any deliverable was sent';
       captions.evaluated = didSubmit ? 'Evaluator rejected the deliverable' : 'Cancelled by the client while still open';
-      captions.settled = 'Escrow left the kernel; the job is closed';
+      captions.settled = escrowWasHeld
+        ? 'Escrow left the kernel; the job is closed'
+        : 'Closed before any budget was locked';
       break;
     // EXPIRED is reached by claimRefund on an expired escrow: the kernel emits
     // Refunded and JobExpired together, so the job never sits on a "refunded"

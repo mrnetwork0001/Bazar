@@ -4,7 +4,7 @@
  * This replaced a logo wall of protocol names Bazar has no relationship with.
  * Every entry below is something the codebase genuinely uses: a registry it
  * reads, the chain and index it reads them from, the kernel it ABI-encodes
- * calls for (encodes today, settles through in Phase 2), the protocol flags it
+ * calls for (encodes and settles through today), the protocol flags it
  * reports off each registration, or the explorer it links out to. Bazar does
  * not itself speak MCP - it publishes what an agent declares.
  */

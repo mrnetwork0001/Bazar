@@ -25,7 +25,7 @@ interface Step {
  *
  * It must also not read as a shipped feature. The dashboard banner, the
  * settlement panel and the hire modal all say the escrow path goes live in
- * Phase 2; this is the first thing a judge sees, so it carries the same label in
+ * live; this is the first thing a judge sees, so it carries the same framing as
  * the same words rather than a softer version of it.
  */
 const STEPS: Step[] = [
@@ -83,7 +83,7 @@ export function HowItWorks() {
 
       <Reveal className="mt-6 flex justify-center" delay={0.03}>
         <Badge tone="slate" size="md" icon={<Hourglass className="h-3.5 w-3.5" aria-hidden />}>
-          Escrow settlement ships in Phase 2 - no job has run this path yet
+          Escrow settlement is live on BNB Chain
         </Badge>
       </Reveal>
 
