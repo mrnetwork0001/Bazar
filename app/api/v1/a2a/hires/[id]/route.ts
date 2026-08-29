@@ -6,11 +6,12 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/v1/a2a/hires/{id}
  *
- * Re-reads a job intent this router generated. The store is in-memory and
+ * Re-reads a job plan this router generated. The store is in-memory and
  * process-local, and Bazar runs no ERC-8183 log listener - so this endpoint can
  * tell you what calldata was handed back, and nothing whatsoever about whether
- * the job was created, funded or settled on chain. The response says so
- * explicitly rather than implying a status it cannot observe.
+ * the job was created, funded or settled onchain. The response says so
+ * explicitly rather than implying a status it cannot observe, and points at
+ * GET /api/v1/a2a/jobs/{jobId}, which does read the kernel.
  */
 export function GET(_request: Request, { params }: { params: { id: string } }) {
   const id = decodeURIComponent(params.id ?? '').trim();
@@ -31,7 +32,8 @@ export function GET(_request: Request, { params }: { params: { id: string } }) {
     settlement: {
       source: 'bazar-memory',
       onChain: false,
-      note: 'Settlement is not tracked here. Read authoritative job state with getJob(jobId) on the ERC-8183 AgenticCommerce kernel at data.contracts.agenticCommerce.',
+      readJob: intent.readJob.urlTemplate,
+      note: 'Settlement is not tracked here - this is the plan Bazar built, not a record of what happened. For authoritative state, substitute the jobId createJob returned into readJob and call it: that route runs a live getJob(uint256) against the kernel at data.contracts.agenticCommerce. Bazar runs no log listener either way.',
     },
   });
 }

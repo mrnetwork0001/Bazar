@@ -22,6 +22,7 @@ import {
   getDeployment,
   type SupportedChainId,
 } from '@/lib/chain/addresses';
+import { MAX_EXPIRY_SECONDS, MIN_EXPIRY_SECONDS } from '@/lib/abi';
 import { parseAgentId } from '@/lib/indexer/scan-client';
 
 export interface ValidationIssue {
@@ -33,8 +34,21 @@ export interface ValidationIssue {
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; errors: ValidationIssue[] };
 
 export const MAX_DESCRIPTION_LENGTH = 2000;
-/** An ERC-8183 job must expire in the future and within a year of creation. */
-export const MAX_JOB_DURATION_MS = 365 * 24 * 60 * 60 * 1000;
+/**
+ * Expiry bounds, taken from the kernel rather than from a guess. Binary-searched
+ * against both live deployments: `createJob` reverts `ExpiryTooShort()` below
+ * `MIN_EXPIRY_SECONDS` and `ExpiryTooLong()` above `MAX_EXPIRY_SECONDS`, both
+ * measured from `block.timestamp` at mine time.
+ */
+export const MAX_JOB_DURATION_MS = MAX_EXPIRY_SECONDS * 1000;
+export const MIN_JOB_DURATION_MS = MIN_EXPIRY_SECONDS * 1000;
+/**
+ * Requests within this margin of the kernel minimum are refused rather than
+ * encoded. The kernel measures the window from the block that mines the
+ * transaction, not from the moment Bazar answered, so calldata built at exactly
+ * the minimum reverts by the time it is broadcast.
+ */
+export const EXPIRY_SAFETY_MARGIN_MS = 60 * 1000;
 /** Applied when the caller sends no `expiresAt`. */
 export const DEFAULT_JOB_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -60,7 +74,13 @@ export interface A2AJobIntentRequest {
   expiresAt?: string;
   /** Overrides the deployment's EvaluatorRouter. */
   evaluator?: Address;
-  /** ERC-8183 hook contract. Defaults to the zero address (no hook). */
+  /**
+   * ERC-8183 hook contract. Defaults to the chain's EvaluatorRouter.
+   *
+   * NOT optional at the kernel: `createJob` reverts `HookRequired()` on a zero
+   * hook and `ZeroAddress()` on a zero evaluator, both simulated against the
+   * live kernel on both chains. Passing the zero address here is a 400.
+   */
   hook?: Address;
   /** 56 (default) or 97. */
   chainId?: SupportedChainId;
@@ -80,6 +100,12 @@ function isNonEmptyString(value: unknown): value is string {
 
 function isIsoDate(value: string): boolean {
   return !Number.isNaN(Date.parse(value));
+}
+
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
+
+function isZeroAddress(value: unknown): boolean {
+  return typeof value === 'string' && value.toLowerCase() === ZERO_ADDRESS;
 }
 
 /**
@@ -161,24 +187,46 @@ export function validateJobIntentRequest(
     if (typeof expiresAt !== 'string' || !isIsoDate(expiresAt)) {
       errors.push({ path: 'expiresAt', message: 'expiresAt must be an ISO-8601 timestamp.' });
     } else {
-      const ms = Date.parse(expiresAt);
-      if (ms <= now.getTime()) {
-        errors.push({ path: 'expiresAt', message: 'expiresAt must be in the future.' });
-      } else if (ms - now.getTime() > MAX_JOB_DURATION_MS) {
-        errors.push({ path: 'expiresAt', message: 'expiresAt must be within 365 days of now.' });
+      const ahead = Date.parse(expiresAt) - now.getTime();
+      if (ahead < MIN_JOB_DURATION_MS + EXPIRY_SAFETY_MARGIN_MS) {
+        errors.push({
+          path: 'expiresAt',
+          message: `expiresAt must be at least ${
+            (MIN_JOB_DURATION_MS + EXPIRY_SAFETY_MARGIN_MS) / 1000
+          } seconds ahead. The kernel enforces a ${MIN_EXPIRY_SECONDS}-second minimum against the block that mines createJob, so Bazar refuses to encode calldata that would revert ExpiryTooShort() before it is broadcast.`,
+        });
+      } else if (ahead > MAX_JOB_DURATION_MS) {
+        errors.push({
+          path: 'expiresAt',
+          message: `expiresAt must be within ${MAX_EXPIRY_SECONDS} seconds (365 days) of now - the kernel reverts ExpiryTooLong() beyond it.`,
+        });
       }
     }
   }
 
-  if (evaluator !== undefined && !isAddress(evaluator)) {
-    errors.push({
-      path: 'evaluator',
-      message: 'evaluator must be a 0x-prefixed EVM address. Omit it to use the deployment EvaluatorRouter.',
-    });
+  if (evaluator !== undefined) {
+    if (!isAddress(evaluator)) {
+      errors.push({
+        path: 'evaluator',
+        message: 'evaluator must be a 0x-prefixed EVM address. Omit it to use the deployment EvaluatorRouter.',
+      });
+    } else if (isZeroAddress(evaluator)) {
+      errors.push({
+        path: 'evaluator',
+        message: 'evaluator cannot be the zero address - createJob reverts ZeroAddress(). Omit it to use the deployment EvaluatorRouter.',
+      });
+    }
   }
 
-  if (hook !== undefined && !isAddress(hook)) {
-    errors.push({ path: 'hook', message: 'hook must be a 0x-prefixed EVM address, or omitted for no hook.' });
+  if (hook !== undefined) {
+    if (!isAddress(hook)) {
+      errors.push({ path: 'hook', message: 'hook must be a 0x-prefixed EVM address.' });
+    } else if (isZeroAddress(hook)) {
+      errors.push({
+        path: 'hook',
+        message: 'hook cannot be the zero address - createJob reverts HookRequired(). There is no "no hook" option. Omit it to use the deployment EvaluatorRouter, which is the hook every real job on both chains carries.',
+      });
+    }
   }
 
   const caller = typeof callerAgentId === 'number' ? String(callerAgentId) : callerAgentId;
@@ -356,6 +404,85 @@ export interface A2ACallStep {
   emits?: string;
 }
 
+/**
+ * One transaction in the executable plan.
+ *
+ * `calldata` is non-null only when every argument is already known - which is
+ * true of `createJob` and of nothing else, because the three calls after it
+ * take a `jobId` the kernel has not issued yet and a budget only the client can
+ * choose. For those, `abi` carries the single ABI fragment so the caller can
+ * encode the call itself without hand-writing a signature.
+ */
+export interface A2ATransactionStep {
+  step: number;
+  /** Short name, e.g. "createJob" or "approve". */
+  call: string;
+  actor: 'client';
+  /** Contract to send it to. */
+  to: Address;
+  /** Full Solidity signature, derived from the vendored SDK ABI. */
+  signature: string;
+  /** 4-byte selector of `signature`. */
+  selector: string;
+  /** Single-entry ABI array - pass straight to viem `encodeFunctionData`. */
+  abi: unknown[];
+  args: A2ATransactionArg[];
+  /** Ready-to-send calldata, or null when an argument is still unknown. */
+  calldata: string | null;
+  /** True when `calldata` is populated and can be broadcast as-is. */
+  ready: boolean;
+  /** Native value. Always "0x0" - the kernel settles in an ERC-20, never in BNB. */
+  value: '0x0';
+  /** Event the kernel emits on success, when it emits one. */
+  emits?: string;
+  description: string;
+  /** Custom errors this call is known to revert with, and why. */
+  reverts: string[];
+}
+
+export interface A2ATransactionArg {
+  name: string;
+  type: string;
+  /** Encoded value when known, else null. */
+  value: string | null;
+  /**
+   * Where the value comes from:
+   *   bazar  - resolved from the registry or the deployment, already filled in
+   *   caller - your decision (the budget)
+   *   chain  - only known after an earlier step lands (the jobId)
+   */
+  source: 'bazar' | 'caller' | 'chain';
+  note?: string;
+}
+
+/** Live kernel state, read while answering the request. Null fields mean unread. */
+export interface A2AKernelState {
+  address: Address;
+  /** `createJob` reverts EnforcedPause() while true. */
+  paused: boolean | null;
+  /** Basis points the kernel skims. Measured 0 on both chains. */
+  platformFeeBP: string | null;
+  /** Highest job id issued so far, as a decimal string. */
+  jobCounter: string | null;
+  /** False when the read failed and the three fields above are null. */
+  readInThisResponse: boolean;
+  note: string;
+}
+
+export interface A2APaymentBlock {
+  token: Address;
+  /** Read off the token in this request; null when that read failed. */
+  symbol: string | null;
+  decimals: number | null;
+  /** False when `symbol` / `decimals` could not be read - read them yourself. */
+  readInThisResponse: boolean;
+  /** EIP-712 domain of the settlement token, as verified onchain by the SDK. */
+  eip712: { name: string; version: string };
+  /** Bazar never quotes an amount - see `budget`. */
+  quotedAmount: null;
+  note: string;
+}
+
 export interface A2AJobIntent {
   id: string;
   /** Always "unsigned_intent": nothing has been signed, sent or settled. */
@@ -363,6 +490,7 @@ export interface A2AJobIntent {
   standard: 'ERC-8183';
   createdAt: string;
   chainId: number;
+  chainName: string;
   /** Verified ERC-8183 / ERC-8004 addresses for this chain. */
   contracts: {
     agenticCommerce: Address;
@@ -370,14 +498,12 @@ export interface A2AJobIntent {
     optimisticPolicy: Address;
     identityRegistry: Address;
   };
-  payment: {
-    token: Address;
-    /** EIP-712 domain of the settlement token, as verified on chain by the SDK. */
-    eip712: { name: string; version: string };
-    /** Bazar never quotes an amount - see `budget`. */
-    quotedAmount: null;
-  };
-  /** The transaction to submit first. `calldata` is ready to send as-is. */
+  kernel: A2AKernelState;
+  payment: A2APaymentBlock;
+  /**
+   * The first transaction, kept as its own field for callers that only want
+   * step 1. It is the same object as `transactions[0]` minus the plan wrapper.
+   */
   createJob: {
     to: Address;
     signature: string;
@@ -392,20 +518,40 @@ export interface A2AJobIntent {
     calldata: Address;
     value: '0x0';
   };
+  /**
+   * Every transaction the client sends, in order, with the two that Bazar can
+   * encode fully already encoded. This is the executable form of the intent.
+   */
+  transactions: A2ATransactionStep[];
   client: Address;
-  /** Every step of the ERC-8183 lifecycle, in order. */
+  /** Every step of the ERC-8183 lifecycle, in order, including the ones you do not send. */
   lifecycle: A2ACallStep[];
   budget: {
     quoted: false;
-    /** The function the client uses to set it. */
+    /** The functions the client uses to set and lock it. */
     setBy: string;
     note: string;
   };
   agent: A2AAgentRef;
   callerAgentId?: string;
+  /**
+   * Reasons the first transaction would revert if broadcast right now, read off
+   * the chain while building this intent. Empty when Bazar found none - which
+   * is not a guarantee, only the absence of a known blocker.
+   */
+  blockers: string[];
+  /** Where to read the job back once it exists. */
+  readJob: {
+    method: 'GET';
+    /** `{jobId}` is a placeholder - substitute the id createJob returned. */
+    urlTemplate: string;
+    note: string;
+  };
   settlement: {
-    /** Bazar does not watch the chain; it never flips this to true. */
+    /** Bazar runs no listener; it reads on request. This is never flipped. */
     observed: false;
+    observation: 'read-on-request';
+    listener: false;
     note: string;
   };
 }
@@ -449,15 +595,20 @@ export const JOB_INTENT_FIELDS: FieldDoc[] = [
   {
     name: 'expiresAt',
     type: 'ISO-8601',
-    description:
-      'Job expiry, encoded as the expiredAt unix timestamp. Must be in the future and within 365 days. Defaults to 7 days out.',
+    description: `Job expiry, encoded as the expiredAt unix timestamp. The kernel enforces ${MIN_EXPIRY_SECONDS}s to ${MAX_EXPIRY_SECONDS}s (365 days) measured from the block that mines createJob, so Bazar requires at least ${(MIN_JOB_DURATION_MS + EXPIRY_SAFETY_MARGIN_MS) / 1000}s ahead. Defaults to 7 days out.`,
   },
   {
     name: 'evaluator',
     type: 'address',
-    description: 'Who may call complete / reject. Defaults to the deployment EvaluatorRouter for the chain.',
+    description:
+      'Who may call complete / reject. Defaults to the deployment EvaluatorRouter for the chain. Cannot be the zero address - createJob reverts ZeroAddress().',
   },
-  { name: 'hook', type: 'address', description: 'ERC-8183 hook contract. Defaults to the zero address - no hook.' },
+  {
+    name: 'hook',
+    type: 'address',
+    description:
+      'ERC-8183 hook contract. Defaults to the deployment EvaluatorRouter, which is the hook every real job on both chains carries. There is no "no hook" option: a zero hook reverts HookRequired().',
+  },
   { name: 'chainId', type: '56 | 97', description: 'BNB Smart Chain (default) or BSC Testnet.' },
   {
     name: 'callerAgentId',
