@@ -104,7 +104,7 @@ export function StatsStrip({ indexedAgents, x402Agents, chainId, degraded }: Sta
     },
     {
       label: 'Chain ID',
-      hint: chainId === 97 ? 'BSC Testnet' : 'BNB Smart Chain mainnet',
+      hint: 'BNB Smart Chain mainnet',
       value: chainId,
       animate: false,
       fromIndex: false,

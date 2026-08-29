@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Inbox, Loader2, ShieldOff, WifiOff } from '@/components/ui/icons';
 import { ConnectButton } from '@/components/wallet/connect-button';
-import { BSC_MAINNET, BSC_TESTNET, getDeployment, type SupportedChainId } from '@/lib/chain/addresses';
+import { BSC_MAINNET, getDeployment, type SupportedChainId } from '@/lib/chain/addresses';
 import { JOB_LIFECYCLE_NODES } from '@/lib/jobs/lifecycle';
 import { PAYMENT_TOKEN_SYMBOL } from '@/lib/jobs/read';
 import type { Address } from '@/lib/types';
@@ -43,7 +43,6 @@ import { WalletPanel } from './wallet-panel';
 
 function supportedChain(chainId: number | undefined): SupportedChainId | null {
   if (chainId === BSC_MAINNET) return BSC_MAINNET;
-  if (chainId === BSC_TESTNET) return BSC_TESTNET;
   return null;
 }
 
@@ -185,7 +184,7 @@ export function DashboardView() {
             <div>
               <h2 className="text-xl font-semibold text-white">This wallet is on a network Bazar does not read</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-                The AgenticCommerce kernel Bazar settles against is deployed on BNB Smart Chain (56) and BSC Testnet
+                The AgenticCommerce kernel Bazar settles against is deployed on BNB Smart Chain (56)
                 (97). No job list is shown for chain {walletChainId ?? 'unknown'}, because Bazar has not read one.
               </p>
             </div>

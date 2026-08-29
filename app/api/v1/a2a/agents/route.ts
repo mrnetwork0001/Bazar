@@ -4,7 +4,7 @@ import { queryAgents, type SortKey } from '@/lib/agents/repository';
 import { CATEGORIES, isCategoryId } from '@/lib/data/categories';
 import { buildAgentsResponse } from '@/lib/a2a/schema';
 import { errorResponse, indexUnavailable, jsonResponse, preflight } from '@/lib/a2a/hire-service';
-import { BSC_MAINNET, BSC_TESTNET, DEFAULT_CHAIN_ID, type SupportedChainId } from '@/lib/chain/addresses';
+import { BSC_MAINNET, DEFAULT_CHAIN_ID, type SupportedChainId } from '@/lib/chain/addresses';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
  */
 const SORT_KEYS: readonly SortKey[] = ['reputation', 'feedback', 'newest'];
 const CATEGORY_IDS = CATEGORIES.map((c) => c.id).join(', ');
-const CHAIN_IDS: readonly SupportedChainId[] = [BSC_MAINNET, BSC_TESTNET];
+const CHAIN_IDS: readonly SupportedChainId[] = [BSC_MAINNET];
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
   if (chainRaw) {
     const n = Number(chainRaw);
     if (!CHAIN_IDS.includes(n as SupportedChainId)) {
-      issues.push({ path: 'chainId', message: `chainId must be ${BSC_MAINNET} or ${BSC_TESTNET}.` });
+      issues.push({ path: 'chainId', message: `chainId must be ${BSC_MAINNET} - Bazar indexes BNB Smart Chain mainnet only.` });
     } else {
       chainId = n as SupportedChainId;
     }

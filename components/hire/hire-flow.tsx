@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { ConnectButton } from '@/components/wallet/connect-button';
 import { CopyButton } from '@/components/agents/copy-button';
 import { EscrowStepper, type EscrowStepId } from '@/components/hire/escrow-stepper';
-import { BSC_TESTNET, getDeployment, type SupportedChainId } from '@/lib/chain/addresses';
+import { BSC_MAINNET, getDeployment, type SupportedChainId } from '@/lib/chain/addresses';
 import { formatBudget, PAYMENT_TOKEN_SYMBOL } from '@/lib/jobs/read';
 import type { Address, IndexedAgent } from '@/lib/types';
 import { bscScanAddress, bscScanTx, cn, shortAddress } from '@/lib/utils';
@@ -209,7 +209,7 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
   /**
    * Which kernel to settle against.
    *
-   * Opens on testnet, because a hirer who has not connected a wallet yet is
+   * Mainnet only, because a hirer who has not connected a wallet yet is
    * almost certainly rehearsing and testnet settles in minutes where mainnet
    * takes a week. Once a wallet is connected on a supported chain the selector
    * adopts it, so a deliberate mainnet hire is never met with a pointless
@@ -230,9 +230,7 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
    * guard still passes in that case, because the lookup succeeds perfectly
    * against the wrong chain.
    */
-  const chainId: SupportedChainId = isSupportedHireChain(agent.chainId)
-    ? agent.chainId
-    : BSC_TESTNET;
+  const chainId: SupportedChainId = BSC_MAINNET;
 
 
   const { state: run, run: startRun, reset: resetRun } = useHireRun();

@@ -52,7 +52,7 @@ export const EXPIRY_SAFETY_MARGIN_MS = 60 * 1000;
 /** Applied when the caller sends no `expiresAt`. */
 export const DEFAULT_JOB_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-export const SUPPORTED_CHAIN_IDS: readonly SupportedChainId[] = [BSC_MAINNET, BSC_TESTNET];
+export const SUPPORTED_CHAIN_IDS: readonly SupportedChainId[] = [BSC_MAINNET];
 
 /* ------------------------------ request type ---------------------------- */
 

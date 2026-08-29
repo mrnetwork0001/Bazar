@@ -50,13 +50,11 @@ import { BSC_MAINNET, BSC_TESTNET, MULTICALL3, type SupportedChainId } from './a
  */
 const DEFAULT_CALL_RPC: Record<SupportedChainId, string> = {
   [BSC_MAINNET]: 'https://bsc-dataseed.binance.org',
-  [BSC_TESTNET]: 'https://data-seed-prebsc-1-s1.binance.org:8545',
 };
 
 /** The only public hosts observed to serve `eth_getLogs` for these contracts. */
 const DEFAULT_LOG_RPC: Record<SupportedChainId, string> = {
   [BSC_MAINNET]: 'https://bsc-rpc.publicnode.com',
-  [BSC_TESTNET]: 'https://bsc-testnet-rpc.publicnode.com',
 };
 
 /**
@@ -65,7 +63,6 @@ const DEFAULT_LOG_RPC: Record<SupportedChainId, string> = {
  */
 export const LOG_CHUNK_BLOCKS: Record<SupportedChainId, number> = {
   [BSC_MAINNET]: 1_800,
-  [BSC_TESTNET]: 20_000,
 };
 
 /**
@@ -94,7 +91,6 @@ function logRpcUrl(chainId: SupportedChainId): string {
 
 const VIEM_CHAIN = {
   [BSC_MAINNET]: bsc,
-  [BSC_TESTNET]: bscTestnet,
 } as const;
 
 const callClients = new Map<SupportedChainId, PublicClient>();

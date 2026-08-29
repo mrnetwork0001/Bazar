@@ -12,7 +12,7 @@ import {
   X,
 } from '@/components/ui/icons';
 import { useAccount, useChainId } from 'wagmi';
-import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID } from '@/lib/constants';
+import { BSC_CHAIN_ID } from '@/lib/constants';
 import { bscScanAddress, cn, shortAddress } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -22,7 +22,6 @@ import { bscScanAddress, cn, shortAddress } from '@/lib/utils';
 /** Human label for a chain id. Everything outside BSC 56 / 97 is unsupported. */
 export function chainLabel(chainId: number): string {
   if (chainId === BSC_CHAIN_ID) return 'BNB Smart Chain';
-  if (chainId === BSC_TESTNET_CHAIN_ID) return 'BSC Testnet';
   return 'Unsupported network';
 }
 
@@ -173,7 +172,7 @@ export function NetworkChip({ className }: NetworkChipProps) {
   const account = useAccount();
   const configChainId = useChainId();
   const chainId = mounted && account.chainId ? account.chainId : configChainId;
-  const supported = chainId === BSC_CHAIN_ID || chainId === BSC_TESTNET_CHAIN_ID;
+  const supported = chainId === BSC_CHAIN_ID;
   const label = chainLabel(chainId);
 
   return (
@@ -233,7 +232,7 @@ export function WalletMenu({
 
   if (!open) return null;
 
-  const supported = chainId === BSC_CHAIN_ID || chainId === BSC_TESTNET_CHAIN_ID;
+  const supported = chainId === BSC_CHAIN_ID;
   const amount = formatBalance(balance);
 
   const copyAddress = async () => {

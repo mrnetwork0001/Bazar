@@ -24,7 +24,7 @@
  * hardcoded anywhere - it grows daily; read it with `fetchAgentCount`.
  */
 
-import { BSC_MAINNET, BSC_TESTNET, type SupportedChainId } from '@/lib/chain/addresses';
+import { BSC_MAINNET, type SupportedChainId } from '@/lib/chain/addresses';
 
 export const SCAN_API_BASE = 'https://8004scan.io/api/v1';
 
@@ -37,7 +37,18 @@ export const SCAN_API_BASE = 'https://8004scan.io/api/v1';
  * chain. Every entry point that accepts a chain id from the outside - the
  * route slug, the A2A `agentId`, the middleware - narrows through here first.
  */
-export const SUPPORTED_CHAIN_IDS: readonly SupportedChainId[] = [BSC_MAINNET, BSC_TESTNET];
+/**
+ * Bazar is a BNB Smart Chain product. Mainnet only, deliberately.
+ *
+ * Testnet was supported while the settlement path was being proven, but a
+ * marketplace that mixes the two is worse than one that does not: an ERC-8004
+ * token id resolves to a different agent on each network, so a testnet listing
+ * beside a mainnet one invites hiring the wrong party, and a testnet agent's
+ * reputation is not a claim about anything real. The testnet deployment
+ * addresses stay in `lib/chain/addresses.ts` for reference, but nothing is
+ * indexed, resolved, listed or settled off chain 56.
+ */
+export const SUPPORTED_CHAIN_IDS: readonly SupportedChainId[] = [BSC_MAINNET];
 
 export function isSupportedChainId(value: number): value is SupportedChainId {
   return (SUPPORTED_CHAIN_IDS as readonly number[]).includes(value);

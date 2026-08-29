@@ -376,7 +376,7 @@ export async function fetchJobView(
 /* Request parsing                                                     */
 /* ------------------------------------------------------------------ */
 
-export const SUPPORTED_JOB_CHAIN_IDS: readonly SupportedChainId[] = [56, 97];
+export const SUPPORTED_JOB_CHAIN_IDS: readonly SupportedChainId[] = [56];
 
 export type JobIdParse =
   | { ok: true; jobId: bigint }

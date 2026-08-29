@@ -11,7 +11,7 @@ import {
   describeWalletError,
   formatBalance,
 } from '@/components/wallet/wallet-menu';
-import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID } from '@/lib/constants';
+import { BSC_CHAIN_ID } from '@/lib/constants';
 import { cn, shortAddress } from '@/lib/utils';
 
 export type ConnectButtonSize = 'sm' | 'md' | 'lg';
@@ -66,7 +66,7 @@ export function ConnectButton({ size = 'md', className, fullWidth }: ConnectButt
 
   const address = account.address;
   const chainId = account.chainId ?? configChainId;
-  const onBsc = chainId === BSC_CHAIN_ID || chainId === BSC_TESTNET_CHAIN_ID;
+  const onBsc = chainId === BSC_CHAIN_ID;
   const connected = mounted && account.status === 'connected' && Boolean(address);
 
   const { data: balance } = useBalance({

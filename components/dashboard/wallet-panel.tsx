@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Wallet } from '@/components/ui/icons';
-import { BSC_MAINNET, BSC_TESTNET, type SupportedChainId } from '@/lib/chain/addresses';
+import { BSC_MAINNET, type SupportedChainId } from '@/lib/chain/addresses';
 import { formatBudget, PAYMENT_TOKEN_SYMBOL, type PaymentTokenPosition } from '@/lib/jobs/read';
 import type { Address } from '@/lib/types';
 import { bscScanAddress, shortAddress } from '@/lib/utils';
@@ -25,7 +25,6 @@ import { bscScanAddress, shortAddress } from '@/lib/utils';
 
 const CHAIN_NAME: Record<SupportedChainId, string> = {
   [BSC_MAINNET]: 'BNB Smart Chain',
-  [BSC_TESTNET]: 'BSC Testnet',
 };
 
 export interface WalletPanelProps {
@@ -66,7 +65,7 @@ export function WalletPanel({ address, walletChainId, chainId, position }: Walle
       {!chainId && (
         <div className="mt-4">
           <p className="text-xs leading-relaxed text-slate-400">
-            Bazar reads the AgenticCommerce kernel on BNB Smart Chain and BSC Testnet only. Switch networks to see this
+            Bazar reads the AgenticCommerce kernel on BNB Smart Chain. Switch networks to see this
             wallet&rsquo;s jobs - nothing is read from the chain it is on now.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -77,14 +76,6 @@ export function WalletPanel({ address, walletChainId, chainId, position }: Walle
               loading={isPending}
             >
               Switch to BNB Chain
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => switchChain({ chainId: BSC_TESTNET })}
-              disabled={isPending}
-            >
-              BSC Testnet
             </Button>
           </div>
         </div>

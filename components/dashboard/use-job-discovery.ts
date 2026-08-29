@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { BSC_MAINNET, BSC_TESTNET, type SupportedChainId } from '@/lib/chain/addresses';
+import { BSC_MAINNET, type SupportedChainId } from '@/lib/chain/addresses';
 import { LOG_CHUNK_BLOCKS, readChainTime, type ChainReadFailure } from '@/lib/chain/client';
 import {
   readJobsByIds,
@@ -25,7 +25,7 @@ import type { Address } from '@/lib/types';
  *   1. RECENT-ID SWEEP. Read `jobCounter`, then `getJob` the last N ids through
  *      multicall3 and keep the ones whose `client` is this wallet. This uses
  *      the call RPC, which is reliable: measured 2026-08-28, 150 ids came back
- *      in ~5.4s on mainnet and ~4s on testnet, with zero failures. It is
+ *      in ~5.4s on mainnet with zero failures. It is
  *      exhaustive within its id window, so a job created seconds ago is always
  *      in it - which is the case that matters right after a wallet funds one.
  *      It cannot see older jobs, because the window is the tail of the counter.
@@ -50,7 +50,6 @@ const SWEEP_IDS_PER_DEPTH = 150;
 /** Log chunks the scan is allowed at depth 0, per chain. */
 const LOG_CHUNKS_PER_DEPTH: Record<SupportedChainId, number> = {
   [BSC_MAINNET]: 24,
-  [BSC_TESTNET]: 12,
 };
 
 /** Widening the window is opt-in and bounded; a page load cannot issue hundreds of requests. */

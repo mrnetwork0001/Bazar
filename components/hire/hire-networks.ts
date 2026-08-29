@@ -2,10 +2,11 @@
  * Network and expiry choices for the hire flow.
  *
  * The AgenticCommerce kernel is deployed on BNB Smart Chain (56) and BSC
- * Testnet (97). Both work. They are not interchangeable, and the flow says so:
- * the settlement policy differs by an order of magnitude, so a hirer who is
- * rehearsing should be on testnet and a hirer who means it should know what a
- * mainnet commitment costs them in time.
+ * Testnet (97), but Bazar settles on mainnet only: an ERC-8004 token id
+ * resolves to a different agent on each network, so mixing them invites paying
+ * the wrong party. What remains here is mainnet's own commitment - a 3-of-5
+ * quorum and a 7-day dispute window - which a hirer should understand before
+ * locking funds.
  *
  * Nothing in this file is a guess. The expiry bounds were binary-searched
  * against both live kernels on 2026-08-28; the quorum and dispute-window
@@ -13,12 +14,12 @@
  * baked in here.
  */
 
-import { BSC_MAINNET, BSC_TESTNET, type SupportedChainId } from '@/lib/chain/addresses';
+import { BSC_MAINNET, type SupportedChainId } from '@/lib/chain/addresses';
 
-export const HIRE_CHAIN_IDS: readonly SupportedChainId[] = [BSC_TESTNET, BSC_MAINNET];
+export const HIRE_CHAIN_IDS: readonly SupportedChainId[] = [BSC_MAINNET];
 
 export function isSupportedHireChain(chainId: number | undefined): chainId is SupportedChainId {
-  return chainId === BSC_MAINNET || chainId === BSC_TESTNET;
+  return chainId === BSC_MAINNET;
 }
 
 export interface HireChainMeta {
@@ -32,13 +33,6 @@ export interface HireChainMeta {
 }
 
 export const HIRE_CHAIN_META: Record<SupportedChainId, HireChainMeta> = {
-  [BSC_TESTNET]: {
-    chainId: BSC_TESTNET,
-    name: 'BSC Testnet',
-    shortName: 'Testnet',
-    liveFunds: false,
-    stake: 'Test funds. The full journey runs end to end, and settles in minutes.',
-  },
   [BSC_MAINNET]: {
     chainId: BSC_MAINNET,
     name: 'BNB Smart Chain',

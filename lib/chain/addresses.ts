@@ -18,7 +18,15 @@ import type { Address } from '@/lib/types';
 export const BSC_MAINNET = 56;
 export const BSC_TESTNET = 97;
 
-export type SupportedChainId = typeof BSC_MAINNET | typeof BSC_TESTNET;
+/**
+ * Bazar supports one network: BNB Smart Chain mainnet.
+ *
+ * The type is narrowed rather than merely defaulted, so a testnet chain id
+ * cannot reach an index query, a slug, a job read or a signature by any path.
+ * The testnet deployment is kept below as documentation of where the same
+ * contracts live, but it is not part of the supported set.
+ */
+export type SupportedChainId = typeof BSC_MAINNET;
 
 export interface ChainDeployment {
   chainId: SupportedChainId;
@@ -49,7 +57,32 @@ export const DEPLOYMENTS: Record<SupportedChainId, ChainDeployment> = {
     treasury: '0x000000000000000000000000000000000000dEaD',
     explorer: 'https://bscscan.com',
   },
-  [BSC_TESTNET]: {
+};
+
+/** EIP-712 domain of the payment token, verified onchain by the SDK. */
+export const PAYMENT_TOKEN_EIP712 = { name: 'United Stables', version: '1' } as const;
+
+/** Multicall3, same address on both networks. */
+export const MULTICALL3: Address = '0xcA11bde05977b3631167028862bE2a173976CA11';
+
+/** Bazar reads and settles on BNB Smart Chain mainnet. There is no override. */
+export const DEFAULT_CHAIN_ID: SupportedChainId = BSC_MAINNET;
+
+export function getDeployment(chainId: number = DEFAULT_CHAIN_ID): ChainDeployment {
+  const d = DEPLOYMENTS[chainId as SupportedChainId];
+  if (!d) throw new Error(`No BNB Chain deployment for chainId=${chainId}`);
+  return d;
+}
+
+/**
+ * The same ERC-8183 stack on BSC Testnet, kept for reference only.
+ *
+ * Bazar does not index, list, resolve or settle on testnet - see
+ * SupportedChainId. This record exists so the addresses are not lost, and so
+ * anyone extending Bazar to testnet has the verified values rather than
+ * rediscovering them.
+ */
+export const BSC_TESTNET_REFERENCE = {
     chainId: BSC_TESTNET,
     name: 'BSC Testnet',
     identityRegistry: '0x8004A818BFB912233c491871b3d84c89A494BD9e',
@@ -59,21 +92,5 @@ export const DEPLOYMENTS: Record<SupportedChainId, ChainDeployment> = {
     paymentToken: '0xc70B8741B8B07A6d61E54fd4B20f22Fa648E5565',
     treasury: '0x1001b2C085345f388778A975648aA50bcfd0D134',
     explorer: 'https://testnet.bscscan.com',
-  },
-};
-
-/** EIP-712 domain of the payment token, verified onchain by the SDK. */
-export const PAYMENT_TOKEN_EIP712 = { name: 'United Stables', version: '1' } as const;
-
-/** Multicall3, same address on both networks. */
-export const MULTICALL3: Address = '0xcA11bde05977b3631167028862bE2a173976CA11';
-
-/** Bazar reads and settles on mainnet by default; override with NEXT_PUBLIC_CHAIN_ID. */
-export const DEFAULT_CHAIN_ID: SupportedChainId =
-  Number(process.env.NEXT_PUBLIC_CHAIN_ID) === BSC_TESTNET ? BSC_TESTNET : BSC_MAINNET;
-
-export function getDeployment(chainId: number = DEFAULT_CHAIN_ID): ChainDeployment {
-  const d = DEPLOYMENTS[chainId as SupportedChainId];
-  if (!d) throw new Error(`No BNB Chain deployment for chainId=${chainId}`);
-  return d;
-}
+  
+} as const;
