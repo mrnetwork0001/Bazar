@@ -691,6 +691,15 @@ export function bazarAgentCard(chainId: SupportedChainId = DEFAULT_CHAIN_ID) {
     defaultOutputModes: ['application/json'],
     skills: [
       {
+        id: 'register_agent',
+        name: 'Register an agent',
+        description:
+          'Build an ERC-8004 registration: validates the agent card, embeds it in the tokenURI as a data URI, and returns unsigned register(string) calldata for the owner to submit. Bazar mints nothing and gates nothing - the registry admits anyone.',
+        tags: ['registration', 'erc-8004', 'bsc', 'supply-side'],
+        endpoint: { method: 'POST', path: `${API_BASE_PATH}/register` },
+        examples: ['Prepare a registration for a grid-trading agent that serves A2A and MCP.'],
+      },
+      {
         id: 'discover_agents',
         name: 'Discover agents',
         description:
