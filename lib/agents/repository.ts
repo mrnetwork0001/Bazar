@@ -217,7 +217,9 @@ export async function getMarketStats(chainId: SupportedChainId = BSC_MAINNET) {
   try {
     const [total, x402] = await Promise.all([
       fetchAgentCount(chainId),
-      fetchAgents({ chainId, limit: 1, x402Only: true }, 900).then((p) => p.total),
+      // Same 60s window as the total beside it: two figures in one strip that
+      // refresh on different clocks would drift visibly out of step.
+      fetchAgents({ chainId, limit: 1, x402Only: true }, 60).then((p) => p.total),
     ]);
     return { indexedAgents: total, x402Agents: x402, chainId, degraded: false };
   } catch {

@@ -182,10 +182,19 @@ export async function fetchAgents(q: ScanQuery = {}, revalidateSeconds = 300): P
   };
 }
 
-/** Total agents indexed on a chain - the headline marketplace stat. */
+/**
+ * Total agents indexed on a chain - the headline marketplace stat.
+ *
+ * Cached for a minute rather than the listings' five, because this number is
+ * the one a reader watches. BSC is registering roughly 90 ERC-8004 agents an
+ * hour (287,993 on 28 Aug, 294,599 on 31 Aug), so a 60s window means the count
+ * visibly moves while someone is looking at it instead of sitting still for a
+ * quarter of an hour. It costs one request a minute for the whole deployment,
+ * not one per visitor, because the cache is shared.
+ */
 export async function fetchAgentCount(
   chainId: SupportedChainId = BSC_MAINNET,
-  revalidateSeconds = 900,
+  revalidateSeconds = 60,
 ): Promise<number> {
   const page = await fetchAgents({ chainId, limit: 1 }, revalidateSeconds);
   return page.total;
