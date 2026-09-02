@@ -51,6 +51,8 @@ export function RegisterAgentForm() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [services, setServices] = useState<ServiceRow[]>([{ name: 'A2A', endpoint: '' }]);
+  const [image, setImage] = useState('');
+  const [imageNote, setImageNote] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('form');
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [agentId, setAgentId] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export function RegisterAgentForm() {
   const [error, setError] = useState<string | null>(null);
 
   const deployment = getDeployment(BSC_MAINNET);
+  const busyNow = phase !== 'form';
   const onMainnet = account.chainId === BSC_MAINNET;
   const connected = account.status === 'connected' && !!account.address;
 
@@ -65,6 +68,34 @@ export function RegisterAgentForm() {
     () => name.trim().length >= 2 && description.trim().length >= 10 && services.some((s) => s.endpoint.trim()),
     [name, description, services],
   );
+
+  /**
+   * A logo can be hosted or embedded. Embedded means the bytes are written
+   * onchain as calldata and the owner pays for every one of them, so the file
+   * is capped and the cost is stated rather than discovered at signing.
+   */
+  const onPickImage = useCallback((file: File | undefined) => {
+    setImageNote(null);
+    if (!file) return;
+    if (!/^image\/(png|jpeg|webp|svg\+xml)$/.test(file.type)) {
+      setImageNote('Use a PNG, JPEG, WebP or SVG.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const uri = String(reader.result ?? '');
+      const bytes = new Blob([uri]).size;
+      if (bytes > 24_576) {
+        setImageNote(
+          `That mark is ${Math.round(bytes / 1024)}KB. Embedded logos go onchain byte for byte, so anything over 24KB is better hosted - paste a URL instead.`,
+        );
+        return;
+      }
+      setImage(uri);
+      setImageNote(`Embedded, ${Math.round(bytes / 1024)}KB. It travels with the identity and needs no host.`);
+    };
+    reader.readAsDataURL(file);
+  }, []);
 
   const submit = useCallback(async () => {
     setError(null);
@@ -80,6 +111,7 @@ export function RegisterAgentForm() {
           owner: account.address,
           name: name.trim(),
           description: description.trim(),
+          ...(image ? { image } : {}),
           services: services.filter((s) => s.endpoint.trim()).map((s) => ({ name: s.name, endpoint: s.endpoint.trim() })),
         }),
       });
@@ -132,7 +164,7 @@ export function RegisterAgentForm() {
       );
       setPhase('form');
     }
-  }, [account.address, publicClient, name, description, services, writeContractAsync]);
+  }, [account.address, publicClient, name, description, image, services, writeContractAsync]);
 
   if (phase === 'done') {
     return (
@@ -175,7 +207,7 @@ export function RegisterAgentForm() {
     );
   }
 
-  const busy = phase !== 'form';
+
 
   return (
     <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
@@ -193,7 +225,7 @@ export function RegisterAgentForm() {
           <label htmlFor="ra-name" className="text-[11px] uppercase tracking-wider text-slate-500">
             Name
           </label>
-          <input id="ra-name" className={cn(FIELD, 'mt-1')} value={name} onChange={(e) => setName(e.target.value)} placeholder="Grid Sentinel" disabled={busy} />
+          <input id="ra-name" className={cn(FIELD, 'mt-1')} value={name} onChange={(e) => setName(e.target.value)} placeholder="Grid Sentinel" disabled={busyNow} />
         </div>
         <div>
           <label htmlFor="ra-desc" className="text-[11px] uppercase tracking-wider text-slate-500">
@@ -205,16 +237,51 @@ export function RegisterAgentForm() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What the agent does, and what a hirer gets. This is what the marketplace shows."
-            disabled={busy}
+            disabled={busyNow}
           />
         </div>
+        <div>
+          <span className="text-[11px] uppercase tracking-wider text-slate-500">Logo (optional)</span>
+          <div className="mt-1 flex items-center gap-3">
+            {image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={image} alt="" className="h-11 w-11 shrink-0 rounded-lg border border-white/10 object-cover" />
+            ) : (
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-white/15 text-[10px] text-slate-600">
+                none
+              </span>
+            )}
+            <input
+              className={FIELD}
+              value={image.startsWith('data:') ? '' : image}
+              disabled={busyNow}
+              placeholder="https://.../logo.png"
+              onChange={(e) => {
+                setImage(e.target.value);
+                setImageNote(null);
+              }}
+            />
+            <label className="ring-focus shrink-0 cursor-pointer rounded-lg border border-white/[0.10] px-3 py-2 text-xs text-slate-300 hover:border-white/25 hover:text-white">
+              Upload
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="sr-only"
+                disabled={busyNow}
+                onChange={(e) => onPickImage(e.target.files?.[0])}
+              />
+            </label>
+          </div>
+          {imageNote && <p className="mt-1.5 text-xs leading-relaxed text-amber-200/80">{imageNote}</p>}
+        </div>
+
         {services.map((s, i) => (
           <div key={i} className="flex gap-2">
             <select
               aria-label={`Service ${i + 1} protocol`}
               className={cn(FIELD, 'w-28 shrink-0')}
               value={s.name}
-              disabled={busy}
+              disabled={busyNow}
               onChange={(e) => setServices((r) => r.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
             >
               {['A2A', 'MCP', 'Web', 'Email'].map((p) => (
@@ -227,7 +294,7 @@ export function RegisterAgentForm() {
               aria-label={`Service ${i + 1} endpoint`}
               className={FIELD}
               value={s.endpoint}
-              disabled={busy}
+              disabled={busyNow}
               placeholder="https://my-agent.example/a2a"
               onChange={(e) => setServices((r) => r.map((x, j) => (j === i ? { ...x, endpoint: e.target.value } : x)))}
             />
@@ -235,7 +302,7 @@ export function RegisterAgentForm() {
         ))}
         <button
           type="button"
-          disabled={busy}
+          disabled={busyNow}
           onClick={() => setServices((r) => [...r, { name: 'Web', endpoint: '' }])}
           className="ring-focus text-xs text-slate-400 hover:text-white"
         >
@@ -269,7 +336,7 @@ export function RegisterAgentForm() {
             Switch to {deployment.name}
           </Button>
         ) : (
-          <Button variant="primary" size="md" onClick={submit} disabled={!ready || busy} loading={busy} className="w-full">
+          <Button variant="primary" size="md" onClick={submit} disabled={!ready || busyNow} loading={busyNow} className="w-full">
             {phase === 'preparing'
               ? 'Building the card'
               : phase === 'signing'
