@@ -39,6 +39,13 @@ export const KNOWN_PROTOCOLS = ['A2A', 'MCP', 'Web', 'OASF', 'Email', 'ENS'] as 
  */
 const MAX_CARD_BYTES = 16_384;
 
+/**
+ * A logo embedded in the card is calldata the owner pays for on every byte, so
+ * only a small mark is worth carrying onchain. Anything larger belongs on a
+ * host, referenced by URL.
+ */
+const MAX_IMAGE_BYTES = 24_576;
+
 export interface AgentService {
   name: string;
   endpoint: string;
@@ -113,8 +120,23 @@ export function validateRegisterRequest(input: unknown): RegisterValidation {
         }
       });
     }
-    if (image !== undefined && (typeof image !== 'string' || (image && !isHttpUrl(image)))) {
-      errors.push({ path: 'image', message: 'image must be an http(s) URL when present.' });
+    if (image !== undefined && image !== '') {
+      if (typeof image !== 'string') {
+        errors.push({ path: 'image', message: 'image must be a string.' });
+      } else if (image.startsWith('data:')) {
+        // An embedded logo is written onchain byte for byte, so it is the most
+        // expensive thing a registration can carry. Small marks only.
+        if (!/^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(image)) {
+          errors.push({ path: 'image', message: 'An embedded image must be a base64 data URI of type png, jpeg, webp or svg+xml.' });
+        } else if (Buffer.byteLength(image, 'utf8') > MAX_IMAGE_BYTES) {
+          errors.push({
+            path: 'image',
+            message: `An embedded image must stay under ${Math.floor(MAX_IMAGE_BYTES / 1024)}KB - it is written onchain as calldata and the owner pays for every byte. Host it and pass a URL instead.`,
+          });
+        }
+      } else if (!isHttpUrl(image)) {
+        errors.push({ path: 'image', message: 'image must be an http(s) URL, or a base64 data URI for a small mark.' });
+      }
     }
   }
 
