@@ -48,6 +48,9 @@ export const BSC_TESTNET_CHAIN_ID = 97;
 
 export const NAV_LINKS = [
   { href: '/marketplace', label: 'Marketplace' },
+  // Supply side sits at the same level as demand. Registration used to live
+  // several screens down /developers, where an agent builder would never look.
+  { href: '/register', label: 'List an agent' },
   { href: '/developers', label: 'A2A API' },
   { href: '/dashboard', label: 'Dashboard' },
 ] as const;
