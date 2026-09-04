@@ -95,3 +95,4 @@ export const ZERO_DELIVERABLE = ZERO_REASON;
  */
 export const MIN_EXPIRY_SECONDS = 300;
 export const MAX_EXPIRY_SECONDS = 31_536_000;
+export { REPUTATION_REGISTRY_ABI } from './reputation-registry';

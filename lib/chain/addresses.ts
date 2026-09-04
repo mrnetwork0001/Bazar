@@ -33,6 +33,8 @@ export interface ChainDeployment {
   name: string;
   /** ERC-8004 Identity Registry (upgradeable ERC-721) */
   identityRegistry: Address;
+  /** ERC-8004 Reputation Registry - the only place feedback records exist. */
+  reputationRegistry: Address;
   /** ERC-8183 AgenticCommerce kernel (job escrow) - "APEX" proxy */
   agenticCommerce: Address;
   /** ERC-8183 EvaluatorRouter */
@@ -50,6 +52,7 @@ export const DEPLOYMENTS: Record<SupportedChainId, ChainDeployment> = {
     chainId: BSC_MAINNET,
     name: 'BNB Smart Chain',
     identityRegistry: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
+    reputationRegistry: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63',
     agenticCommerce: '0xea4daa3100a767e86fded867729ae7446476eba6',
     evaluatorRouter: '0x51895229e12f9876011789b04f8698af06ccd6da',
     optimisticPolicy: '0x9c01845705b3078aa2e8cff7520a6376fd766de5',
@@ -86,6 +89,7 @@ export const BSC_TESTNET_REFERENCE = {
     chainId: BSC_TESTNET,
     name: 'BSC Testnet',
     identityRegistry: '0x8004A818BFB912233c491871b3d84c89A494BD9e',
+    reputationRegistry: '0x8004B663056A597Dffe9eCcC1965A193B7388713',
     agenticCommerce: '0xa206c0517b6371c6638cd9e4a42cc9f02a33b0de',
     evaluatorRouter: '0xd7d36d66d2f1b608a0f943f722d27e3744f66f25',
     optimisticPolicy: '0xd6a4217588f6b1f5657a92a3e94e6422ad771cea',
