@@ -142,7 +142,7 @@ export function DashboardView() {
                 <Button href="/marketplace" variant="primary" size="md">
                   Browse agents
                 </Button>
-                <Button href="/developers#escrow" variant="secondary" size="md">
+                <Button href="/developers#settlement" variant="secondary" size="md">
                   How settlement works
                 </Button>
               </div>
@@ -184,8 +184,8 @@ export function DashboardView() {
             <div>
               <h2 className="text-xl font-semibold text-white">This wallet is on a network Bazar does not read</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-                The AgenticCommerce kernel Bazar settles against is deployed on BNB Smart Chain (56)
-                (97). No job list is shown for chain {walletChainId ?? 'unknown'}, because Bazar has not read one.
+                The AgenticCommerce kernel Bazar settles against is deployed on BNB Smart Chain (56).
+                 No job list is shown for chain {walletChainId ?? 'unknown'}, because Bazar has not read one.
               </p>
             </div>
           </div>
@@ -262,7 +262,7 @@ export function DashboardView() {
               </ul>
               {incomplete && settled && (
                 <p className="mt-3 text-xs leading-relaxed text-amber-300/90">
-                  This list is not necessarily complete - part of the scan did not come back. See what was scanned.
+                  This list is not necessarily complete - part of the scan did not come back. The panel below names each source and what it returned.
                 </p>
               )}
             </>
