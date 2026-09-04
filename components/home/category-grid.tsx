@@ -72,41 +72,42 @@ export function CategoryGrid({ counts, unclassified, sampleSize, degraded }: Cat
                   style={{ background: `radial-gradient(160px 110px at 18% 0%, ${cat.accentHex}26, transparent 70%)` }}
                 />
 
-                <div className="relative flex items-start justify-between">
+                {/*
+                  The count leads the card. It is the only thing on here that
+                  is measured rather than declared, and it used to sit at the
+                  bottom in 11px mono where it read as a footnote.
+                */}
+                <div className="relative flex items-start justify-between gap-3">
                   <span
                     className={cn(
-                      'flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-inset ring-white/10',
+                      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ring-white/10',
                       accent.tile,
                     )}
                     style={{ color: cat.accentHex }}
                   >
                     <Icon className="h-5 w-5" aria-hidden />
                   </span>
+                  <span className="text-right">
+                    <span className={cn('tabular block text-2xl font-semibold leading-none', accent.text)}>
+                      {showCounts ? count : '--'}
+                    </span>
+                    <span className="mt-1 block text-[10px] uppercase tracking-wider text-slate-500">
+                      {showCounts ? `of top ${sampleSize}` : 'unavailable'}
+                    </span>
+                  </span>
                 </div>
 
                 <h3 className="relative mt-5 text-lg font-semibold text-white">{cat.name}</h3>
-                <p className="relative mt-1 text-sm text-slate-400">{cat.tagline}</p>
+                <p className="relative mt-1.5 text-sm leading-relaxed text-slate-400">{cat.tagline}</p>
 
-                <dl className="relative mt-5 space-y-2 border-t border-white/[0.08] pt-4 text-xs">
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Agent type</dt>
-                    <dd className="text-right text-slate-300">{cat.agentType}</dd>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Ranked by</dt>
-                    <dd className={cn('text-right font-medium', accent.text)}>Reputation score</dd>
-                  </div>
-                </dl>
-
-                <p className="relative mt-auto pt-4 font-mono text-[11px] leading-relaxed text-slate-500">
-                  {showCounts ? (
-                    <>
-                      <span className="tabular text-slate-200">{count}</span> of the top {sampleSize} ranked agents
-                      matched this from their own text
-                    </>
-                  ) : (
-                    <>Category share unavailable</>
-                  )}
+                {/*
+                  "Ranked by: Reputation score" was identical on all four cards,
+                  so a table meant to differentiate them repeated the same row
+                  four times. Only the agent type actually varies, so only it
+                  remains.
+                */}
+                <p className="relative mt-auto border-t border-white/[0.08] pt-4 text-[11px] uppercase tracking-wider text-slate-500">
+                  {cat.agentType}
                 </p>
               </Link>
             </Reveal>
@@ -118,24 +119,19 @@ export function CategoryGrid({ counts, unclassified, sampleSize, degraded }: Cat
         <p className="text-xs leading-relaxed text-slate-500">
           {showCounts ? (
             <>
-              Counts cover the top {sampleSize} agents by onchain reputation, not the whole index: classification runs
-              on the agent text Bazar has fetched, so an index-wide per-category total does not exist and is not shown.{' '}
-              {unclassified > 0 ? (
+              Counted across the top <span className="tabular text-slate-400">{sampleSize}</span> agents by onchain
+              reputation, not the whole index - classification reads each agent&apos;s own registration text, so an
+              index-wide per-category total does not exist and is not invented.
+              {unclassified > 0 && (
                 <>
-                  <span className="tabular text-slate-400">{unclassified}</span> of those {sampleSize} published nothing
-                  a category rule matched. They are listed as Unclassified and counted in none of the four tiles - Bazar
-                  places them on a shelf so they stay browsable, and says so rather than passing the placement off as
-                  the agent&apos;s own claim.
+                  {' '}
+                  <span className="tabular text-slate-400">{unclassified}</span> published nothing a rule matched; they
+                  are shown as Unclassified and counted in none of the four.
                 </>
-              ) : (
-                <>Every agent in this sample matched a category rule in its own registration text.</>
               )}
             </>
           ) : (
-            <>
-              The ERC-8004 index is not answering, so no category tallies are shown. Bazar leaves the number out rather
-              than estimating it.
-            </>
+            <>The ERC-8004 index is not answering, so no tallies are shown rather than estimated.</>
           )}
         </p>
       </Reveal>
