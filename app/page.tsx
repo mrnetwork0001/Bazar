@@ -3,7 +3,7 @@ import { CategoryGrid } from '@/components/home/category-grid';
 import { DualLayer } from '@/components/home/dual-layer';
 import { FeaturedAgents } from '@/components/home/featured-agents';
 import { FinalCta } from '@/components/home/final-cta';
-import { RANKED_SAMPLE_SIZE, pickShowcase, tallyCategories } from '@/components/home/home-data';
+import { RANKED_SAMPLE_SIZE, hasSignal, pickShowcase, tallyCategories } from '@/components/home/home-data';
 import { Hero } from '@/components/home/hero';
 import { HowItWorks } from '@/components/home/how-it-works';
 import { PartnerMarquee } from '@/components/home/partner-marquee';
@@ -53,6 +53,9 @@ export default async function HomePage() {
     <>
       <Hero
         agent={heroAgent}
+        // Reuses the ranked page already fetched above: the stream costs no
+        // extra index request.
+        streamAgents={ranked.agents.filter(hasSignal).slice(0, 14)}
         indexedAgents={stats.indexedAgents}
         total={ranked.total}
         degraded={stats.degraded || ranked.degraded}

@@ -1,5 +1,5 @@
-import { Fingerprint, Network, Sparkles, Star, Terminal as TerminalIcon } from '@/components/ui/icons';
-import { HeroShowcase } from '@/components/home/hero-showcase';
+import { Fingerprint, Network, Star, Terminal as TerminalIcon } from '@/components/ui/icons';
+import { HeroStream } from '@/components/home/hero-stream';
 import { Button } from '@/components/ui/button';
 import type { IndexedAgent } from '@/lib/types';
 import { formatNumber } from '@/lib/utils';
@@ -14,6 +14,8 @@ const TRUST = [
 export interface HeroProps {
   /** Top-ranked indexed agent, or null when the index is unreachable. */
   agent: IndexedAgent | null;
+  /** Real indexed agents for the moving stream. Already fetched by the page. */
+  streamAgents: IndexedAgent[];
   /** Agents indexed on BSC, from getMarketStats(). */
   indexedAgents: number;
   /** Index-wide total behind the ranked listing. */
@@ -21,7 +23,7 @@ export interface HeroProps {
   degraded: boolean;
 }
 
-export function Hero({ agent, indexedAgents, total, degraded }: HeroProps) {
+export function Hero({ agent, streamAgents, indexedAgents, total, degraded }: HeroProps) {
   const count = formatNumber(indexedAgents, { compact: false });
 
   return (
@@ -31,11 +33,6 @@ export function Hero({ agent, indexedAgents, total, degraded }: HeroProps) {
 
       <div className="container-x relative grid items-center gap-14 pb-16 pt-14 sm:pt-20 lg:grid-cols-12 lg:gap-8 lg:pb-24 lg:pt-24">
         <div className="max-w-2xl lg:col-span-6">
-          <span className="inline-flex items-center gap-2 rounded-full border border-bnb/30 bg-bnb/10 px-3 py-1 text-xs font-medium text-bnb">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden />
-            Built for BNB Agent Studio · ERC-8004
-          </span>
-
           <h1
             id="hero-title"
             className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl"
@@ -100,7 +97,7 @@ export function Hero({ agent, indexedAgents, total, degraded }: HeroProps) {
         </div>
 
         <div className="lg:col-span-6">
-          <HeroShowcase agent={agent} total={total} degraded={degraded} />
+          <HeroStream agents={streamAgents} degraded={degraded} />
         </div>
       </div>
     </section>

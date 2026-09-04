@@ -69,6 +69,14 @@ const config: Config = {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
+        'marquee-up': {
+          '0%': { transform: 'translateY(0)' },
+          '100%': { transform: 'translateY(-50%)' },
+        },
+        'marquee-down': {
+          '0%': { transform: 'translateY(-50%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
       },
       animation: {
         float: 'float 6s ease-in-out infinite',
@@ -76,6 +84,8 @@ const config: Config = {
         'pulse-ring': 'pulse-ring 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) infinite',
         'fade-up': 'fade-up 0.6s ease-out both',
         marquee: 'marquee 40s linear infinite',
+        'marquee-up': 'marquee-up 38s linear infinite',
+        'marquee-down': 'marquee-down 46s linear infinite',
       },
     },
   },
