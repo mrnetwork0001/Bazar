@@ -11,6 +11,14 @@ export interface StatsStripProps {
   /** Indexed agents advertising x402 machine payments. */
   x402Agents: number;
   chainId: number;
+  /**
+   * ERC-8183 jobs created on the AgenticCommerce kernel Bazar settles against,
+   * or null when the kernel could not be read. This replaced a "Chain ID: 56"
+   * cell: a constant is not a statistic, and this number is both live and the
+   * strongest thing the strip can say - the settlement layer Bazar uses is in
+   * production, with tens of thousands of real jobs on it.
+   */
+  kernelJobs: number | null;
   /** True when the indexer was unreachable; index-derived cells show no number. */
   degraded: boolean;
 }
@@ -76,7 +84,8 @@ function StatCell({ cell, active, degraded }: { cell: Cell; active: boolean; deg
  * total, no hire count, no A2A call volume and no SLA average to show here -
  * those were removed rather than re-sourced.
  */
-export function StatsStrip({ indexedAgents, x402Agents, chainId, degraded }: StatsStripProps) {
+export function StatsStrip({ indexedAgents, x402Agents, chainId,
+  kernelJobs, degraded }: StatsStripProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '0px 0px -10% 0px' });
 
@@ -103,10 +112,10 @@ export function StatsStrip({ indexedAgents, x402Agents, chainId, degraded }: Sta
       fromIndex: false,
     },
     {
-      label: 'Chain ID',
-      hint: 'BNB Smart Chain mainnet',
-      value: chainId,
-      animate: false,
+      label: 'ERC-8183 jobs',
+      hint: kernelJobs === null ? 'Kernel unreachable' : 'Created on the settlement kernel',
+      value: kernelJobs ?? 0,
+      animate: kernelJobs !== null,
       fromIndex: false,
     },
   ];

@@ -10,6 +10,8 @@ import { PartnerMarquee } from '@/components/home/partner-marquee';
 import { StatsStrip } from '@/components/home/stats-strip';
 import { TrustRegistries } from '@/components/home/trust-registries';
 import { getMarketStats, queryAgents } from '@/lib/agents/repository';
+import { BSC_MAINNET } from '@/lib/chain/addresses';
+import { readKernelInfo } from '@/lib/jobs/read';
 import { formatNumber } from '@/lib/utils';
 
 /** Re-read the index every five minutes; the underlying fetches are cached too. */
@@ -40,9 +42,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   // Two index calls for the whole page. Everything below is derived locally.
-  const [stats, ranked] = await Promise.all([
+  const [stats, ranked, kernel] = await Promise.all([
     getMarketStats(),
     queryAgents({ sort: 'reputation', limit: RANKED_SAMPLE_SIZE }),
+    readKernelInfo(BSC_MAINNET),
   ]);
 
   const showcase = pickShowcase(ranked.agents, 4);
@@ -63,6 +66,7 @@ export default async function HomePage() {
       <StatsStrip
         indexedAgents={stats.indexedAgents}
         x402Agents={stats.x402Agents}
+        kernelJobs={kernel.ok ? Number(kernel.info.jobCounter) : null}
         chainId={stats.chainId}
         degraded={stats.degraded}
       />
