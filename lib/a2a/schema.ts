@@ -17,7 +17,6 @@ import type { SortKey } from '@/lib/agents/repository';
 import { isAddress } from '@/lib/utils';
 import {
   BSC_MAINNET,
-  BSC_TESTNET,
   DEFAULT_CHAIN_ID,
   getDeployment,
   type SupportedChainId,
@@ -82,7 +81,7 @@ export interface A2AJobIntentRequest {
    * live kernel on both chains. Passing the zero address here is a 400.
    */
   hook?: Address;
-  /** 56 (default) or 97. */
+  /** 56. Bazar is mainnet-only. */
   chainId?: SupportedChainId;
   /**
    * True only when the caller actually sent a chainId. `chainId` itself is
@@ -148,7 +147,7 @@ export function validateJobIntentRequest(
     if (!SUPPORTED_CHAIN_IDS.includes(chainId as SupportedChainId)) {
       errors.push({
         path: 'chainId',
-        message: `chainId must be ${BSC_MAINNET} (BNB Smart Chain) or ${BSC_TESTNET} (BSC Testnet).`,
+        message: `chainId must be ${SUPPORTED_CHAIN_IDS.join(' or ')} - Bazar indexes, resolves and settles on BNB Smart Chain mainnet only.`,
       });
     } else {
       resolvedChainId = chainId as SupportedChainId;
@@ -617,7 +616,7 @@ export const JOB_INTENT_FIELDS: FieldDoc[] = [
     description:
       'ERC-8183 hook contract. Defaults to the deployment EvaluatorRouter, which is the hook every real job on both chains carries. There is no "no hook" option: a zero hook reverts HookRequired().',
   },
-  { name: 'chainId', type: '56 | 97', description: 'BNB Smart Chain (default) or BSC Testnet.' },
+  { name: 'chainId', type: '56', description: 'BNB Smart Chain mainnet. Bazar does not index, resolve or settle on testnet.' },
   {
     name: 'callerAgentId',
     type: 'string',

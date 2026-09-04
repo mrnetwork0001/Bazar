@@ -26,7 +26,7 @@ export default function NotFound() {
             The address may be mistyped. If you were opening an agent: a Bazar agent URL is the identity token itself,
             written <span className="font-mono text-slate-300">/agents/56-49637</span> for chain 56, token 49637. A URL
             lands here when it cannot name a BNB Chain identity at all - a different shape, or a chain other than 56 and
-            97, which Bazar does not index and will not dress in BscScan links.
+            a chain other than 56, which Bazar does not index and will not dress in BscScan links.
           </p>
           <p className="mx-auto mt-3 max-w-md text-xs leading-relaxed text-slate-500">
             A well-formed BNB Chain slug that the index simply cannot resolve does not land here. That page answers 200
