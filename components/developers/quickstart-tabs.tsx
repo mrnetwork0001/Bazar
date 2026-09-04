@@ -71,7 +71,7 @@ if (intent.blockers.length) throw new Error(intent.blockers.join(" "));
 
 const wallet = createWalletClient({ chain: bsc, transport: custom(window.ethereum) });
 const client = createPublicClient({ chain: bsc, transport: http() });
-const [createJob, setBudget, approve, fund] = intent.transactions;
+const [createJob, registerJob, setBudget, approve, fund] = intent.transactions;
 
 // YOU choose this number. intent.payment.quotedAmount is null because no price
 // for an ERC-8004 agent exists onchain - nothing can quote one for you.
@@ -130,14 +130,16 @@ intent = result["intent"]
 assert intent["status"] == "unsigned_intent"      # nothing signed, nothing sent
 assert not intent["blockers"], intent["blockers"]
 
-create_job, set_budget, approve, fund = intent["transactions"]
+create_job, register_job, set_budget, approve, fund = intent["transactions"]
 
 print(create_job["to"])                            # ERC-8183 AgenticCommerce kernel
 print(create_job["calldata"])                      # send this from intent["client"]
 print(intent["payment"]["token"], intent["payment"]["symbol"], intent["payment"]["decimals"])
 print(intent["payment"]["quotedAmount"])           # None - you set the budget yourself
 
-# Steps 2-4 carry no calldata: they need a jobId that does not exist yet.
+# Steps 2-5 carry no calldata: they need a jobId that does not exist yet.
+# registerJob binds the job to the settlement policy on the EvaluatorRouter -
+# skip it and fund() reverts PolicyNotSet().
 # Each one hands you the ABI fragment and selector instead.
 for step in (set_budget, approve, fund):
     print(step["step"], step["call"], step["signature"], step["selector"], step["ready"])
