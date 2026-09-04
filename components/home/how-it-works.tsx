@@ -167,10 +167,10 @@ export function HowItWorks() {
 
       <Reveal className="mt-6" delay={0.16}>
         <p className="mx-auto max-w-2xl text-center text-xs leading-relaxed text-slate-400">
-          What Bazar does today is build the calldata for this lifecycle and hand it back unsigned. No Bazar-originated
-          job has been created, funded or settled onchain yet, so the funding step inside the app is a labelled
-          simulation and the jobs page is empty rather than populated with examples. The five steps describe the
-          ERC-8183 contract Bazar will settle against, not a path it has already run.
+          Bazar builds the calldata for this lifecycle and your wallet signs it. Each call is simulated against the
+          kernel before it is offered, so a step that would revert says why instead of costing gas. Bazar holds no key,
+          takes no fee and runs no listener: it reads job state back from the chain on request, which is why the jobs
+          page is empty until a wallet has actually opened one.
         </p>
       </Reveal>
     </section>
