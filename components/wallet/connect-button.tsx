@@ -13,6 +13,7 @@ import {
 } from '@/components/wallet/wallet-menu';
 import { BSC_CHAIN_ID } from '@/lib/constants';
 import { cn, shortAddress } from '@/lib/utils';
+import { useBnbName } from '@/components/wallet/use-bnb-name';
 
 export type ConnectButtonSize = 'sm' | 'md' | 'lg';
 
@@ -52,6 +53,8 @@ export function ConnectButton({ size = 'md', className, fullWidth }: ConnectButt
   }, []);
 
   const account = useAccount();
+  // A BNB Chain marketplace should call people by their BNB Chain name.
+  const bnbName = useBnbName(account.address);
   const configChainId = useChainId();
   const { connect, connectors, isPending: isConnecting, error: connectError, reset: resetConnect } = useConnect();
   const { disconnect } = useDisconnect();
@@ -154,7 +157,7 @@ export function ConnectButton({ size = 'md', className, fullWidth }: ConnectButt
         onClick={() => setMenuOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        aria-label={`Wallet ${shortAddress(address)} on ${chainLabel(chainId)}`}
+        aria-label={`Wallet ${bnbName ?? shortAddress(address)} on ${chainLabel(chainId)}`}
         className={cn(
           'glass inline-flex items-center justify-center whitespace-nowrap font-medium text-white transition-all duration-200 hover:border-bnb/40 hover:bg-white/[0.08] ring-focus',
           PILL[size],
@@ -170,7 +173,7 @@ export function ConnectButton({ size = 'md', className, fullWidth }: ConnectButt
             {formatBalance(balance.formatted)} {balance.symbol}
           </span>
         ) : null}
-        <span className="font-mono tabular">{shortAddress(address)}</span>
+        <span className={cn(bnbName ? 'font-medium' : 'font-mono tabular')}>{bnbName ?? shortAddress(address)}</span>
         <ChevronDown
           className={cn(iconCls, 'text-slate-400 transition-transform duration-200', menuOpen && 'rotate-180')}
           aria-hidden
