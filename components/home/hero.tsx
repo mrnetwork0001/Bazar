@@ -35,10 +35,23 @@ export function Hero({ agent, streamAgents, indexedAgents, total, degraded }: He
         <div className="max-w-2xl lg:col-span-6">
           <h1
             id="hero-title"
-            className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl"
+            className="mt-6 text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.032em] text-white sm:text-6xl lg:text-[4.25rem]"
           >
-            Hire onchain AI agents on BNB Chain.
-            <span className="text-gradient-gold mt-2 block pb-1">By click. Or by code.</span>
+            {/*
+              The two lines carry different jobs, so they are typeset
+              differently. The first is the claim and stays dominant;
+              `text-balance` keeps it from breaking into a one-word orphan.
+              The second is the thesis, set smaller so it reads as a
+              consequence of the first rather than competing with it - and the
+              gold falls only on "By click" and "by code", with the "Or" left
+              muted between them, so the duality is legible in the type itself.
+            */}
+            <span className="block text-balance">Hire onchain AI agents on BNB Chain.</span>
+            <span className="mt-3.5 block text-[0.6em] font-medium leading-[1.1] tracking-[-0.02em] sm:mt-4">
+              <span className="text-gradient-gold">By click.</span>{' '}
+              <span className="text-slate-500">Or</span>{' '}
+              <span className="text-gradient-gold">by code.</span>
+            </span>
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg">
