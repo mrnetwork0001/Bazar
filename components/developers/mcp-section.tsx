@@ -158,7 +158,7 @@ export function McpSection({
             </div>
             <p className="mt-2 text-sm leading-relaxed text-slate-400">
               There is no Bazar MCP server, and this page does not publish a manifest for one. An MCP runtime consumes
-              Bazar the same way anything else does: four unauthenticated, CORS-open JSON routes under{' '}
+              Bazar the same way anything else does: six unauthenticated, CORS-open JSON routes under{' '}
               <code className="font-mono text-slate-300">{API_BASE_PATH}</code>, wrapped as tools on your side in about
               a dozen lines.
             </p>

@@ -135,7 +135,7 @@ export function JobFlow({ calldata, selector, words, intentId, chainId, kernel }
       <SectionHeading
         eyebrow="Settlement - ERC-8183"
         title="From intent to payout, without a middleman"
-        description="Bazar never custodies funds, never asks for a key and never quotes a price. It resolves the provider from the ERC-8004 Identity Registry, encodes the createJob transaction for the ERC-8183 AgenticCommerce kernel, and hands back the three calls that follow it with their ABI fragments. You send all four. Bazar sends none."
+        description="Bazar never custodies funds, never asks for a key and never quotes a price. It resolves the provider from the ERC-8004 Identity Registry, encodes the createJob transaction for the ERC-8183 AgenticCommerce kernel, and hands back the four calls that follow it with their ABI fragments. You send all five. Bazar sends none."
       />
 
       <ol className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

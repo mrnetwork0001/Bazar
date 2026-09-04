@@ -329,6 +329,15 @@ export function RegisterAgentForm() {
       )}
 
       <div className="mt-5">
+        {!ready && !busyNow && (
+          <p className="mb-3 text-xs leading-relaxed text-slate-500">
+            {name.trim().length < 2
+              ? 'Add a name of two characters or more.'
+              : description.trim().length < 10
+                ? 'Add a description of ten characters or more - it is what a hirer reads before trusting the agent.'
+                : 'Add at least one endpoint. An agent with no endpoint cannot be hired.'}
+          </p>
+        )}
         {!connected ? (
           <ConnectButton fullWidth />
         ) : !onMainnet ? (
