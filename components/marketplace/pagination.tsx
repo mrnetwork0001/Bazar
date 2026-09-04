@@ -26,10 +26,16 @@ const CONTROL =
 /**
  * Offset-based prev / next, preserving every other param.
  *
- * There is no total page count on purpose: the index is a several-hundred-
- * thousand-row ranking that grows with every registration, and Bazar curates
- * the top of it, so advertising "page 1 of 11,999" would invite a walk into the
- * bulk-registered tail.
+ * The total is the number of pages Bazar will actually walk, not the number
+ * the index could theoretically fill. Paging stops at MAX_OFFSET, so the bound
+ * is min(total, cap) - quoting "of 11,999" would be true of the index and
+ * false of this control, and would invite a walk into the bulk-registered tail
+ * that Bazar deliberately will not serve.
+ *
+ * With a category selected the pages still step ranking positions: the filter
+ * runs locally and does not shrink the walk, so this counts pages of the
+ * ranking rather than pages of that category. A per-category page count does
+ * not exist - the index cannot report one - and is not implied here.
  */
 export function Pagination({ params, total, step, count, className }: PaginationProps) {
   const { offset } = params;
@@ -42,6 +48,13 @@ export function Pagination({ params, total, step, count, className }: Pagination
   // degraded) fall back to "this page returned a full window".
   const remaining = total.known ? offset + step < total.value : count >= step;
   const capped = offset + step > MAX_OFFSET;
+
+  /**
+   * Pages Bazar will serve, which is not pages the index could fill: the walk
+   * stops at MAX_OFFSET. Null when no total answered, in which case the
+   * control shows the page number alone rather than inventing a denominator.
+   */
+  const totalPages = total.known ? Math.max(1, Math.ceil(Math.min(total.value, MAX_OFFSET + step) / step)) : null;
   const hasNext = remaining && !capped;
   const deep = pageNumber >= 6;
 
@@ -75,6 +88,12 @@ export function Pagination({ params, total, step, count, className }: Pagination
 
         <span className="tabular text-xs text-slate-500">
           Page {formatNumber(pageNumber, { compact: false })}
+          {totalPages !== null && (
+            <>
+              {' '}
+              <span className="text-slate-500">of {formatNumber(totalPages, { compact: false })}</span>
+            </>
+          )}
         </span>
 
         {hasNext ? (
