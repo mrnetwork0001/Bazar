@@ -67,12 +67,17 @@ function StatCell({ cell, active, degraded }: { cell: Cell; active: boolean; deg
   const shown = cell.animate ? counted : cell.value;
 
   return (
-    <div className="bg-surface px-5 py-5 sm:py-6">
+    // Centred, and every cell the same height: the hints run to different
+    // lengths, so left-aligned cells of different heights made the row look
+    // ragged rather than like one instrument panel.
+    <div className="flex h-full flex-col items-center justify-center bg-surface px-4 py-5 text-center sm:py-6">
       <p className="tabular text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {unavailable ? <span className="text-slate-500">Unavailable</span> : formatNumber(Math.round(shown), { compact: false })}
       </p>
       <p className="mt-1 text-xs font-medium uppercase tracking-wider text-slate-400">{cell.label}</p>
-      <p className="mt-0.5 text-[11px] text-slate-500">{unavailable ? 'Indexer unreachable' : cell.hint}</p>
+      <p className="mt-0.5 text-balance text-[11px] leading-snug text-slate-500">
+        {unavailable ? 'Indexer unreachable' : cell.hint}
+      </p>
     </div>
   );
 }
@@ -124,7 +129,7 @@ export function StatsStrip({ indexedAgents, x402Agents, chainId,
     <section aria-label="Marketplace statistics" className="container-x relative z-10 pb-6 sm:pb-10">
       <div
         ref={ref}
-        className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06] shadow-card lg:grid-cols-4"
+        className="grid grid-cols-2 items-stretch gap-px overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06] shadow-card lg:grid-cols-4"
       >
         {cells.map((cell) => (
           <StatCell key={cell.label} cell={cell} active={inView} degraded={degraded} />
