@@ -6,11 +6,13 @@ import { ChevronRight, MessageSquare, Network, Star, Trophy } from '@/components
 import { queryAgents } from '@/lib/agents/repository';
 import { resolveAgentDetail } from './resolve';
 import { CATEGORY_MAP } from '@/lib/data/categories';
+import { readAgentFeedback } from '@/lib/chain/reputation';
 import { Button } from '@/components/ui/button';
 import { HireButton } from '@/components/hire/hire-button';
 import { AgentHeader } from '@/components/agents/agent-header';
 import { Capabilities } from '@/components/agents/capabilities';
 import { IdentityPanel } from '@/components/agents/identity-panel';
+import { FeedbackList } from '@/components/agents/feedback-list';
 import { ReputationPanel } from '@/components/agents/reputation-panel';
 import { AgentSection } from '@/components/agents/section';
 import { SimilarAgents } from '@/components/agents/similar-agents';
@@ -83,6 +85,10 @@ export default async function AgentPage({ params }: AgentPageProps) {
   }
 
   const { agent, extras } = resolved;
+
+  // Feedback records live only on chain: the index publishes a count and an
+  // aggregate, never the entries themselves.
+  const feedback = await readAgentFeedback(agent.chainId as 56, agent.tokenId);
 
   const category = CATEGORY_MAP[agent.category];
   const rep = agent.reputation;
@@ -182,6 +188,23 @@ export default async function AgentPage({ params }: AgentPageProps) {
               description="Read straight from the ERC-8004 reputation index. Where the registry publishes nothing, this page says so rather than filling the gap."
             >
               <ReputationPanel agent={agent} scores={extras.scores} scoredAt={extras.scoredAt} />
+
+              <section className="mt-4" aria-labelledby="feedback-heading">
+                <h3 id="feedback-heading" className="text-sm font-medium text-white">
+                  Onchain feedback
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Read from the ERC-8004 Reputation Registry. A record is a signed value and up to two tags - the
+                  standard carries no comment text, so none is shown.
+                </p>
+                <div className="mt-3">
+                  <FeedbackList
+                    records={feedback.ok ? feedback.records : []}
+                    chainId={agent.chainId}
+                    unavailable={feedback.ok ? null : feedback.reason}
+                  />
+                </div>
+              </section>
             </AgentSection>
 
             <AgentSection
