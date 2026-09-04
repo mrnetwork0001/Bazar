@@ -89,11 +89,6 @@ export function Hero({ agent, streamAgents, indexedAgents, total, degraded }: He
               </li>
             ))}
           </ul>
-
-          <p className="mt-4 max-w-xl text-xs leading-relaxed text-slate-500">
-            No ROI, SLA or uptime numbers anywhere on this site - the registries do not publish them, so Bazar does not
-            render them.
-          </p>
         </div>
 
         <div className="lg:col-span-6">
