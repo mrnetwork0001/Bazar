@@ -3,6 +3,7 @@ import { Bot, CircleDashed, Fingerprint, Hash, Link2, Network, Receipt, ShieldCh
 import type { Address, IndexedAgent } from '@/lib/types';
 import { DEPLOYMENTS, type SupportedChainId } from '@/lib/chain/addresses';
 import { CopyButton } from '@/components/agents/copy-button';
+import { ExternalLink } from '@/components/ui/icons';
 import { bscScanAddress, bscScanTx, cn, formatDate, shortAddress } from '@/lib/utils';
 
 interface RecordRowProps {
@@ -39,6 +40,7 @@ function RecordRow({ icon, label, display, copyValue, href, linkLabel, hint }: R
             title={linkLabel ?? `Open ${label} on BscScan`}
             className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.03] text-slate-400 transition-colors hover:border-bnb/40 hover:bg-bnb/10 hover:text-bnb ring-focus"
           >
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
           </a>
         )}
       </div>
@@ -168,7 +170,7 @@ export function IdentityPanel({ agent, agentWallet, registrationTx, className }:
             <>
               <span className="font-medium text-slate-300">No verification flag set.</span> Nothing on BNB Smart Chain
               currently sets this field, so Bazar does not use it as a trust signal and does not offer it as a filter.
-              Rank and reputation below are the real signals.
+              Rank and reputation above are the real signals.
             </>
           )}
         </p>

@@ -144,12 +144,21 @@ export default async function AgentPage({ params }: AgentPageProps) {
               <ChevronRight className="h-3.5 w-3.5 text-slate-700" />
             </li>
             <li>
-              <Link
-                href={`/marketplace?category=${category.id}`}
-                className="rounded px-1 py-0.5 transition-colors hover:text-slate-200 ring-focus"
-              >
-                {category.name}
-              </Link>
+              {/* An unclassified agent has no shelf to point at: its category
+                  was assigned by hash for coverage, and the breadcrumb must not
+                  state it as fact when the header below says otherwise. */}
+              {unclassified ? (
+                <Link href="/marketplace" className="rounded px-1 py-0.5 transition-colors hover:text-slate-200 ring-focus">
+                  Unclassified
+                </Link>
+              ) : (
+                <Link
+                  href={`/marketplace?category=${category.id}`}
+                  className="rounded px-1 py-0.5 transition-colors hover:text-slate-200 ring-focus"
+                >
+                  {category.name}
+                </Link>
+              )}
             </li>
             <li aria-hidden className="flex items-center">
               <ChevronRight className="h-3.5 w-3.5 text-slate-700" />

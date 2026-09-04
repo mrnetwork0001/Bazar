@@ -19,7 +19,7 @@ export function shortAddress(address: string, chars = 4) {
 }
 
 /**
- * Currency and percentage formatters, for the labelled demo ledger ONLY.
+ * Currency and percentage formatters, for the demo ledger that has since been removed ONLY.
  *
  * Nothing Bazar reads from the ERC-8004 registries is a price, a percentage
  * return or a rate: the registries publish identity and reputation, and the
