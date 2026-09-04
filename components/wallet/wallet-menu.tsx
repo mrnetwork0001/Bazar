@@ -14,6 +14,7 @@ import {
 import { useAccount, useChainId } from 'wagmi';
 import { BSC_CHAIN_ID } from '@/lib/constants';
 import { bscScanAddress, cn, shortAddress } from '@/lib/utils';
+import { useBnbName } from '@/components/wallet/use-bnb-name';
 
 /* ------------------------------------------------------------------ */
 /* Pure helpers (also imported by components/wallet/connect-button)     */
@@ -143,7 +144,12 @@ function useDismiss(open: boolean, onClose: () => void, containerRef: RefObject<
 /** Anchored panel geometry, shared by the menu and the install hint. */
 function panelClass(fullWidth?: boolean) {
   return cn(
-    'glass-strong z-50 animate-fade-up overflow-hidden rounded-2xl shadow-card',
+    // Deliberately NOT `glass-strong`: a 7%-white panel is readable over static
+    // page content but not over the hero's moving agent stream, which showed
+    // straight through the menu. A dropdown is a surface, not a scrim, so it
+    // gets a near-opaque ground and sits above everything around it.
+    'z-[60] animate-fade-up overflow-hidden rounded-2xl border border-white/[0.12]',
+    'bg-[#13161D]/[0.98] shadow-card backdrop-blur-2xl',
     fullWidth ? 'mt-2 w-full' : 'absolute right-0 top-full mt-2 w-64',
   );
 }
@@ -219,6 +225,7 @@ export function WalletMenu({
   onDisconnect,
   fullWidth,
 }: WalletMenuProps) {
+  const bnbName = useBnbName(address as `0x${string}`);
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -254,8 +261,19 @@ export function WalletMenu({
           <Wallet className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="font-mono tabular text-sm font-medium text-white">{shortAddress(address, 6)}</p>
-          <p className="text-[11px] text-slate-500">Connected wallet</p>
+          {bnbName ? (
+            <>
+              <p className="truncate text-sm font-medium text-white">{bnbName}</p>
+              {/* The address stays visible: a name is a convenience, and the
+                  address is the thing that actually receives funds. */}
+              <p className="font-mono tabular text-[11px] text-slate-500">{shortAddress(address, 4)}</p>
+            </>
+          ) : (
+            <>
+              <p className="font-mono tabular text-sm font-medium text-white">{shortAddress(address, 6)}</p>
+              <p className="text-[11px] text-slate-500">Connected wallet</p>
+            </>
+          )}
         </div>
       </div>
 
