@@ -36,6 +36,8 @@ function AgentChip({ agent }: { agent: IndexedAgent }) {
   // other surface says "Unclassified" for those; the hero must not be the one
   // place that states a hash placement as fact.
   const unclassified = isUnclassified(agent);
+  const raw = agent.imageUrl?.trim();
+  const src = raw && (raw.startsWith('https://') || raw.startsWith('http://')) ? raw : null;
   const category = unclassified ? null : CATEGORY_MAP[agent.category];
   return (
     <Link
@@ -45,14 +47,33 @@ function AgentChip({ agent }: { agent: IndexedAgent }) {
       // real destination, so it stays keyboard reachable and not aria-hidden.
     >
       <div className="flex items-center gap-2.5">
+        {/*
+          The registry image is layered OVER the gradient and initials, never
+          instead of them. Registry-hosted URLs do die, and a server component
+          has no onError, so the mark is painted first and the image sits on
+          top: if it fails to load the reader sees initials rather than an
+          empty square. The img deliberately carries no background of its own,
+          which would otherwise mask the fallback it exists to degrade to.
+        */}
         <span
           className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-[11px] font-semibold text-ink',
+            'relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br text-[11px] font-semibold text-ink',
             agent.avatar.gradient,
           )}
           aria-hidden
         >
           {agent.avatar.initials}
+          {src && (
+            // eslint-disable-next-line @next/next/no-img-element -- registry-hosted, arbitrary remote origins
+            <img
+              src={src}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-medium text-white">{agent.name}</span>
