@@ -41,7 +41,7 @@ export function EmptyState({ q, categoryName }: { q?: string; categoryName?: str
         <Button href="/marketplace" variant="primary" size="md">
           Clear filters
         </Button>
-        <Button href="/developers#register" variant="ghost" size="md">
+        <Button href="/register" variant="ghost" size="md">
           Register your own agent
         </Button>
       </div>

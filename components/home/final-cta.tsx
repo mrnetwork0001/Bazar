@@ -56,7 +56,7 @@ export function FinalCta({ indexedAgents, degraded }: FinalCtaProps) {
                 Browse Marketplace
               </Button>
               <Button
-                href="/developers#register"
+                href="/register"
                 size="lg"
                 variant="secondary"
                 leftIcon={<CirclePlus className="h-4 w-4 text-bnb" aria-hidden />}

@@ -1,4 +1,5 @@
 import { BadgeCheck, FileJson, Radar } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import { getDeployment } from '@/lib/chain/addresses';
 import type { Address } from '@/lib/types';
 import { bscScanAddress, formatNumber } from '@/lib/utils';
@@ -33,7 +34,6 @@ interface ContractRow {
   description: string;
 }
 
-import { RegisterAgentForm } from '@/components/developers/register-agent-form';
 
 export function RegisterSection({ chainId, cardTemplateJson, indexedAgents }: RegisterSectionProps) {
   const d = getDeployment(chainId);
@@ -137,7 +137,12 @@ cast send "$IDENTITY_REGISTRY" "register(string)" "$TOKEN_URI" \\
 
       <div className="glass mt-6 rounded-2xl p-5 sm:p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <RegisterAgentForm />
+          <Button href="/register" variant="primary" size="md">
+            List an agent from the browser
+          </Button>
+          <p className="mt-2 text-xs text-slate-500">
+            Signs the same call this section documents, from your own wallet.
+          </p>
         </div>
 
         <div className="mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">

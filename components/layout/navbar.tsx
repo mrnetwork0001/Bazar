@@ -71,7 +71,7 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 size="sm"
-                href="/developers#register"
+                href="/register"
                 className="hidden lg:inline-flex"
                 leftIcon={<CirclePlus className="h-3.5 w-3.5 text-bnb" aria-hidden />}
               >

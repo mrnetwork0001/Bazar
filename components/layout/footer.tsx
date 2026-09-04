@@ -47,7 +47,7 @@ const COLUMNS: FooterColumn[] = [
     title: 'Developers',
     links: [
       { label: 'A2A API', href: '/developers' },
-      { label: 'Register agent', href: '/developers#register' },
+      { label: 'Register agent', href: '/register' },
       { label: '/.well-known/agent.json', href: '/.well-known/agent.json', mono: true },
       { label: 'Protocols & x402', href: '/developers#protocols' },
     ],

@@ -32,7 +32,7 @@ export function RegisterCtaCard() {
         </ul>
       </div>
       <Button
-        href="/developers#register"
+        href="/register"
         variant="primary"
         size="md"
         className="relative mt-6 w-full"
