@@ -22,8 +22,9 @@ export interface MobileNavProps {
 }
 
 /**
- * Slide-down glass panel rendered below the navbar on small screens.
- * Escape, backdrop click, link click and crossing the md breakpoint all close it.
+ * Slide-down glass panel rendered below the navbar on small and tablet screens,
+ * up to the `lg` breakpoint where the navbar paints its own link row.
+ * Escape, backdrop click, link click and crossing that breakpoint all close it.
  */
 export function MobileNav({ open, onClose, pathname }: MobileNavProps) {
   useEffect(() => {
@@ -32,7 +33,9 @@ export function MobileNav({ open, onClose, pathname }: MobileNavProps) {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
-    const media = window.matchMedia('(min-width: 768px)');
+    // Matches the navbar's `lg:flex` link row - the panel must close exactly
+    // when that row takes over, not a breakpoint earlier.
+    const media = window.matchMedia('(min-width: 1024px)');
     const onMedia = (event: MediaQueryListEvent) => {
       if (event.matches) onClose();
     };
@@ -56,7 +59,7 @@ export function MobileNav({ open, onClose, pathname }: MobileNavProps) {
           <motion.div
             key="mobile-nav-backdrop"
             aria-hidden
-            className="absolute inset-x-0 top-full h-[100vh] bg-ink/70 backdrop-blur-sm md:hidden"
+            className="absolute inset-x-0 top-full h-[100vh] bg-ink/70 backdrop-blur-sm lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -66,7 +69,7 @@ export function MobileNav({ open, onClose, pathname }: MobileNavProps) {
           <motion.div
             key="mobile-nav-panel"
             id="mobile-nav"
-            className="absolute inset-x-0 top-full z-10 border-b border-white/[0.08] bg-surface/95 shadow-card backdrop-blur-2xl md:hidden"
+            className="absolute inset-x-0 top-full z-10 border-b border-white/[0.08] bg-surface/95 shadow-card backdrop-blur-2xl lg:hidden"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}

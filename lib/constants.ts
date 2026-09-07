@@ -46,8 +46,20 @@ if (APP_URL_IS_LOCAL_FALLBACK && process.env.NODE_ENV === 'production' && typeof
 export const BSC_CHAIN_ID = 56;
 export const BSC_TESTNET_CHAIN_ID = 97;
 
+/**
+ * Five is the ceiling here, not a preference. Between `md` and `lg` the navbar's
+ * right-hand side drops the network chip and the Register button, but the link
+ * row still has to share 768px with the logo and the connect button - a sixth
+ * label overflows it. So the bar carries the destinations a visitor browses,
+ * and account-level or evidence surfaces are reached from the footer and from
+ * the flow that needs them.
+ */
 export const NAV_LINKS = [
   { href: '/marketplace', label: 'Marketplace' },
+  // The PancakeSwap lane is a shelf, not a report: it answers "who serves my
+  // LP position" out of the same live index the marketplace reads, so it sits
+  // beside Marketplace rather than below it.
+  { href: '/pancakeswap', label: 'PancakeSwap' },
   // Supply side sits at the same level as demand. Registration used to live
   // several screens down /developers, where an agent builder would never look.
   { href: '/register', label: 'List an agent' },

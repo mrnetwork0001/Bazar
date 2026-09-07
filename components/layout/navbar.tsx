@@ -36,8 +36,17 @@ export function Navbar() {
               <Logo size="sm" />
             </Link>
 
-            {/* Center: primary links */}
-            <ul className="hidden flex-1 items-center justify-center gap-1 md:flex">
+            {/*
+              Center: primary links.
+
+              This row appears at `lg`, not `md`. With five destinations the
+              labels need ~450px, and between 768px and 1023px that left the
+              connect button clipped off the right edge and wrapped "List an
+              agent" onto three lines. The tablet band now gets the same
+              slide-down panel as mobile, which lists every destination at full
+              width, so nothing is lost by not painting the row there.
+            */}
+            <ul className="hidden flex-1 items-center justify-center gap-1 lg:flex">
               {NAV_LINKS.map((link) => {
                 const active = isActivePath(pathname, link.href);
                 return (
@@ -46,7 +55,7 @@ export function Navbar() {
                       href={link.href}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ring-focus',
+                        'whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ring-focus',
                         active ? 'text-bnb' : 'text-slate-400 hover:bg-white/[0.05] hover:text-white',
                       )}
                     >
@@ -66,13 +75,13 @@ export function Navbar() {
             </ul>
 
             {/* Right: network, register, wallet, hamburger */}
-            <div className="ml-auto flex shrink-0 items-center gap-2 md:ml-0">
-              <NetworkChip className="hidden lg:inline-flex" />
+            <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
+              <NetworkChip className="hidden xl:inline-flex" />
               <Button
                 variant="ghost"
                 size="sm"
                 href="/register"
-                className="hidden lg:inline-flex"
+                className="hidden xl:inline-flex"
                 leftIcon={<CirclePlus className="h-3.5 w-3.5 text-bnb" aria-hidden />}
               >
                 Register agent
@@ -84,7 +93,7 @@ export function Navbar() {
                 aria-expanded={open}
                 aria-controls="mobile-nav"
                 aria-label={open ? 'Close menu' : 'Open menu'}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white ring-focus md:hidden"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white ring-focus lg:hidden"
               >
                 {open ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
               </button>

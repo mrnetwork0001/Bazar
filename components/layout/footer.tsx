@@ -40,7 +40,13 @@ const COLUMNS: FooterColumn[] = [
     title: 'Product',
     links: [
       { label: 'Marketplace', href: '/marketplace' },
+      { label: 'PancakeSwap agents', href: '/pancakeswap' },
       ...CATEGORIES.map((c) => ({ label: c.name, href: `/marketplace?category=${c.id}` })),
+      // Session permissions is an account control, not a browse destination, so
+      // it stays off the navbar. It is reached in context from the hire flow's
+      // review step, and from here for someone who wants to revoke a key
+      // without starting a hire they have no intention of finishing.
+      { label: 'Session permissions', href: '/permissions' },
     ],
   },
   {
@@ -65,6 +71,11 @@ const COLUMNS: FooterColumn[] = [
     title: 'Provenance',
     links: [
       { label: '8004scan index', href: SOCIAL_LINKS.indexer, external: true },
+      // Belongs here rather than under Product for the same reason as the rows
+      // below it: the benchmark publishes the raw response bytes of both legs
+      // and the script that produced them, so a reader checks the claim instead
+      // of taking it. It is evidence about agents, not a Bazar feature.
+      { label: 'Agent advantage benchmark', href: '/advantage' },
       {
         label: 'Identity Registry',
         href: bscScanAddress(BSC.identityRegistry, BSC.chainId),
