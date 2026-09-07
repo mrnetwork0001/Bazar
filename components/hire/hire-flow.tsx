@@ -40,6 +40,7 @@ import {
 import {
   useAgentProvider,
   useKernelPaused,
+  usePaymentTokenMeta,
   usePaymentTokenPosition,
   useSettlementPolicy,
 } from './use-hire-reads';
@@ -253,8 +254,12 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
   const paused = useKernelPaused(chainId);
   const { data: headBlock } = useBlock({ chainId, blockTag: 'latest', query: { staleTime: 30_000 } });
 
-  const symbol = tokenState.status === 'ready' ? tokenState.position.symbol : PAYMENT_TOKEN_SYMBOL;
-  const decimals = tokenState.status === 'ready' ? tokenState.position.decimals : null;
+  // Read from the token contract, not from the wallet: a disconnected reader
+  // needs decimals to parse a budget, and without them `canReview` was false
+  // and the brief step could not be left at all.
+  const tokenMeta = usePaymentTokenMeta(chainId);
+  const symbol = tokenMeta.status === 'ready' ? tokenMeta.meta.symbol : PAYMENT_TOKEN_SYMBOL;
+  const decimals = tokenMeta.status === 'ready' ? tokenMeta.meta.decimals : null;
 
   /* ---------------- budget ---------------- */
   const budget = useMemo(() => {
@@ -292,10 +297,12 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
   const blockingReason = useMemo<string | null>(() => {
     if (paused === 'paused') return `The ${chainMeta.name} kernel is paused. No job can be created or funded on it.`;
     if (provider.status === 'refused') return provider.reason;
+    if (tokenMeta.status === 'error')
+      return `The settlement token could not be read on ${chainMeta.name}, so Bazar cannot tell what a budget in it means. Nothing here is safe to sign until it answers.`;
     if (tokenState.status === 'error')
       return `The ${symbol} balance for this wallet could not be read on ${chainMeta.name}, so Bazar cannot tell whether this budget is fundable.`;
     return null;
-  }, [chainMeta.name, paused, provider, symbol, tokenState.status]);
+  }, [chainMeta.name, paused, provider, symbol, tokenMeta.status, tokenState.status]);
 
   const canReview =
     briefReady && budget.wei !== null && !budget.error && !overBalance && !blockingReason && !noBalance;

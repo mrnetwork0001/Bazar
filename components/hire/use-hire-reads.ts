@@ -172,6 +172,53 @@ export type TokenPositionState =
   | { status: 'error' }
   | { status: 'ready'; position: TokenPosition };
 
+export interface TokenMeta {
+  symbol: string;
+  decimals: number;
+}
+
+export type TokenMetaState =
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'ready'; meta: TokenMeta };
+
+/**
+ * The payment token's own symbol and decimals.
+ *
+ * Separate from `usePaymentTokenPosition` because these are properties of the
+ * token contract, not of any wallet, and reading them needs no address.
+ *
+ * They used to be fetched in the same batch as `balanceOf` and `allowance`,
+ * which meant a disconnected reader could not learn them - and a budget cannot
+ * be parsed without decimals, so `canReview` was false and the hire flow's
+ * first step could not be left. The button offered no reason, because from its
+ * point of view the budget was simply unparseable. Connecting a wallet fixed it
+ * by accident, which is the worst way for a requirement to be communicated.
+ *
+ * A reader can now fill in a brief, a budget and a deadline, and read the whole
+ * commitment, before being asked to connect anything.
+ */
+export function usePaymentTokenMeta(chainId: SupportedChainId): TokenMetaState {
+  const deployment = getDeployment(chainId);
+
+  const { data, isPending, isError } = useReadContracts({
+    allowFailure: false,
+    contracts: [
+      { chainId, address: deployment.paymentToken, abi: ERC20_ABI, functionName: 'symbol' },
+      { chainId, address: deployment.paymentToken, abi: ERC20_ABI, functionName: 'decimals' },
+    ],
+    // Immutable for the life of the contract; no reason to refetch it.
+    query: { staleTime: Infinity },
+  });
+
+  return useMemo<TokenMetaState>(() => {
+    if (isError) return { status: 'error' };
+    if (!data) return isPending ? { status: 'loading' } : { status: 'error' };
+    const [symbol, decimals] = data as unknown as [string, number];
+    return { status: 'ready', meta: { symbol, decimals: Number(decimals) } };
+  }, [data, isError, isPending]);
+}
+
 /**
  * Balance and kernel allowance for the payment token on one chain.
  *
