@@ -92,7 +92,24 @@ export interface LaneResult {
   /** True when the index could not be reached. Not evidence about any agent. */
   degraded: boolean;
   error?: string;
+  /** The queries that answered. Only these may be described as searched. */
   searchTerms: readonly string[];
+  /**
+   * Queries that did not answer after every retry.
+   *
+   * Non-empty means this page is a partial sweep and must say so: agents that
+   * only an unanswered query would have surfaced are missing, and the counts
+   * below are floors rather than totals.
+   */
+  unanswered: readonly string[];
+  /**
+   * Queries that matched more rows than one page of the index returns.
+   *
+   * Empty today - the widest term matches 76 rows against a page of 100 - and
+   * the page says so when it stops being empty, because a sampled term makes
+   * every count below a floor rather than a total.
+   */
+  capped: readonly string[];
   /** Distinct identities the searches returned. */
   examined: number;
   /** Of those, how many name PancakeSwap in their own name or description. */
@@ -118,14 +135,17 @@ const QUOTE_AFTER = 130;
  * Finds the venue phrase in the agent's own text and cuts a readable window
  * around it.
  *
- * The name is checked before the description because a name that says
- * "PancakeSwap LP Monitor" is the strongest form of the claim, and quoting the
- * name back is clearer than quoting a fragment of prose that repeats it.
+ * The description is checked first even though a name like "SMEAI Reference
+ * PancakeSwap LP Monitor" is the more emphatic claim: the card printed above
+ * this quote already shows the name in full, so quoting it back says nothing
+ * new, while an agent whose name is merely "Pancake AI" would be evidenced by
+ * two words that could as easily be about breakfast. The name is the fallback
+ * for the agents that name the venue nowhere else.
  */
 function findVenue(agent: IndexedAgent): VenueEvidence | null {
   const fields: ReadonlyArray<[EvidenceField, string]> = [
-    ['name', agent.name],
     ['description', agent.description],
+    ['name', agent.name],
   ];
 
   for (const [field, text] of fields) {
@@ -233,34 +253,86 @@ function errorMessage(err: unknown): string {
 interface TermResult {
   term: string;
   items?: ScanAgent[];
+  /** Index-wide matches for the term, whether or not they all came back. */
+  total?: number;
+}
+
+/**
+ * Attempts per query before the lane gives up on a term.
+ *
+ * Not defensive boilerplate: 8004scan really does drop requests. Measured
+ * 2026-09-07, five sequential queries returned one HTTP 500 and four 200s, the
+ * failure landing on `pancakeswap` - the widest and slowest of them, and the
+ * one query this lane can least afford to lose. Without a retry a single
+ * transient 500 silently emptied the busiest shelf on the page while every
+ * count beside it kept saying, accurately but uselessly, that only one query
+ * had been searched.
+ */
+const QUERY_ATTEMPTS = 4;
+const RETRY_BACKOFF_MS = 400;
+
+function pause(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/**
+ * One query, retried, with the retries actually reaching the network.
+ *
+ * The shrinking `limit` is not a tuning knob, it is the whole reason the retry
+ * works. Next memoises `fetch` for the life of a render and replays a
+ * memoised rejection to every later caller with the same key, so a naive retry
+ * loop at one URL does not retry anything: measured 2026-09-07, four attempts
+ * "failed" within milliseconds of the first genuine HTTP 500, while the same
+ * query answered on five of six tries from a shell. Varying the revalidate
+ * window does not help - it is not part of the key. Asking for one fewer row
+ * changes the URL, so attempt two is a real request.
+ *
+ * Dropping to 97 costs nothing today: the widest term the lane sends matches
+ * 76 rows. If that ever stops being true, `total` comes back with the page and
+ * the caller reports the shortfall rather than quietly showing a slice.
+ */
+async function fetchTerm(
+  term: string,
+  chainId: SupportedChainId,
+  revalidateSeconds: number,
+): Promise<TermResult> {
+  for (let attempt = 0; attempt < QUERY_ATTEMPTS; attempt += 1) {
+    try {
+      const page = await fetchAgents(
+        { chainId, search: term, limit: 100 - attempt },
+        revalidateSeconds,
+      );
+      return { term, items: page.items, total: page.total };
+    } catch {
+      if (attempt < QUERY_ATTEMPTS - 1) await pause(RETRY_BACKOFF_MS * (attempt + 1));
+    }
+  }
+  return { term };
 }
 
 /**
  * Runs every recall query in parallel and returns the distinct rows.
  *
- * A single failed query is not fatal: the lane is a union, so one term timing
- * out narrows the candidate pool rather than emptying it. The count of terms
- * that did answer is what the page reports as having been searched, so a
- * partial sweep never gets described as a complete one.
+ * A query that fails every attempt is not fatal: the lane is a union, so one
+ * term dropping out narrows the candidate pool rather than emptying it. What
+ * matters is that the page then says so - `terms` carries only the queries
+ * that actually answered, and the caller reports the rest as unanswered, so a
+ * partial sweep can never be presented as a complete one.
  */
 async function fetchCandidates(
   chainId: SupportedChainId,
   revalidateSeconds: number,
-): Promise<{ rows: ScanAgent[]; terms: string[]; failures: string[] }> {
+): Promise<{ rows: ScanAgent[]; terms: string[]; failures: string[]; capped: string[] }> {
   const settled: TermResult[] = await Promise.all(
-    SEARCH_TERMS.map(async (term): Promise<TermResult> => {
-      try {
-        const page = await fetchAgents({ chainId, search: term, limit: 100 }, revalidateSeconds);
-        return { term, items: page.items };
-      } catch {
-        return { term };
-      }
-    }),
+    SEARCH_TERMS.map((term) => fetchTerm(term, chainId, revalidateSeconds)),
   );
 
   const byToken = new Map<string, ScanAgent>();
   const terms: string[] = [];
   const failures: string[] = [];
+  const capped: string[] = [];
 
   for (const result of settled) {
     if (!result.items) {
@@ -268,12 +340,15 @@ async function fetchCandidates(
       continue;
     }
     terms.push(result.term);
+    // A term matching more rows than one page returns has been sampled, not
+    // swept. That is a different claim and the page has to make it.
+    if ((result.total ?? 0) > result.items.length) capped.push(result.term);
     for (const row of result.items) {
       if (row.chain_id === chainId) byToken.set(row.token_id, row);
     }
   }
 
-  return { rows: [...byToken.values()], terms, failures };
+  return { rows: [...byToken.values()], terms, failures, capped };
 }
 
 /* --------------------------------- lane ---------------------------------- */
@@ -310,6 +385,8 @@ export async function buildLane(
       degraded: true,
       error: `no index query answered (${candidates.failures.join(', ')})`,
       searchTerms: [],
+      unanswered: candidates.failures,
+      capped: candidates.capped,
       examined: 0,
       named: 0,
       tagOnly: 0,
@@ -400,6 +477,8 @@ export async function buildLane(
       ? `${candidates.failures.join(', ')} did not answer`
       : undefined,
     searchTerms: candidates.terms,
+    unanswered: candidates.failures,
+    capped: candidates.capped,
     examined: examined.length,
     named: admitted.length,
     tagOnly: examined.length - admitted.length,

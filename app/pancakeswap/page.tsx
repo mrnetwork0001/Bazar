@@ -108,16 +108,14 @@ export default async function PancakeSwapLanePage() {
           </div>
         </header>
 
-        {/* The measurable claim */}
-        <div className="mt-10 grid gap-4 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:items-start">
+        {/* The measurable claim: what was sifted, and what the sift buys you */}
+        <div className="mt-10 grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
           <LaneSift lane={lane} />
-          <div className="grid gap-4">
-            <LaneBenefit lane={lane} />
-          </div>
+          <LaneBenefit lane={lane} />
         </div>
 
         {/* The shelves */}
-        <div className="mt-16 space-y-16">
+        <div className="mt-14 space-y-14">
           {lane.groups.map((group) => (
             <LaneSection key={group.intent} group={group} />
           ))}
@@ -135,9 +133,9 @@ export default async function PancakeSwapLanePage() {
           </h2>
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-400">
             <Radio className="h-3.5 w-3.5 text-emerald-300" aria-hidden />
-            Built from {lane.searchTerms.length} live query
-            {lane.searchTerms.length === 1 ? '' : 'ies'} against the public ERC-8004 index on chain
-            56, cached for thirty minutes.
+            Built from {lane.searchTerms.length} live{' '}
+            {lane.searchTerms.length === 1 ? 'query' : 'queries'} against the public ERC-8004 index
+            on chain 56, cached for thirty minutes.
           </p>
           <div className="mt-5">
             <LaneMethod lane={lane} />

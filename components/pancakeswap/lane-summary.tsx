@@ -78,6 +78,36 @@ export function LaneSift({ lane }: { lane: LaneResult }) {
         is a stored list.
       </p>
 
+      {lane.unanswered.length > 0 && (
+        <div className="mt-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] px-3.5 py-3">
+          <p className="flex items-start gap-2 text-[12px] leading-relaxed text-amber-100/90">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" aria-hidden />
+            <span>
+              Partial sweep. {lane.unanswered.length} of{' '}
+              {lane.unanswered.length + lane.searchTerms.length} index{' '}
+              {lane.unanswered.length + lane.searchTerms.length === 1 ? 'query' : 'queries'} did not
+              answer after four attempts (
+              {lane.unanswered.map((t) => `"${t}"`).join(', ')}), so every figure below is a floor,
+              not a total, and agents only those queries would have reached are missing. Reload to
+              try the full sweep again.
+            </span>
+          </p>
+        </div>
+      )}
+
+      {lane.capped.length > 0 && (
+        <div className="mt-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.06] px-3.5 py-3">
+          <p className="flex items-start gap-2 text-[12px] leading-relaxed text-amber-100/90">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" aria-hidden />
+            <span>
+              Sampled, not swept. {lane.capped.map((t) => `"${t}"`).join(', ')} now{' '}
+              {lane.capped.length === 1 ? 'matches' : 'match'} more identities than one page of the
+              index returns, so the lane read the first page only and the counts below are floors.
+            </span>
+          </p>
+        </div>
+      )}
+
       <div className="mt-5 space-y-4">
         <SiftRow
           label="Identities the searches returned"
@@ -150,11 +180,15 @@ export function LaneSift({ lane }: { lane: LaneResult }) {
  * The "before" is not a straw man: `/marketplace?q=pancakeswap` is a real
  * control on this site and it is linked here, so anyone can open it beside
  * this page and compare what comes back.
+ *
+ * Returned as a fragment rather than a wrapper so both cards are siblings of
+ * the measurement panel in the page's own grid and the three stretch to one
+ * height together.
  */
 export function LaneBenefit({ lane }: { lane: LaneResult }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <GlassCard className="p-5 sm:p-6">
+    <>
+      <GlassCard className="flex flex-col p-5 sm:p-6">
         <Badge tone="slate">Before this page</Badge>
         <h3 className="mt-3 text-sm font-semibold text-white">A keyword search, ranked by score</h3>
         <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
@@ -169,13 +203,22 @@ export function LaneBenefit({ lane }: { lane: LaneResult }) {
           8004scan&rsquo;s metadata LLM rather than by their registrant, and nothing on the page
           distinguishes the two.
         </p>
-        <Button href="/marketplace?q=pancakeswap" variant="ghost" size="sm" className="mt-4">
-          Open that search and compare
-        </Button>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+          It is also one list for every question. An LP hunting a range keeper and a trader wanting a
+          pre-swap check are handed the same rows in the same order, and every identity that
+          re-registered someone else&rsquo;s copy word for word takes a row of its own.
+        </p>
+        <div className="mt-auto pt-4">
+          <Button href="/marketplace?q=pancakeswap" variant="ghost" size="sm">
+            Open that search and compare
+          </Button>
+        </div>
       </GlassCard>
 
-      <GlassCard className="p-5 sm:p-6">
-        <Badge tone="gold">After</Badge>
+      <GlassCard className="flex flex-col p-5 sm:p-6">
+        <Badge tone="gold" className="self-start">
+          After
+        </Badge>
         <h3 className="mt-3 text-sm font-semibold text-white">A shelf per job, with the receipts</h3>
         <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
           Pick the job you actually have. You get only agents whose own registration text names both
@@ -188,7 +231,7 @@ export function LaneBenefit({ lane }: { lane: LaneResult }) {
           declared A2A / MCP endpoints sit, and where hiring signs a real ERC-8183 job against the
           agent&rsquo;s identity.
         </p>
-        <div className="mt-4 flex flex-wrap gap-1.5">
+        <div className="mt-auto flex flex-wrap gap-1.5 pt-4">
           {lane.groups.map((group) => (
             <a
               key={group.intent}
@@ -201,7 +244,7 @@ export function LaneBenefit({ lane }: { lane: LaneResult }) {
           ))}
         </div>
       </GlassCard>
-    </div>
+    </>
   );
 }
 
@@ -315,10 +358,11 @@ export function LaneUnplaced({ lane }: { lane: LaneResult }) {
           {formatNumber(identities, { compact: false })}
         </span>{' '}
         further {identities === 1 ? 'identity mentions' : 'identities mention'} the exchange in text
-        their registrant wrote, and then describe nothing a trader or LP could hire: championship
-        placeholders, memecoin launch bots for which PancakeSwap is only where a token graduates, and
-        the exchange&rsquo;s own social profile. They are here because a lane that quietly discarded
-        them would report a cleaner result than it earned.
+        their registrant wrote, and then describe nothing a trader or LP could hire. What that
+        currently means, reading down the list: agent-championship placeholders, memecoin launch bots
+        for which PancakeSwap is only where a token graduates once its bonding curve fills, and the
+        exchange&rsquo;s own social profile. They are here because a lane that quietly discarded them
+        would report a cleaner result than it earned.
       </p>
       <ul role="list" className="mt-5 max-w-3xl">
         {lane.unplaced.map((entry) => (
@@ -359,12 +403,22 @@ export function LaneUnavailable({ error }: { error?: string }) {
 
 /* -------------------------------- headline -------------------------------- */
 
-/** The stat strip under the page title. */
+/**
+ * The stat strip under the page title.
+ *
+ * The headline count is `placedOffers`, not `placedIdentities`, because that
+ * is the number every other count on the page adds up to: the four job chips,
+ * the badge on each section heading, and the cards themselves. The larger
+ * identity figure is real and is not hidden - the measurement panel reports
+ * both and says which is which - but printing it here would put two numbers
+ * for one idea on a single screen and leave the reader to work out that the
+ * shelves do not sum to the headline.
+ */
 export function LaneHeadline({ lane }: { lane: LaneResult }) {
   const cells = [
     {
-      label: 'Agents on this page',
-      value: formatNumber(lane.placedIdentities, { compact: false }),
+      label: 'Agents shown',
+      value: formatNumber(lane.placedOffers, { compact: false }),
       icon: Boxes,
       tone: 'text-bnb',
     },

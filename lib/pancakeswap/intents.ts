@@ -153,10 +153,15 @@ export const LANE_INTENTS: readonly LaneIntent[] = [
     naming: [
       'pool data', 'pool state', 'live pool', 'pool tick', 'pool quote', '池报价', '行情',
       'price feed', 'oracle', 'twap', 'market brief', 'market data', 'price discrep',
-      'analytic', 'research', 'live price', "pool's live", 'token metrics',
-      'live quote', 'radar',
+      'analytic', 'research', 'live price', "pool's live", 'token metrics', 'radar',
     ],
-    supporting: ['monitor', '监控', 'observ', 'reports', 'scan', 'evidence', 'assessment'],
+    // "live quote" sits here rather than above on purpose. A launchpad that
+    // quotes its own bonding curve and mentions PancakeSwap only as the venue
+    // a graduated token migrates to is not a pool research service, and on its
+    // own that phrase was filing exactly that agent under this job.
+    supporting: [
+      'live quote', 'monitor', '监控', 'observ', 'reports', 'scan', 'evidence', 'assessment',
+    ],
   },
 ] as const;
 
