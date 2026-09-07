@@ -47,5 +47,26 @@ NEXT_PUBLIC_ERC8004_REGISTRY_ADDRESS=0x...
 
 ---
 
+## Submission notes
+
+Points worth making in the hackathon submission that are easy to forget.
+
+**AltLayer runs 8004scan, and Bazar reads every single listing through it.**
+Bazar does not run its own indexer: the marketplace, the agent pages, the
+category tallies and the A2A discovery endpoint all resolve through the public
+8004scan index, which is AltLayer's. Across roughly 300,000 indexed BSC agents
+served on every page render, Bazar is plausibly the heaviest consumer of that
+index in this hackathon. AltLayer contributes 8004scan Pro plans and AltLLM
+credits to the prize pool, so this is worth a line in the write-up even though
+AltLayer is not one of the three judged partner tracks.
+
+**Judging runs 9-23 September; the winner is announced 5 November.** The
+deployment has to stay publicly reachable for the whole judging window, not
+just on submission day. A local demo scores nothing.
+
+**Prizes are additive.** Taking the main track does not exclude the partner
+tracks, and one build can win both - so the Altana, TermiX and PancakeSwap
+entries cost nothing against the main score.
+
 ## License
 Apache 2.0 Open Source
