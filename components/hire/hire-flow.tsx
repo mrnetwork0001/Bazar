@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConnectButton } from '@/components/wallet/connect-button';
 import { CopyButton } from '@/components/agents/copy-button';
+import { AltanaHirePanel } from '@/components/hire/altana-hire-panel';
 import { EscrowStepper, type EscrowStepId } from '@/components/hire/escrow-stepper';
 import { BSC_MAINNET, getDeployment, type SupportedChainId } from '@/lib/chain/addresses';
 import { formatBudget, PAYMENT_TOKEN_SYMBOL } from '@/lib/jobs/read';
@@ -640,6 +641,19 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
                 </>
               )}
             </Notice>
+
+            {/* The delegated route. Rendered alongside the wallet route, never
+                instead of it: a session key is an option a hirer has set up in
+                advance on /permissions, and the panel says so plainly when
+                there is none. It disappears entirely for a browser with no
+                Altana wallet. */}
+            <AltanaHirePanel
+              agent={agent}
+              provider={provider.status === 'resolved' ? provider.address : null}
+              brief={brief}
+              budgetWei={budget.wei}
+              deadlineSeconds={duration.seconds}
+            />
           </div>
         )}
 

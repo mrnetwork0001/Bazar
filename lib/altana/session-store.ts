@@ -9,7 +9,7 @@
  * says what it may call and how much it may spend. Both are read live in
  * `./read`. This store exists for the two things the chain cannot give back:
  *
- *   1. The session's PRIVATE KEY. A granted session is an on-chain
+ *   1. The session's PRIVATE KEY. A granted session is an onchain
  *      authorization for a public key; the matching secret only ever exists in
  *      the process that generated it. Lose it and the authorization is stranded
  *      until an admin revokes it (the SDK warns about exactly this). It is
@@ -18,7 +18,7 @@
  *   2. The label the user typed, and the local record of hires executed
  *      through each session, so a transaction hash can be found again.
  *
- * A session that exists on-chain but not in here is still shown by the
+ * A session that exists onchain but not in here is still shown by the
  * permissions page - read from the KeyStore, marked as having no key material
  * in this browser, and still revocable, because revocation is an admin action
  * that does not need the session key.
@@ -279,7 +279,7 @@ export function saveAltanaWallet(wallet: StoredWallet): void {
  * Forget the wallet handle and every session key held for it.
  *
  * This does NOT revoke anything. It removes this browser's copy of the secrets
- * and labels; the authorizations stay live on-chain until they are revoked or
+ * and labels; the authorizations stay live onchain until they are revoked or
  * they expire, and the UI says so before running it.
  */
 export function forgetAltanaWallet(): void {
@@ -310,24 +310,4 @@ export function recordAltanaRun(keyId: Hex, run: StoredRun): void {
   const next = [...store.sessions];
   next[index] = { ...session, runs: [run, ...session.runs.filter((r) => r.jobId !== run.jobId)] };
   write({ ...store, sessions: next });
-}
-
-/**
- * Drop this browser's copy of one session's key material.
- *
- * Used after a confirmed revoke: keeping a secret for an authorization the
- * chain has already killed is pure downside.
- */
-export function deleteAltanaSession(keyId: Hex): void {
-  const store = readAltanaStore();
-  write({ ...store, sessions: store.sessions.filter((s) => s.keyId !== keyId) });
-}
-
-/** Sessions this browser holds key material for, on one network. */
-export function altanaSessionsFor(chainId: AltanaChainId, wallet?: Address): StoredSession[] {
-  const store = readAltanaStore();
-  const target = wallet?.toLowerCase();
-  return store.sessions.filter(
-    (s) => s.chainId === chainId && (!target || s.walletAddress.toLowerCase() === target),
-  );
 }

@@ -13,7 +13,7 @@
  * an RPC, nothing more.
  */
 
-import { createPublicClient, encodeFunctionData, http, keccak256, padHex, encodeAbiParameters } from 'viem';
+import { createPublicClient, http, keccak256, padHex, encodeAbiParameters } from 'viem';
 import type { Abi, Hex, PublicClient } from 'viem';
 import { publicKeyToAddress } from 'viem/utils';
 
@@ -375,11 +375,6 @@ export function probeAllowlist(
     });
     return probes.map((probe, index) => ({ ...probe, allowed: Boolean(results[index]) }));
   });
-}
-
-/** Build probe calldata from a signature and arguments, so nothing is typed twice. */
-export function probeCalldata(abi: Abi, functionName: string, args: readonly unknown[]): Hex {
-  return encodeFunctionData({ abi, functionName, args });
 }
 
 /* ------------------------------------------------------------------ */

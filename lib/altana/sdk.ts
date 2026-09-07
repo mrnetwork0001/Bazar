@@ -29,12 +29,12 @@
  * admin action costs a biometric prompt.
  *
  * Session keys are the other half of the story: a fresh secp256k1 key,
- * generated in the browser, authorized on-chain for a named set of calls, a
+ * generated in the browser, authorized onchain for a named set of calls, a
  * spending cap and an expiry. That key can then act without the passkey - which
  * is the whole point, and exactly why the constraints matter.
  */
 
-import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import { generatePrivateKey } from 'viem/accounts';
 import type { Hex } from 'viem';
 
 import type { Address } from '@/lib/types';
@@ -120,7 +120,7 @@ export async function createAltanaPasskeyWallet(opts: {
  *
  * Reads the wallet address out of the credential's user handle, then reads the
  * admin public key back from the KeyStore, so it only works once the wallet has
- * done something on-chain - registration happens on the first admin action.
+ * done something onchain - registration happens on the first admin action.
  */
 export async function recoverAltanaWallet(network: AltanaNetwork): Promise<CreatedWallet> {
   const { sdk, sdkNetwork } = await altanaSdkNetwork(network);
@@ -147,7 +147,7 @@ export interface GrantedSession {
  *
  * The session key is generated here, in the browser, and passed to the SDK as
  * `sessionSigner` rather than letting the SDK generate one: an SDK-generated
- * key exists only in that call's memory, and losing it strands a live on-chain
+ * key exists only in that call's memory, and losing it strands a live onchain
  * authorization (the SDK logs a warning about precisely this).
  *
  * `register` is left at its default of true, which is what puts the key in the
@@ -217,7 +217,7 @@ export async function grantHireSession(opts: {
 /* ------------------------------------------------------------------ */
 
 /**
- * Revoke a session key on-chain.
+ * Revoke a session key onchain.
  *
  * Takes the session's PUBLIC key, not the session object, because the most
  * valuable case is revoking a key this browser has no secret for - one granted
@@ -329,14 +329,4 @@ export async function hireThroughAltanaSession(opts: {
     status: result.status,
     client: opts.session.walletAddress,
   };
-}
-
-/**
- * The address a stored session key signs as.
- *
- * Derived locally from the stored secret - no network, no SDK. Used to show
- * which key is acting and to cross-check the account's key hash.
- */
-export function sessionSignerAddress(session: StoredSession): Address {
-  return privateKeyToAccount(session.privateKey).address;
 }
