@@ -1,0 +1,153 @@
+{
+  "metrics": {
+    "overall": {
+      "total_predictions": 0,
+      "settled_predictions": 0,
+      "pending_predictions": 0,
+      "stale_predictions": 0,
+      "scored_predictions": 0,
+      "probability_scored_predictions": 0,
+      "decision_coverage": null,
+      "clean_predictions": 0,
+      "clean_win_rate": null,
+      "pass_predictions": 0,
+      "lean_predictions": 0,
+      "lean_win_rate": null,
+      "void_predictions": 0,
+      "expired_predictions": 0,
+      "avg_prediction_score": null,
+      "win_rate": null,
+      "brier_score": null,
+      "market_brier_score": null,
+      "brier_improvement": null,
+      "rps_score": null,
+      "log_loss": null,
+      "calibration_error": null,
+      "signal_accuracy": {
+        "bullish": null,
+        "trap": null,
+        "neutral": null
+      }
+    },
+    "by_league": {},
+    "by_month": {},
+    "model_version": "1.2.0",
+    "backbone_version": "37node_pchip1x2_v4",
+    "data_range": {},
+    "baseline_status": "pending",
+    "is_shadow_only": false,
+    "evaluation_scope": "current_production",
+    "current_level_source": "unified_dynamic_fair_backbone",
+    "current_production": {
+      "total_predictions": 0,
+      "settled_predictions": 0,
+      "pending_predictions": 0,
+      "stale_predictions": 0,
+      "scored_predictions": 0,
+      "probability_scored_predictions": 0,
+      "decision_coverage": null,
+      "clean_predictions": 0,
+      "clean_win_rate": null,
+      "pass_predictions": 0,
+      "lean_predictions": 0,
+      "lean_win_rate": null,
+      "void_predictions": 0,
+      "expired_predictions": 0,
+      "avg_prediction_score": null,
+      "win_rate": null,
+      "brier_score": null,
+      "market_brier_score": null,
+      "brier_improvement": null,
+      "rps_score": null,
+      "log_loss": null,
+      "calibration_error": null,
+      "signal_accuracy": {
+        "bullish": null,
+        "trap": null,
+        "neutral": null
+      }
+    },
+    "current_by_league": {},
+    "current_data_range": {},
+    "all_time_overall": {
+      "total_predictions": 177,
+      "settled_predictions": 177,
+      "pending_predictions": 0,
+      "stale_predictions": 0,
+      "scored_predictions": 0,
+      "probability_scored_predictions": 0,
+      "decision_coverage": 0,
+      "clean_predictions": 0,
+      "clean_win_rate": null,
+      "pass_predictions": 0,
+      "lean_predictions": 0,
+      "lean_win_rate": null,
+      "void_predictions": 0,
+      "expired_predictions": 30,
+      "avg_prediction_score": null,
+      "win_rate": null,
+      "brier_score": null,
+      "market_brier_score": null,
+      "brier_improvement": null,
+      "rps_score": null,
+      "log_loss": null,
+      "calibration_error": null,
+      "signal_accuracy": {
+        "bullish": null,
+        "trap": null,
+        "neutral": null
+      }
+    },
+    "all_time_by_league": {
+      "SerieA": {
+        "total": 49,
+        "settled": 49,
+        "scored": 0,
+        "avg_score": null,
+        "win_rate": null
+      },
+      "EPL": {
+        "total": 45,
+        "settled": 45,
+        "scored": 0,
+        "avg_score": null,
+        "win_rate": null
+      },
+      "Bundesliga": {
+        "total": 44,
+        "settled": 44,
+        "scored": 0,
+        "avg_score": null,
+        "win_rate": null
+      },
+      "LaLiga": {
+        "total": 39,
+        "settled": 39,
+        "scored": 0,
+        "avg_score": null,
+        "win_rate": null
+      }
+    },
+    "all_time_data_range": {
+      "from": "2026-03-21",
+      "to": "2026-05-12"
+    },
+    "metrics_schema_version": "2.0",
+    "metrics_status": "ok",
+    "metrics_error": null
+  },
+  "summary": {
+    "window_days": 365,
+    "league": null,
+    "total": 209,
+    "settled": 179,
+    "pending": 30,
+    "committed_onchain": 177,
+    "revealed_onchain": 177,
+    "error_count": 0,
+    "by_status": {
+      "settled": 179,
+      "expired": 30
+    }
+  }
+}

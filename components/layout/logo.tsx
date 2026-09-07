@@ -3,12 +3,9 @@ import { cn } from '@/lib/utils';
 export type LogoSize = 'sm' | 'md' | 'lg';
 
 const MARK_PX: Record<LogoSize, number> = { sm: 26, md: 32, lg: 40 };
-const WORD_CLASS: Record<LogoSize, string> = {
-  sm: 'text-[17px]',
-  md: 'text-xl',
-  lg: 'text-2xl',
-};
 
+/** Rendered height of the horizontal lockup, in px. */
+const LOCKUP_PX: Record<LogoSize, number> = { sm: 26, md: 34, lg: 42 };
 export interface LogoMarkProps {
   /** Named size or an explicit pixel size */
   size?: LogoSize | number;
@@ -70,20 +67,35 @@ export interface LogoProps {
   className?: string;
 }
 
+/**
+ * The supplied horizontal lockup, used in the header and the footer.
+ *
+ * It replaced an inline SVG mark plus a text wordmark. The artwork is a single
+ * image at 2106x747, already containing both, so drawing a second wordmark
+ * beside it would repeat the name.
+ *
+ * The file is light artwork on a near-black field with no alpha channel. That
+ * is fine here and nowhere else: the app's ground is #07080B, so the baked
+ * background disappears against it. Do not place this on a light surface or on
+ * a glass panel with a lifted background - it will show as a rectangle.
+ */
 export function Logo({ size = 'md', withWordmark = true, subtitle = false, className }: LogoProps) {
+  const height = LOCKUP_PX[size];
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <LogoMark size={size} />
-      {withWordmark ? (
-        <span className="flex flex-col leading-none">
-          <span className={cn('font-semibold tracking-tight text-gradient-white', WORD_CLASS[size])}>Bazar</span>
-          {subtitle && (
-            <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.2em] text-bnb/80">BNB Chain</span>
-          )}
-        </span>
-      ) : (
-        <span className="sr-only">Bazar</span>
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed local asset, no optimisation needed */}
+      <img
+        src="/bazar-header.png"
+        alt="Bazar"
+        height={height}
+        style={{ height, width: 'auto' }}
+        className="block select-none"
+        draggable={false}
+      />
+      {subtitle && (
+        <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-bnb/80">BNB Chain</span>
       )}
+      {!withWordmark && <span className="sr-only">Bazar</span>}
     </span>
   );
 }

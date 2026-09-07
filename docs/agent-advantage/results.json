@@ -1,0 +1,469 @@
+{
+  "startedAt": "2026-09-07T05:51:26.839Z",
+  "finishedAt": "2026-09-07T05:52:29.962Z",
+  "samplesPerLeg": 3,
+  "runner": {
+    "node": "v26.5.0",
+    "platform": "darwin/arm64"
+  },
+  "note": "Machine wall-clock only. Human analyst time is recorded by hand in REPORT.md and is not reproducible by this script.",
+  "tasks": [
+    {
+      "id": "odds-snapshot",
+      "title": "Pre-match 1X2 odds across the top five European leagues",
+      "category": "Trading",
+      "question": "List upcoming football fixtures in the top European leagues with 1X2 prices from more than one bookmaker.",
+      "agent": {
+        "name": "OpenOdds.Ai",
+        "tokenId": "49637",
+        "transport": "MCP (Streamable HTTP)",
+        "endpoint": "https://api.openodds.ai/mcp",
+        "request": "tools/call list_supported_leagues {} ; tools/call get_upcoming_matches { limit: 100 }",
+        "priceNote": "No payment required. The endpoint is unauthenticated and free at the point of use.",
+        "samplesMs": [
+          3160,
+          1470.5,
+          1213.4
+        ],
+        "medianMs": 1470.5,
+        "error": null,
+        "steps": [
+          {
+            "label": "MCP list_supported_leagues",
+            "status": 200,
+            "note": "5 leagues"
+          },
+          {
+            "label": "MCP get_upcoming_matches limit=100",
+            "status": 200,
+            "note": "53 rows"
+          }
+        ],
+        "findings": {
+          "leagues": [
+            "Bundesliga",
+            "EPL",
+            "LaLiga",
+            "Ligue1",
+            "SerieA"
+          ],
+          "rowsReturned": 53,
+          "rowsWithTwoBookmakers": 53,
+          "rowsActuallyInTheFuture": 4,
+          "statusCounts": {
+            "finished": 30,
+            "upcoming": 23
+          },
+          "dateRange": {
+            "from": "2026-09-01",
+            "to": "2026-09-08"
+          }
+        },
+        "outputFile": "outputs/odds-snapshot.agent.json"
+      },
+      "manual": {
+        "label": "Public odds APIs, tried in the order a developer reaches for them",
+        "priceNote": "Free tier only. No key was bought, so the paid tiers behind the three 401/403 responses were not exercised.",
+        "samplesMs": [
+          3527.8,
+          1266.4,
+          1241.1
+        ],
+        "medianMs": 1266.4,
+        "error": null,
+        "steps": [
+          {
+            "label": "the-odds-api v4 (EPL h2h)",
+            "status": 401,
+            "note": "rejected without an API key"
+          },
+          {
+            "label": "api-football v3 (odds, league 39)",
+            "status": 403,
+            "note": "rejected without an API key"
+          },
+          {
+            "label": "football-data.org v4 (PL matches)",
+            "status": 403,
+            "note": "rejected without an API key"
+          },
+          {
+            "label": "OpenLigaDB (Bundesliga 2026)",
+            "status": 200,
+            "note": "306 rows, odds fields: none"
+          }
+        ],
+        "findings": {
+          "sourcesTried": 4,
+          "sourcesThatAnswered": 1,
+          "sourcesCarrying1X2Odds": 0
+        },
+        "outputFile": "outputs/odds-snapshot.manual.json"
+      }
+    },
+    {
+      "id": "track-record",
+      "title": "Win rate and risk metrics for a live trading agent",
+      "category": "Trading",
+      "question": "What is OpenOdds.Ai's settled win rate, Brier score and calibration error, and how much of its record is anchored onchain?",
+      "agent": {
+        "name": "OpenOdds.Ai",
+        "tokenId": "49637",
+        "transport": "MCP (Streamable HTTP)",
+        "endpoint": "https://api.openodds.ai/mcp",
+        "request": "tools/call get_metrics {} ; tools/call get_prediction_summary { days: 365 }",
+        "priceNote": "No payment required.",
+        "samplesMs": [
+          2588.9,
+          811,
+          820.4
+        ],
+        "medianMs": 820.4,
+        "error": null,
+        "steps": [
+          {
+            "label": "MCP get_metrics",
+            "status": 200,
+            "note": "model 1.2.0"
+          },
+          {
+            "label": "MCP get_prediction_summary days=365",
+            "status": 200,
+            "note": "209 predictions"
+          }
+        ],
+        "findings": {
+          "modelVersion": "1.2.0",
+          "allTimeSettled": 177,
+          "allTimeScored": 0,
+          "winRate": null,
+          "brierScore": null,
+          "calibrationError": null,
+          "committedOnchain": 177,
+          "revealedOnchain": 177,
+          "dataRange": {
+            "from": "2026-03-21",
+            "to": "2026-05-12"
+          }
+        },
+        "outputFile": "outputs/track-record.agent.json"
+      },
+      "manual": {
+        "label": "The agent's public website, plus its ERC-8004 reputation record",
+        "priceNote": "Free.",
+        "samplesMs": [
+          4292.8,
+          1644.3,
+          1642.9
+        ],
+        "medianMs": 1644.3,
+        "error": null,
+        "steps": [
+          {
+            "label": "GET openodds.ai (HTML)",
+            "status": 200,
+            "note": "2938 bytes, metric words present: none"
+          },
+          {
+            "label": "GET 8004scan agent record 56/49637",
+            "status": 200,
+            "note": "3 feedbacks"
+          }
+        ],
+        "findings": {
+          "siteBytes": 2938,
+          "metricWordsInHtml": [],
+          "onchainFeedbacks": 3,
+          "onchainAverageScore": 100,
+          "onchainStars": 8,
+          "winRate": null,
+          "brierScore": null
+        },
+        "outputFile": "outputs/track-record.manual.json"
+      }
+    },
+    {
+      "id": "token-contract-check",
+      "title": "Verify the ERC-20 contract behind a spend approval",
+      "category": "Security",
+      "question": "Before approving a spend, confirm what 0xcE24439F2D9C6a2289F741120FE202248B666666 on BNB Smart Chain actually is: name, symbol, decimals, supply, and who controls it.",
+      "agent": {
+        "name": "ClawdMint",
+        "tokenId": "2468",
+        "transport": "MCP (Streamable HTTP, SSE framed)",
+        "endpoint": "https://clawdmint-api.vercel.app/mcp",
+        "request": "tools/call get_token_info { token_address: \"0xcE24439F2D9C6a2289F741120FE202248B666666\", chain: \"bsc\" }",
+        "priceNote": "No payment required.",
+        "samplesMs": [
+          1597.6,
+          423.4,
+          497.5
+        ],
+        "medianMs": 497.5,
+        "error": null,
+        "steps": [
+          {
+            "label": "MCP get_token_info",
+            "status": 200,
+            "note": "6 fields returned"
+          }
+        ],
+        "findings": {
+          "name": "United Stables",
+          "symbol": "U",
+          "decimals": 18,
+          "totalSupply": "956298607.90846715",
+          "owner": null,
+          "paused": null,
+          "fieldsReturned": [
+            "address",
+            "chain",
+            "name",
+            "symbol",
+            "decimals",
+            "total_supply"
+          ]
+        },
+        "outputFile": "outputs/token-contract-check.agent.json"
+      },
+      "manual": {
+        "label": "Six eth_call reads against a public BNB Chain node, decoded by hand",
+        "priceNote": "Free. Public dataseed node, no key.",
+        "samplesMs": [
+          2291.6,
+          1532.9,
+          1549
+        ],
+        "medianMs": 1549,
+        "error": null,
+        "steps": [
+          {
+            "label": "eth_call name() 0x06fdde03",
+            "status": 200,
+            "note": "returned data"
+          },
+          {
+            "label": "eth_call symbol() 0x95d89b41",
+            "status": 200,
+            "note": "returned data"
+          },
+          {
+            "label": "eth_call decimals() 0x313ce567",
+            "status": 200,
+            "note": "returned data"
+          },
+          {
+            "label": "eth_call totalSupply() 0x18160ddd",
+            "status": 200,
+            "note": "returned data"
+          },
+          {
+            "label": "eth_call owner() 0x8da5cb5b",
+            "status": 200,
+            "note": "returned data"
+          },
+          {
+            "label": "eth_call paused() 0x5c975abb",
+            "status": 200,
+            "note": "returned data"
+          }
+        ],
+        "findings": {
+          "name": "United Stables",
+          "symbol": "U",
+          "decimals": 18,
+          "totalSupply": "956298607.90846715",
+          "owner": "0x59F94AdE4F881f21ea608AD4448bf70B78e37187",
+          "paused": false,
+          "fieldsReturned": [
+            "name",
+            "symbol",
+            "decimals",
+            "totalSupply",
+            "owner",
+            "paused"
+          ]
+        },
+        "outputFile": "outputs/token-contract-check.manual.json"
+      }
+    },
+    {
+      "id": "bridge-route",
+      "title": "Best route to bridge 100 USDC from BNB Chain to Base",
+      "category": "Trading",
+      "question": "Which bridge gives the most USDC on Base for 100 USDC sent from BNB Chain, and what does it cost?",
+      "agent": {
+        "name": "ClawdMint",
+        "tokenId": "2468",
+        "transport": "MCP (Streamable HTTP, SSE framed)",
+        "endpoint": "https://clawdmint-api.vercel.app/mcp",
+        "request": "tools/call get_bridge_route { from_chain: \"bsc\", to_chain: \"base\", from_token: \"USDC\", to_token: \"USDC\", amount: \"100\" }",
+        "priceNote": "No payment required.",
+        "samplesMs": [
+          1546.3,
+          1604.3,
+          1354.5
+        ],
+        "medianMs": 1546.3,
+        "error": null,
+        "steps": [
+          {
+            "label": "MCP get_bridge_route",
+            "status": 200,
+            "note": "3 routes ranked"
+          }
+        ],
+        "findings": {
+          "topBridge": "AcrossV4",
+          "topMinReceived": "99.7366 USDC",
+          "topTotalCostUsd": "$0.2714",
+          "routesReturned": 3,
+          "cheapestRouteByTotalCost": "LI.FI Intents",
+          "rankOneIsCheapest": false
+        },
+        "outputFile": "outputs/bridge-route.agent.json"
+      },
+      "manual": {
+        "label": "One GET to the LI.FI quote API, fields extracted by hand",
+        "priceNote": "Free. Public endpoint, no key.",
+        "samplesMs": [
+          2001.1,
+          1107.4,
+          1536.7
+        ],
+        "medianMs": 1536.7,
+        "error": null,
+        "steps": [
+          {
+            "label": "GET li.quest/v1/quote",
+            "status": 200,
+            "note": "tool across"
+          }
+        ],
+        "findings": {
+          "topBridge": "AcrossV4",
+          "topMinReceived": "99.736594",
+          "topTotalCostUsd": "$0.2805",
+          "routesReturned": 1,
+          "cheapestRouteByTotalCost": "AcrossV4",
+          "rankOneIsCheapest": null
+        },
+        "outputFile": "outputs/bridge-route.manual.json"
+      }
+    },
+    {
+      "id": "commit-reveal-audit",
+      "title": "Independently audit a trading agent's onchain commit-reveal claim",
+      "category": "Security",
+      "question": "Did OpenOdds.Ai really commit prediction pred_c0bc19d214a24fd9 onchain before kickoff, and does the revealed content hash to the committed value?",
+      "agent": {
+        "name": "OpenOdds.Ai",
+        "tokenId": "49637",
+        "transport": "MCP (Streamable HTTP)",
+        "endpoint": "https://api.openodds.ai/mcp",
+        "request": "tools/call verify_prediction { prediction_id: \"pred_c0bc19d214a24fd9\" }",
+        "priceNote": "No payment required.",
+        "samplesMs": [
+          1274.4,
+          1232.3,
+          377
+        ],
+        "medianMs": 1232.3,
+        "error": null,
+        "steps": [
+          {
+            "label": "MCP verify_prediction",
+            "status": 200,
+            "note": "status verified"
+          }
+        ],
+        "findings": {
+          "verificationStatus": "verified",
+          "verificationSource": "local_db",
+          "namesTheChain": false,
+          "commitTx": "a784bbc3a79f12ff01b02cd9cec8f10a775d055431f98fae6a93e9b3b81af7fd",
+          "commitBlock": 45756452,
+          "revealed": true,
+          "contentHashMatch": true,
+          "commitmentHashMatch": true,
+          "independentlyChecked": false
+        },
+        "outputFile": "outputs/commit-reveal-audit.agent.json"
+      },
+      "manual": {
+        "label": "Locate the commit tx across seven EVM chains, read the calldata, re-derive the hash",
+        "priceNote": "Free. Public RPC endpoints, no key.",
+        "samplesMs": [
+          7832.7,
+          6142.3,
+          5532.9
+        ],
+        "medianMs": 6142.3,
+        "error": null,
+        "steps": [
+          {
+            "label": "Take the claim to be tested (verify_prediction)",
+            "status": 200,
+            "note": "claim under audit"
+          },
+          {
+            "label": "eth_getTransactionByHash on BNB Smart Chain",
+            "status": 200,
+            "note": "not present"
+          },
+          {
+            "label": "eth_getTransactionByHash on opBNB",
+            "status": 200,
+            "note": "not present"
+          },
+          {
+            "label": "eth_getTransactionByHash on Base",
+            "status": 200,
+            "note": "FOUND"
+          },
+          {
+            "label": "eth_getTransactionByHash on Polygon",
+            "status": 401,
+            "note": "not present"
+          },
+          {
+            "label": "eth_getTransactionByHash on Arbitrum One",
+            "status": 200,
+            "note": "not present"
+          },
+          {
+            "label": "eth_getTransactionReceipt on Base",
+            "status": 200,
+            "note": "success"
+          },
+          {
+            "label": "eth_getBlockByNumber on Base",
+            "status": 200,
+            "note": "block header read"
+          }
+        ],
+        "findings": {
+          "verificationStatus": "verified",
+          "verificationSource": "local_db",
+          "namesTheChain": true,
+          "chainFoundOn": "Base",
+          "commitTx": "0xa784bbc3a79f12ff01b02cd9cec8f10a775d055431f98fae6a93e9b3b81af7fd",
+          "commitBlock": 45756452,
+          "txSucceeded": true,
+          "contractCalled": "0x3002fd6411b7f89abcc2319126b95c4a2eaa03d5",
+          "selector": "0x3bab54e6",
+          "matchIdInCalldata": true,
+          "contentHashInCalldata": true,
+          "commitmentHashInCalldata": true,
+          "derivedCommitment": "0x83b13fbe60937d2d92ca889408a693284d9ddb5199e45a2e96cfe6a9a9a1bb0f",
+          "derivedMatchesOnchain": true,
+          "blockTimeUtc": "2026-05-09T04:50:51.000Z",
+          "agentClaimedCommitTime": "2026-05-09T04:50:45.702367",
+          "committedBeforeKickoff": true,
+          "independentlyChecked": true
+        },
+        "outputFile": "outputs/commit-reveal-audit.manual.json"
+      }
+    }
+  ]
+}

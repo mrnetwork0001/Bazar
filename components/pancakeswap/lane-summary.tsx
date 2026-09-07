@@ -1,0 +1,412 @@
+import Link from 'next/link';
+import { AlertTriangle, Boxes, FlaskConical, Radio, ScanSearch, ShieldCheck } from '@/components/ui/icons';
+import { Badge } from '@/components/ui/badge';
+import { GlassCard } from '@/components/ui/glass-card';
+import { Button } from '@/components/ui/button';
+import { formatNumber } from '@/lib/utils';
+import type { LaneResult } from '@/lib/pancakeswap/lane';
+import {
+  LANE_INTENT_MAP,
+  SWEEP_DATE,
+  SWEEP_IDENTITIES,
+  SWEEP_NAMED,
+  SWEEP_TERMS,
+} from '@/lib/pancakeswap/intents';
+import { UnplacedEntry } from './lane-evidence';
+
+/* -------------------------------- the sift -------------------------------- */
+
+function Bar({ value, of, hex }: { value: number; of: number; hex: string }) {
+  const pct = of > 0 ? Math.max((value / of) * 100, value > 0 ? 1.5 : 0) : 0;
+  return (
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]" aria-hidden>
+      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: hex }} />
+    </div>
+  );
+}
+
+function SiftRow({
+  label,
+  value,
+  of,
+  hex,
+  note,
+  indent,
+}: {
+  label: string;
+  value: number;
+  of: number;
+  hex: string;
+  note: string;
+  indent?: boolean;
+}) {
+  return (
+    <div className={indent ? 'pl-4 sm:pl-6' : undefined}>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[13px] font-medium text-slate-200">{label}</span>
+        <span className="tabular shrink-0 text-sm font-semibold text-white">
+          {formatNumber(value, { compact: false })}
+        </span>
+      </div>
+      <div className="mt-1.5">
+        <Bar value={value} of={of} hex={hex} />
+      </div>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{note}</p>
+    </div>
+  );
+}
+
+/**
+ * What the lane actually measured, on this render.
+ *
+ * These are the numbers the track's "genuine and measurable" bar is answered
+ * with, so every one of them is counted from the records the index returned a
+ * moment ago rather than written down here. If the index adds a PancakeSwap
+ * agent tonight, this panel moves tomorrow without anyone editing it.
+ */
+export function LaneSift({ lane }: { lane: LaneResult }) {
+  const unplacedIdentities = lane.unplaced.reduce((n, u) => n + 1 + u.twins.length, 0);
+
+  return (
+    <GlassCard className="p-5 sm:p-6">
+      <div className="flex items-center gap-2">
+        <ScanSearch className="h-4 w-4 text-bnb" aria-hidden />
+        <h2 className="text-sm font-semibold text-white">What this page measured, just now</h2>
+      </div>
+      <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+        Counted from the records the ERC-8004 index returned for this request. Nothing on this page
+        is a stored list.
+      </p>
+
+      <div className="mt-5 space-y-4">
+        <SiftRow
+          label="Identities the searches returned"
+          value={lane.examined}
+          of={lane.examined}
+          hex="#94A3B8"
+          note={`Distinct ERC-8004 identities on BNB Smart Chain across ${lane.searchTerms.length} index ${
+            lane.searchTerms.length === 1 ? 'query' : 'queries'
+          }: ${lane.searchTerms.map((t) => `"${t}"`).join(', ')}.`}
+        />
+        <SiftRow
+          indent
+          label="Name PancakeSwap in their own text"
+          value={lane.named}
+          of={lane.examined}
+          hex="#F0B90B"
+          note="The registrant wrote the word. This is the only evidence the lane accepts, and it is quoted under every card."
+        />
+        <SiftRow
+          indent
+          label="Dropped: index-derived tag only"
+          value={lane.tagOnly}
+          of={lane.examined}
+          hex="#64748B"
+          note="Returned by the search because 8004scan's own LLM tagged them, while their registration text never mentions the exchange. A keyword search keeps these. The lane does not."
+        />
+        <SiftRow
+          indent
+          label="Also name a trader or LP job"
+          value={lane.placedIdentities}
+          of={lane.examined}
+          hex="#22D3EE"
+          note={`Filed under ${lane.groups.length} ${lane.groups.length === 1 ? 'job' : 'jobs'}, as ${formatNumber(
+            lane.placedOffers,
+            { compact: false },
+          )} distinct ${lane.placedOffers === 1 ? 'registration' : 'registrations'} once identities sharing byte-identical text are collapsed onto one card.`}
+        />
+        <SiftRow
+          indent
+          label="Name the venue, describe no job"
+          value={unplacedIdentities}
+          of={lane.examined}
+          hex="#475569"
+          note="Listed at the foot of this page rather than filed under work they never claimed."
+        />
+      </div>
+
+      {lane.indexedTotal !== null && (
+        <p className="mt-5 border-t border-white/[0.06] pt-4 text-[12px] leading-relaxed text-slate-400">
+          For scale, the Identity Registry on BNB Smart Chain holds{' '}
+          <span className="tabular font-semibold text-white">
+            {formatNumber(lane.indexedTotal, { compact: false })}
+          </span>{' '}
+          indexed identities. The lane is{' '}
+          <span className="tabular font-medium text-slate-200">
+            {((lane.placedIdentities / lane.indexedTotal) * 100).toFixed(3)}%
+          </span>{' '}
+          of them.
+        </p>
+      )}
+    </GlassCard>
+  );
+}
+
+/* ------------------------------ the benefit ------------------------------- */
+
+/**
+ * The before and the after, stated as something a reader can go and check.
+ *
+ * The "before" is not a straw man: `/marketplace?q=pancakeswap` is a real
+ * control on this site and it is linked here, so anyone can open it beside
+ * this page and compare what comes back.
+ */
+export function LaneBenefit({ lane }: { lane: LaneResult }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <GlassCard className="p-5 sm:p-6">
+        <Badge tone="slate">Before this page</Badge>
+        <h3 className="mt-3 text-sm font-semibold text-white">A keyword search, ranked by score</h3>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+          Bazar&rsquo;s shelves are the four BNB Agent Studio categories - Rebalancing, Grid Trading,
+          Yield Optimisation, Health Factor. None of them is a PancakeSwap shelf, so the only move
+          available to a trader was to type the exchange&rsquo;s name into the marketplace search.
+        </p>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+          That returns the index&rsquo;s raw match list in reputation order. It mixes a live v3 range
+          rebalancer with trading-card NFTs that carry a{' '}
+          <span className="font-mono text-[12px] text-slate-300">pancakeswap</span> tag written by
+          8004scan&rsquo;s metadata LLM rather than by their registrant, and nothing on the page
+          distinguishes the two.
+        </p>
+        <Button href="/marketplace?q=pancakeswap" variant="ghost" size="sm" className="mt-4">
+          Open that search and compare
+        </Button>
+      </GlassCard>
+
+      <GlassCard className="p-5 sm:p-6">
+        <Badge tone="gold">After</Badge>
+        <h3 className="mt-3 text-sm font-semibold text-white">A shelf per job, with the receipts</h3>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+          Pick the job you actually have. You get only agents whose own registration text names both
+          PancakeSwap and that job, with the sentence quoted under the card, duplicate registrations
+          collapsed onto one entry, and the ones that name the venue but offer nothing listed
+          separately instead of padding the count.
+        </p>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+          Each card links to the agent&rsquo;s Bazar page, where its onchain reputation, feedback and
+          declared A2A / MCP endpoints sit, and where hiring signs a real ERC-8183 job against the
+          agent&rsquo;s identity.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {lane.groups.map((group) => (
+            <a
+              key={group.intent}
+              href={`#${group.intent}`}
+              className="ring-focus inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium text-slate-300 transition-colors hover:bg-white/[0.09] hover:text-white"
+            >
+              {LANE_INTENT_MAP[group.intent].name}
+              <span className="tabular text-slate-500">{group.agents.length}</span>
+            </a>
+          ))}
+        </div>
+      </GlassCard>
+    </div>
+  );
+}
+
+/* ------------------------------- the method ------------------------------- */
+
+/** How the lane decides, and everything it is careful not to claim. */
+export function LaneMethod({ lane }: { lane: LaneResult }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <GlassCard className="p-5 sm:p-6">
+        <div className="flex items-center gap-2">
+          <FlaskConical className="h-4 w-4 text-slate-300" aria-hidden />
+          <h3 className="text-sm font-semibold text-white">How an agent gets onto this page</h3>
+        </div>
+        <ol className="mt-3 space-y-3 text-[12px] leading-relaxed text-slate-400">
+          <li>
+            <span className="font-mono text-slate-300">1.</span> Bazar queries the public 8004scan
+            index for {lane.searchTerms.length}{' '}
+            {lane.searchTerms.length === 1 ? 'term' : 'terms'} on chain 56 and takes the union. This
+            is a recall net, not evidence: the index&rsquo;s free-text search also matches tags its
+            own LLM wrote.
+          </li>
+          <li>
+            <span className="font-mono text-slate-300">2.</span> Each candidate&rsquo;s name and
+            description - the text its registrant published - is tested for the venue. No mention,
+            no lane, whatever the tags say.
+          </li>
+          <li>
+            <span className="font-mono text-slate-300">3.</span> The same text is read for a trader
+            or LP job. At least one phrase that names the job outright is required; corroborating
+            words like &ldquo;monitor&rdquo; or &ldquo;reward&rdquo; can raise a placement but never
+            make one, because most of the index uses them.
+          </li>
+          <li>
+            <span className="font-mono text-slate-300">4.</span> Identities registering byte-identical
+            text collapse onto one card, highest reputation first. The rest are named on that card.
+          </li>
+        </ol>
+        <p className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-slate-500">
+          On {SWEEP_DATE} a wider sweep of {SWEEP_TERMS} terms across{' '}
+          <span className="tabular">{formatNumber(SWEEP_IDENTITIES, { compact: false })}</span>{' '}
+          distinct identities - liquidity, LP, pool, impermanent loss, slippage, MEV, APY, arbitrage,
+          honeypot, fee tier and the rest - found{' '}
+          <span className="tabular">{SWEEP_NAMED}</span> agents naming PancakeSwap in their own text,
+          and every one of them was already reachable from the venue queries above. That measurement
+          was taken once, on that date; the figures elsewhere on this page are live.
+        </p>
+      </GlassCard>
+
+      <GlassCard className="p-5 sm:p-6">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-slate-300" aria-hidden />
+          <h3 className="text-sm font-semibold text-white">What this page does not claim</h3>
+        </div>
+        <ul className="mt-3 space-y-2.5 text-[12px] leading-relaxed text-slate-400">
+          <li className="flex gap-2">
+            <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
+            <span>
+              <span className="font-medium text-slate-200">No affiliation.</span> Bazar has no
+              partnership with, endorsement from or relationship of any kind with PancakeSwap. This
+              lane is Bazar reading a public registry, and PancakeSwap has no part in it.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
+            <span>
+              <span className="font-medium text-slate-200">Not a verification.</span> That an agent
+              says it manages a v3 range is not proof it does. Bazar has not run these agents, has
+              not measured their results, and the ERC-8004 registries publish no performance data to
+              measure them against.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
+            <span>
+              <span className="font-medium text-slate-200">The placement is Bazar&rsquo;s reading.</span>{' '}
+              ERC-8004 has no venue field and no capability field, so the shelf is a keyword match
+              against registration text. That is exactly why the text is quoted under every card
+              rather than summarised.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
+            <span>
+              <span className="font-medium text-slate-200">No ranking of fitness.</span> Cards are
+              ordered by the aggregate ERC-8004 reputation score the index publishes, which for most
+              of this shelf rests on no feedback at all. It is a registry figure, not a
+              recommendation.
+            </span>
+          </li>
+        </ul>
+      </GlassCard>
+    </div>
+  );
+}
+
+/* ------------------------------ the leftovers ----------------------------- */
+
+/** Named the venue, described no job. Shown because dropping them would flatter the lane. */
+export function LaneUnplaced({ lane }: { lane: LaneResult }) {
+  if (lane.unplaced.length === 0) return null;
+  const identities = lane.unplaced.reduce((n, u) => n + 1 + u.twins.length, 0);
+
+  return (
+    <section aria-labelledby="lane-unplaced" className="border-t border-white/[0.08] pt-8">
+      <h2 id="lane-unplaced" className="text-lg font-semibold tracking-tight text-white">
+        Named PancakeSwap, offered no job
+      </h2>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">
+        <span className="tabular font-medium text-slate-200">
+          {formatNumber(identities, { compact: false })}
+        </span>{' '}
+        further {identities === 1 ? 'identity mentions' : 'identities mention'} the exchange in text
+        their registrant wrote, and then describe nothing a trader or LP could hire: championship
+        placeholders, memecoin launch bots for which PancakeSwap is only where a token graduates, and
+        the exchange&rsquo;s own social profile. They are here because a lane that quietly discarded
+        them would report a cleaner result than it earned.
+      </p>
+      <ul role="list" className="mt-5 max-w-3xl">
+        {lane.unplaced.map((entry) => (
+          <UnplacedEntry key={entry.agent.slug} entry={entry} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/* ------------------------------- unavailable ------------------------------ */
+
+/** The index did not answer. Not evidence that no PancakeSwap agents exist. */
+export function LaneUnavailable({ error }: { error?: string }) {
+  return (
+    <div className="flex flex-col items-center rounded-2xl border border-amber-400/25 bg-amber-400/[0.06] px-6 py-14 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-400/25 bg-amber-400/10 text-amber-300">
+        <AlertTriangle className="h-6 w-6" aria-hidden />
+      </div>
+      <h2 className="mt-5 text-lg font-semibold text-white">The ERC-8004 index did not answer</h2>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-400">
+        This lane is built from live index queries on every request, and none of them came back. That
+        is a failure to look, not a finding: it says nothing about how many PancakeSwap agents are
+        registered on BNB Smart Chain. Reload in a moment.
+      </p>
+      {error && <p className="mt-3 max-w-lg break-words font-mono text-[11px] text-amber-200/70">{error}</p>}
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <Button href="/pancakeswap" variant="primary" size="md">
+          Try again
+        </Button>
+        <Button href="/marketplace" variant="ghost" size="md">
+          Browse the marketplace
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------- headline -------------------------------- */
+
+/** The stat strip under the page title. */
+export function LaneHeadline({ lane }: { lane: LaneResult }) {
+  const cells = [
+    {
+      label: 'Agents on this page',
+      value: formatNumber(lane.placedIdentities, { compact: false }),
+      icon: Boxes,
+      tone: 'text-bnb',
+    },
+    {
+      label: 'Trader jobs covered',
+      value: formatNumber(lane.groups.length, { compact: false }),
+      icon: ScanSearch,
+      tone: 'text-cyan-300',
+    },
+    {
+      label: 'Index status',
+      value: lane.degraded ? 'Unreachable' : 'Live',
+      icon: lane.degraded ? AlertTriangle : Radio,
+      tone: lane.degraded ? 'text-amber-300' : 'text-emerald-300',
+    },
+  ];
+
+  return (
+    <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06] sm:grid-cols-3">
+      {cells.map((cell) => (
+        <div key={cell.label} className="flex flex-col justify-center gap-1 bg-ink/80 px-4 py-3.5">
+          <dt className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+            <cell.icon className={`h-3.5 w-3.5 ${cell.tone}`} aria-hidden />
+            {cell.label}
+          </dt>
+          <dd className="tabular text-lg font-semibold leading-none text-white">{cell.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Small print that has to appear near the top, not only in the method panel. */
+export function LaneDisclaimer() {
+  return (
+    <p className="text-[12px] leading-relaxed text-slate-500">
+      Bazar is not affiliated with PancakeSwap and claims no endorsement by it. Every agent below is
+      an independent ERC-8004 identity that names the exchange in its own registration text.{' '}
+      <Link href="#method" className="ring-focus rounded text-slate-400 underline underline-offset-2 hover:text-white">
+        How the lane decides
+      </Link>
+      .
+    </p>
+  );
+}

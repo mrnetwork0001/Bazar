@@ -1,0 +1,31 @@
+{
+  "tool": "across",
+  "toolName": "AcrossV4",
+  "estimate": {
+    "fromAmount": "100000000000000000000",
+    "toAmount": "99736594",
+    "toAmountMin": "99736594",
+    "fromAmountUSD": "99.9623",
+    "toAmountUSD": "100.2259",
+    "executionDuration": 2,
+    "gasCosts": [
+      {
+        "amountUSD": "0.0172"
+      }
+    ],
+    "feeCosts": [
+      {
+        "name": "LIFI Fixed Fee",
+        "amountUSD": "0.2499"
+      },
+      {
+        "name": "Relayer fee",
+        "amountUSD": "0.0100"
+      },
+      {
+        "name": "Relayer gas fee",
+        "amountUSD": "0.0034"
+      }
+    ]
+  }
+}

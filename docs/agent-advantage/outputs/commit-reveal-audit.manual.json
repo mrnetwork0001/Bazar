@@ -1,0 +1,38 @@
+{
+  "claimUnderAudit": {
+    "prediction_id": "pred_c0bc19d214a24fd9",
+    "match_id": "0xccf4b1a6f24937d129ffe8da2141ea7f6e3e4edcf75d12a3ad8e070d58d50d6f",
+    "match_time": "2026-05-11T01:30:00",
+    "content_hash": "0xb79743557bd43c703b034beb6082649d1c829e1766447fd3ba4edf13132ed4d3",
+    "commitment_hash": "0x83b13fbe60937d2d92ca889408a693284d9ddb5199e45a2e96cfe6a9a9a1bb0f",
+    "commit_tx": "a784bbc3a79f12ff01b02cd9cec8f10a775d055431f98fae6a93e9b3b81af7fd",
+    "commit_block": 45756452,
+    "commit_timestamp": "2026-05-09T04:50:45.702367",
+    "commit_before_match": true,
+    "revealed": true,
+    "reveal_tx": "5accfd504b2a1b7568c5c68b214b1e415f31197792234fc5c75cbc98fd169b12",
+    "salt": "0xbc833638a69227d04dd690de59477df1ff864f8b11b0ef06d9efa70bff57ba04",
+    "ipfs_uri": "ipfs://QmRwhE3fGrJYTC2U2PJiQ1hj98E6TYekhYsSm2s8A6der1",
+    "verification_source": "local_db",
+    "verification_status": "verified",
+    "content_hash_match": true,
+    "commitment_hash_match": true
+  },
+  "chainFoundOn": "Base",
+  "transaction": {
+    "hash": "0xa784bbc3a79f12ff01b02cd9cec8f10a775d055431f98fae6a93e9b3b81af7fd",
+    "blockNumber": "0x2ba3024",
+    "from": "0x0d68a153897b73a6e4d2eaa9b0d4802bae69532d",
+    "to": "0x3002fd6411b7f89abcc2319126b95c4a2eaa03d5",
+    "input": "0x3bab54e6ccf4b1a6f24937d129ffe8da2141ea7f6e3e4edcf75d12a3ad8e070d58d50d6fb79743557bd43c703b034beb6082649d1c829e1766447fd3ba4edf13132ed4d383b13fbe60937d2d92ca889408a693284d9ddb5199e45a2e96cfe6a9a9a1bb0f000000000000000000000000000000000000000000000000000000006a00c098"
+  },
+  "receiptStatus": "0x1",
+  "blockTimestampHex": "0x69febd2b",
+  "calldataWords": [
+    "0xccf4b1a6f24937d129ffe8da2141ea7f6e3e4edcf75d12a3ad8e070d58d50d6f",
+    "0xb79743557bd43c703b034beb6082649d1c829e1766447fd3ba4edf13132ed4d3",
+    "0x83b13fbe60937d2d92ca889408a693284d9ddb5199e45a2e96cfe6a9a9a1bb0f",
+    "0x000000000000000000000000000000000000000000000000000000006a00c098"
+  ],
+  "derivedCommitment": "0x83b13fbe60937d2d92ca889408a693284d9ddb5199e45a2e96cfe6a9a9a1bb0f"
+}

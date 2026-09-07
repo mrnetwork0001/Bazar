@@ -1,0 +1,120 @@
+{
+  "generatedAt": "2026-09-07T05:53:22.624Z",
+  "note": "Published prices, read from the agents themselves. Nothing here was paid for and no paid task was executed.",
+  "agents": [
+    {
+      "agent": "Cast Transaction Agent",
+      "tokenId": "44942",
+      "endpoint": "https://aliasai.io/cast/",
+      "status": 402,
+      "scheme": "x402",
+      "network": "eip155:8453",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "amountRaw": "1000",
+      "amountHuman": "0.001 USDC",
+      "payTo": "0xa016f608aDb394B861A6a6282Ac3cB842d43d25C",
+      "quote": {
+        "x402Version": 2,
+        "error": "Payment required",
+        "resource": {
+          "url": "http://aliasai.io/",
+          "description": "A2A task execution",
+          "mimeType": "application/json"
+        },
+        "accepts": [
+          {
+            "scheme": "exact",
+            "network": "eip155:8453",
+            "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "amount": "1000",
+            "payTo": "0xa016f608aDb394B861A6a6282Ac3cB842d43d25C",
+            "maxTimeoutSeconds": 300,
+            "extra": {
+              "name": "USD Coin",
+              "version": "2"
+            }
+          }
+        ]
+      },
+      "executed": false,
+      "whyNot": "Bazar holds no keys. Paying would require signing from a funded wallet, which this harness will not do."
+    },
+    {
+      "agent": "Agentscan Agent",
+      "tokenId": "51945",
+      "endpoint": "https://aliasai.io/agentscan/",
+      "status": 402,
+      "scheme": "x402",
+      "network": "eip155:84532",
+      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "amountRaw": "1000",
+      "amountHuman": "0.001 USDC",
+      "payTo": "0xa016f608aDb394B861A6a6282Ac3cB842d43d25C",
+      "quote": {
+        "x402Version": 2,
+        "error": "Payment required",
+        "resource": {
+          "url": "http://aliasai.io/",
+          "description": "A2A task execution",
+          "mimeType": "application/json"
+        },
+        "accepts": [
+          {
+            "scheme": "exact",
+            "network": "eip155:84532",
+            "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            "amount": "1000",
+            "payTo": "0xa016f608aDb394B861A6a6282Ac3cB842d43d25C",
+            "maxTimeoutSeconds": 300,
+            "extra": {
+              "name": "USDC",
+              "version": "2"
+            }
+          }
+        ]
+      },
+      "executed": false,
+      "whyNot": "Bazar holds no keys. Paying would require signing from a funded wallet, which this harness will not do."
+    },
+    {
+      "agent": "Sentinels Audit",
+      "tokenId": "258641",
+      "endpoint": "https://smartsentinels.net/api/audit-mcp",
+      "status": 200,
+      "scheme": "native BNB transfer, tx hash redeemed once",
+      "network": "eip155:56",
+      "asset": "BNB",
+      "amountRaw": null,
+      "amountHuman": "0.2 BNB on BSC",
+      "payTo": "0x4E21F74143660ee576F4D2aC26BD30729a849f55",
+      "quote": {
+        "engine": "Sentinels AI",
+        "chainId": 56,
+        "chain": "BNB Smart Chain (BSC)",
+        "priceBnb": "0.2",
+        "priceWei": "200000000000000000",
+        "recipient": "0x4E21F74143660ee576F4D2aC26BD30729a849f55",
+        "payment": "Send exactly 0.2 BNB (or more) as a native transfer to 0x4E21F74143660ee576F4D2aC26BD30729a849f55 on BSC, then call sentinels_ai_audit_contract with paymentTxHash.",
+        "hub": "https://smartsentinels.net/hub/labs",
+        "branding": {
+          "required": true,
+          "attribution": "Powered by SmartSentinels",
+          "engine": "Sentinels AI",
+          "site": "https://smartsentinels.net",
+          "logoUrl": "https://smartsentinels.net/brand/ss-mark-p01a.svg",
+          "sealUrl": "https://smartsentinels.net/ssholo.png",
+          "usage": "If you render this report in your own UI, show “Powered by SmartSentinels” (link to site) and the holographic seal. Do not remove, crop out, or replace the mark."
+        },
+        "report": {
+          "format": "html",
+          "viewer": "https://smartsentinels.net/api/audit-report?cid={cid}",
+          "gateway": "https://ipfs.smartsentinels.net/ipfs/{cid}",
+          "pdf": "Open report.viewUrl or report.htmlUrl and use Print → Save as PDF. No separate PDF binary in v1."
+        },
+        "note": "Each paymentTxHash is redeemable once. Paid audits return JSON plus a pinned HTML report URL. PoUW minting remains on Hub gateway path in v1. Partner UIs must show Powered by SmartSentinels and the holographic seal."
+      },
+      "executed": false,
+      "whyNot": "The audit costs 0.2 BNB. No such payment was made, so no audit was run and none is reported."
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "the-odds-api v4 (EPL h2h)": "{\"message\":\"API key is missing\",\"error_code\":\"MISSING_KEY\",\"details_url\":\"https://the-odds-api.com/liveapi/guides/v4/api-error-codes.html#missing-key\"}\n",
+  "api-football v3 (odds, league 39)": "{\"get\": \"\",\"parameters\": [],\"errors\": {\"token\": \"Missing application key, Check our documentation on how to add your API key in headers.\",\"error\": \"4xHe\"},\"results\": 0,\"paging\": {\"current\": 1,\"total\": 1},\"response\": []}",
+  "football-data.org v4 (PL matches)": "{\"message\":\"The resource you are looking for is restricted and apparently not within your permissions. Please check your subscription.\",\"errorCode\":403}",
+  "OpenLigaDB (Bundesliga 2026)": {
+    "rows": 306,
+    "firstRowFields": [
+      "matchID",
+      "matchDateTime",
+      "timeZoneID",
+      "leagueId",
+      "leagueName",
+      "leagueSeason",
+      "leagueShortcut",
+      "matchDateTimeUTC",
+      "group",
+      "team1",
+      "team2",
+      "lastUpdateDateTime",
+      "matchIsFinished",
+      "matchResults",
+      "goals",
+      "location",
+      "numberOfViewers"
+    ]
+  }
+}

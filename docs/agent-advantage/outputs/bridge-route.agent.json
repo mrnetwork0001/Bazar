@@ -1,0 +1,47 @@
+{
+  "from": "100 USDC on bsc",
+  "to": "~99.9866 USDC on base",
+  "bridge": "AcrossV4",
+  "gas_cost_usd": "$0.0081",
+  "bridge_fee_usd": "$0.2633",
+  "total_cost_usd": "$0.2714",
+  "estimated_time": "~1 min",
+  "slippage": "0.26%",
+  "min_received": "99.7366 USDC",
+  "jumper_url": "https://jumper.exchange/?fromChain=56&toChain=8453&fromToken=0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "routes": [
+    {
+      "rank": 1,
+      "bridge": "AcrossV4",
+      "to": "~99.9866 USDC",
+      "min_received": "99.7366 USDC",
+      "bridge_fee_usd": "$0.2633",
+      "gas_cost_usd": "$0.0081",
+      "total_cost_usd": "$0.2714",
+      "estimated_time": "~1 min",
+      "slippage": "0.26%"
+    },
+    {
+      "rank": 2,
+      "bridge": "LI.FI Intents",
+      "to": "~99.9834 USDC",
+      "min_received": "99.7334 USDC",
+      "bridge_fee_usd": "$0.2499",
+      "gas_cost_usd": "$0.0142",
+      "total_cost_usd": "$0.2641",
+      "estimated_time": "~1 min",
+      "slippage": "0.27%"
+    },
+    {
+      "rank": 3,
+      "bridge": "NearIntents",
+      "to": "~99.9693 USDC",
+      "min_received": "99.7193 USDC",
+      "bridge_fee_usd": "$0.2898",
+      "gas_cost_usd": "$0.0142",
+      "total_cost_usd": "$0.3040",
+      "estimated_time": "~1 min",
+      "slippage": "0.28%"
+    }
+  ]
+}

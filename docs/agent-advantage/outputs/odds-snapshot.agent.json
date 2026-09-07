@@ -1,0 +1,1314 @@
+{
+  "leagues": {
+    "total": 5,
+    "leagues": [
+      {
+        "league": "Bundesliga",
+        "configured": true,
+        "live_matches_30d": 18,
+        "predictions_total": 53
+      },
+      {
+        "league": "EPL",
+        "configured": true,
+        "live_matches_30d": 30,
+        "predictions_total": 46
+      },
+      {
+        "league": "LaLiga",
+        "configured": true,
+        "live_matches_30d": 40,
+        "predictions_total": 49
+      },
+      {
+        "league": "Ligue1",
+        "configured": true,
+        "live_matches_30d": 28,
+        "predictions_total": 1
+      },
+      {
+        "league": "SerieA",
+        "configured": true,
+        "live_matches_30d": 30,
+        "predictions_total": 60
+      }
+    ]
+  },
+  "matches": {
+    "total": 53,
+    "matches": [
+      {
+        "match_id": 2993771,
+        "league": "SerieA",
+        "round": 2,
+        "match_date": "2026-09-01T00:30:00+00:00",
+        "home_team": "Lecce",
+        "away_team": "Roma",
+        "b365_odds": {
+          "home": 7.5,
+          "draw": 4.33,
+          "away": 1.44
+        },
+        "wh_odds": {
+          "home": 7,
+          "draw": 4,
+          "away": 1.44
+        },
+        "lb_odds": {
+          "home": 6.5,
+          "draw": 4.2,
+          "away": 1.5
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3013667,
+        "league": "LaLiga",
+        "round": 3,
+        "match_date": "2026-09-01T01:30:00+00:00",
+        "home_team": "Osasuna",
+        "away_team": "Getafe",
+        "b365_odds": {
+          "home": 2.1,
+          "draw": 2.9,
+          "away": 4.2
+        },
+        "wh_odds": {
+          "home": 2.15,
+          "draw": 2.8,
+          "away": 4
+        },
+        "lb_odds": {
+          "home": 2.15,
+          "draw": 2.87,
+          "away": 4
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 2993766,
+        "league": "SerieA",
+        "round": 2,
+        "match_date": "2026-09-01T02:45:00+00:00",
+        "home_team": "Atalanta",
+        "away_team": "Bologna",
+        "b365_odds": {
+          "home": 1.9,
+          "draw": 3.5,
+          "away": 4.1
+        },
+        "wh_odds": {
+          "home": 1.85,
+          "draw": 3.4,
+          "away": 4
+        },
+        "lb_odds": {
+          "home": 1.85,
+          "draw": 3.6,
+          "away": 4
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003860,
+        "league": "EPL",
+        "round": 2,
+        "match_date": "2026-09-01T03:00:00+00:00",
+        "home_team": "Aston Villa",
+        "away_team": "Arsenal",
+        "b365_odds": {
+          "home": 6.5,
+          "draw": 4.33,
+          "away": 1.48
+        },
+        "wh_odds": {
+          "home": 6.5,
+          "draw": 4.33,
+          "away": 1.44
+        },
+        "lb_odds": {
+          "home": 6,
+          "draw": 4.2,
+          "away": 1.48
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3013665,
+        "league": "LaLiga",
+        "round": 3,
+        "match_date": "2026-09-01T03:30:00+00:00",
+        "home_team": "Barcelona",
+        "away_team": "Vallecano",
+        "b365_odds": {
+          "home": 1.1,
+          "draw": 10,
+          "away": 19
+        },
+        "wh_odds": {
+          "home": 1.11,
+          "draw": 10,
+          "away": 19
+        },
+        "lb_odds": {
+          "home": 1.12,
+          "draw": 10,
+          "away": 15
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 2995333,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-04T02:45:00+00:00",
+        "home_team": "Toulouse",
+        "away_team": "Lille",
+        "b365_odds": {
+          "home": 3.6,
+          "draw": 3.5,
+          "away": 2.05
+        },
+        "wh_odds": {
+          "home": 3.6,
+          "draw": 3.3,
+          "away": 2
+        },
+        "lb_odds": {
+          "home": 3.5,
+          "draw": 3.4,
+          "away": 2.05
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 2995329,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-05T01:00:00+00:00",
+        "home_team": "Lyon",
+        "away_team": "Auxerre",
+        "b365_odds": {
+          "home": 1.38,
+          "draw": 5,
+          "away": 7.5
+        },
+        "wh_odds": {
+          "home": 1.36,
+          "draw": 4.6,
+          "away": 7
+        },
+        "lb_odds": {
+          "home": 1.4,
+          "draw": 5,
+          "away": 7
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3018802,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-05T02:30:00+00:00",
+        "home_team": "Stuttgart",
+        "away_team": "FC Koln",
+        "b365_odds": {
+          "home": 1.44,
+          "draw": 5.25,
+          "away": 6.25
+        },
+        "wh_odds": {
+          "home": 1.44,
+          "draw": 4.8,
+          "away": 5.8
+        },
+        "lb_odds": {
+          "home": 1.44,
+          "draw": 5.25,
+          "away": 5.5
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 2993780,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-05T02:45:00+00:00",
+        "home_team": "Genoa",
+        "away_team": "Como",
+        "b365_odds": {
+          "home": 5.75,
+          "draw": 3.5,
+          "away": 1.67
+        },
+        "wh_odds": {
+          "home": 5,
+          "draw": 3.6,
+          "away": 1.67
+        },
+        "lb_odds": {
+          "home": 5,
+          "draw": 3.6,
+          "away": 1.7
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003875,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-05T03:00:00+00:00",
+        "home_team": "Ipswich",
+        "away_team": "Liverpool",
+        "b365_odds": {
+          "home": 4.75,
+          "draw": 4.33,
+          "away": 1.62
+        },
+        "wh_odds": {
+          "home": 4.8,
+          "draw": 4,
+          "away": 1.62
+        },
+        "lb_odds": {
+          "home": 4.33,
+          "draw": 4,
+          "away": 1.61
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3013674,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-05T03:00:00+00:00",
+        "home_team": "Betis",
+        "away_team": "Real Madrid",
+        "b365_odds": {
+          "home": 8,
+          "draw": 5,
+          "away": 1.36
+        },
+        "wh_odds": {
+          "home": 6.5,
+          "draw": 5,
+          "away": 1.4
+        },
+        "lb_odds": {
+          "home": 6.5,
+          "draw": 5.25,
+          "away": 1.4
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2995332,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-05T03:05:00+00:00",
+        "home_team": "Paris SG",
+        "away_team": "Monaco",
+        "b365_odds": {
+          "home": 1.3,
+          "draw": 5.75,
+          "away": 8
+        },
+        "wh_odds": {
+          "home": 1.3,
+          "draw": 5,
+          "away": 7.5
+        },
+        "lb_odds": {
+          "home": 1.33,
+          "draw": 5.75,
+          "away": 7
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003877,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-05T19:30:00+00:00",
+        "home_team": "Newcastle",
+        "away_team": "Bournemouth",
+        "b365_odds": {
+          "home": 2.15,
+          "draw": 3.5,
+          "away": 3.25
+        },
+        "wh_odds": {
+          "home": 2.1,
+          "draw": 3.4,
+          "away": 3.3
+        },
+        "lb_odds": {
+          "home": 2.05,
+          "draw": 3.5,
+          "away": 3.1
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 2993778,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-05T21:00:00+00:00",
+        "home_team": "Fiorentina",
+        "away_team": "Torino",
+        "b365_odds": {
+          "home": 2.1,
+          "draw": 3.2,
+          "away": 3.75
+        },
+        "wh_odds": {
+          "home": 2.05,
+          "draw": 3.3,
+          "away": 3.4
+        },
+        "lb_odds": {
+          "home": 2.1,
+          "draw": 3.3,
+          "away": 3.6
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3018796,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-05T21:30:00+00:00",
+        "home_team": "M'gladbach",
+        "away_team": "Elversberg",
+        "b365_odds": {
+          "home": 1.91,
+          "draw": 3.9,
+          "away": 3.5
+        },
+        "wh_odds": {
+          "home": 1.85,
+          "draw": 3.75,
+          "away": 3.6
+        },
+        "lb_odds": {
+          "home": 1.91,
+          "draw": 3.9,
+          "away": 3.5
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3018803,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-05T21:30:00+00:00",
+        "home_team": "Werder Bremen",
+        "away_team": "RB Leipzig",
+        "b365_odds": {
+          "home": 3.75,
+          "draw": 4.2,
+          "away": 1.83
+        },
+        "wh_odds": {
+          "home": 3.8,
+          "draw": 3.9,
+          "away": 1.8
+        },
+        "lb_odds": {
+          "home": 3.6,
+          "draw": 4.2,
+          "away": 1.83
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3018799,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-05T21:30:00+00:00",
+        "home_team": "Hoffenheim",
+        "away_team": "Dortmund",
+        "b365_odds": {
+          "home": 2.4,
+          "draw": 3.8,
+          "away": 2.7
+        },
+        "wh_odds": {
+          "home": 2.45,
+          "draw": 3.6,
+          "away": 2.5
+        },
+        "lb_odds": {
+          "home": 2.4,
+          "draw": 3.9,
+          "away": 2.6
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3018800,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-05T21:30:00+00:00",
+        "home_team": "Paderborn",
+        "away_team": "Freiburg",
+        "b365_odds": {
+          "home": 3.6,
+          "draw": 3.8,
+          "away": 1.91
+        },
+        "wh_odds": {
+          "home": 3.6,
+          "draw": 3.6,
+          "away": 1.91
+        },
+        "lb_odds": {
+          "home": 3.5,
+          "draw": 3.7,
+          "away": 1.95
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3018795,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-05T21:30:00+00:00",
+        "home_team": "Leverkusen",
+        "away_team": "Union Berlin",
+        "b365_odds": {
+          "home": 1.33,
+          "draw": 5.25,
+          "away": 7.5
+        },
+        "wh_odds": {
+          "home": 1.36,
+          "draw": 5,
+          "away": 7
+        },
+        "lb_odds": {
+          "home": 1.33,
+          "draw": 5.75,
+          "away": 7.5
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003871,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-05T22:00:00+00:00",
+        "home_team": "Brighton",
+        "away_team": "Leeds",
+        "b365_odds": {
+          "home": 1.91,
+          "draw": 3.7,
+          "away": 3.75
+        },
+        "wh_odds": {
+          "home": 1.95,
+          "draw": 3.5,
+          "away": 3.7
+        },
+        "lb_odds": {
+          "home": 1.91,
+          "draw": 3.5,
+          "away": 3.6
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003873,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-05T22:00:00+00:00",
+        "home_team": "Fulham",
+        "away_team": "Crystal Palace",
+        "b365_odds": {
+          "home": 2.2,
+          "draw": 3.4,
+          "away": 3.4
+        },
+        "wh_odds": {
+          "home": 2.15,
+          "draw": 3.2,
+          "away": 3.5
+        },
+        "lb_odds": {
+          "home": 2.1,
+          "draw": 3.25,
+          "away": 3.3
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003876,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-05T22:00:00+00:00",
+        "home_team": "Man City",
+        "away_team": "Coventry",
+        "b365_odds": {
+          "home": 1.18,
+          "draw": 7.5,
+          "away": 13
+        },
+        "wh_odds": {
+          "home": 1.2,
+          "draw": 7,
+          "away": 12
+        },
+        "lb_odds": {
+          "home": 1.2,
+          "draw": 6.5,
+          "away": 10
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003878,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-05T22:00:00+00:00",
+        "home_team": "Nott'm Forest",
+        "away_team": "Tottenham",
+        "b365_odds": {
+          "home": 2.7,
+          "draw": 3.3,
+          "away": 2.63
+        },
+        "wh_odds": {
+          "home": 2.7,
+          "draw": 3.2,
+          "away": 2.6
+        },
+        "lb_odds": {
+          "home": 2.5,
+          "draw": 3.2,
+          "away": 2.6
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003870,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-05T22:00:00+00:00",
+        "home_team": "Brentford",
+        "away_team": "Sunderland",
+        "b365_odds": {
+          "home": 1.7,
+          "draw": 3.8,
+          "away": 4.75
+        },
+        "wh_odds": {
+          "home": 1.7,
+          "draw": 3.6,
+          "away": 4.8
+        },
+        "lb_odds": {
+          "home": 1.67,
+          "draw": 3.6,
+          "away": 4.6
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3013673,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-05T22:15:00+00:00",
+        "home_team": "Ath Bilbao",
+        "away_team": "Ath Madrid",
+        "b365_odds": {
+          "home": 3,
+          "draw": 3.3,
+          "away": 2.38
+        },
+        "wh_odds": {
+          "home": 2.9,
+          "draw": 3.3,
+          "away": 2.3
+        },
+        "lb_odds": {
+          "home": 3,
+          "draw": 3.4,
+          "away": 2.3
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2995328,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-05T23:15:00+00:00",
+        "home_team": "Lens",
+        "away_team": "Lorient",
+        "b365_odds": {
+          "home": 1.5,
+          "draw": 4.33,
+          "away": 6.25
+        },
+        "wh_odds": {
+          "home": 1.53,
+          "draw": 4,
+          "away": 5.5
+        },
+        "lb_odds": {
+          "home": 1.53,
+          "draw": 4.4,
+          "away": 5.5
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 2993781,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-06T00:00:00+00:00",
+        "home_team": "Inter",
+        "away_team": "Napoli",
+        "b365_odds": {
+          "home": 1.62,
+          "draw": 4,
+          "away": 5.25
+        },
+        "wh_odds": {
+          "home": 1.62,
+          "draw": 3.75,
+          "away": 5
+        },
+        "lb_odds": {
+          "home": 1.61,
+          "draw": 3.9,
+          "away": 5.25
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3018801,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-06T00:30:00+00:00",
+        "home_team": "Schalke 04",
+        "away_team": "Bayern Munich",
+        "b365_odds": {
+          "home": 13,
+          "draw": 7,
+          "away": 1.2
+        },
+        "wh_odds": {
+          "home": 11,
+          "draw": 6.5,
+          "away": 1.2
+        },
+        "lb_odds": {
+          "home": 9.5,
+          "draw": 7.5,
+          "away": 1.22
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3003874,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-06T00:30:00+00:00",
+        "home_team": "Hull",
+        "away_team": "Aston Villa",
+        "b365_odds": {
+          "home": 4,
+          "draw": 3.6,
+          "away": 1.91
+        },
+        "wh_odds": {
+          "home": 4,
+          "draw": 3.5,
+          "away": 1.85
+        },
+        "lb_odds": {
+          "home": 3.7,
+          "draw": 3.4,
+          "away": 1.91
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3013679,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-06T00:30:00+00:00",
+        "home_team": "Vallecano",
+        "away_team": "Santander",
+        "b365_odds": {
+          "home": 2.2,
+          "draw": 3.4,
+          "away": 3.2
+        },
+        "wh_odds": {
+          "home": 2.25,
+          "draw": 3.3,
+          "away": 3.1
+        },
+        "lb_odds": {
+          "home": 2.3,
+          "draw": 3.4,
+          "away": 3
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2995327,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-06T02:45:00+00:00",
+        "home_team": "Le Havre",
+        "away_team": "Brest",
+        "b365_odds": {
+          "home": 2.88,
+          "draw": 3.2,
+          "away": 2.5
+        },
+        "wh_odds": {
+          "home": 2.8,
+          "draw": 3,
+          "away": 2.45
+        },
+        "lb_odds": {
+          "home": 2.75,
+          "draw": 3.25,
+          "away": 2.5
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 2993775,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-06T02:45:00+00:00",
+        "home_team": "Roma",
+        "away_team": "Atalanta",
+        "b365_odds": {
+          "home": 1.65,
+          "draw": 3.8,
+          "away": 5.25
+        },
+        "wh_odds": {
+          "home": 1.67,
+          "draw": 3.6,
+          "away": 5
+        },
+        "lb_odds": {
+          "home": 1.65,
+          "draw": 3.9,
+          "away": 5
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 2995331,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-06T02:45:00+00:00",
+        "home_team": "Nice",
+        "away_team": "Le Mans",
+        "b365_odds": {
+          "home": 1.62,
+          "draw": 4,
+          "away": 5.25
+        },
+        "wh_odds": {
+          "home": 1.62,
+          "draw": 3.8,
+          "away": 4.8
+        },
+        "lb_odds": {
+          "home": 1.65,
+          "draw": 4,
+          "away": 4.8
+        },
+        "match_status": "finished"
+      },
+      {
+        "match_id": 3013681,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-06T03:00:00+00:00",
+        "home_team": "Villarreal",
+        "away_team": "La Coruna",
+        "b365_odds": {
+          "home": 1.48,
+          "draw": 4.2,
+          "away": 6.25
+        },
+        "wh_odds": {
+          "home": 1.44,
+          "draw": 4.33,
+          "away": 6
+        },
+        "lb_odds": {
+          "home": 1.5,
+          "draw": 4.4,
+          "away": 6
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2993779,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-06T21:00:00+00:00",
+        "home_team": "Frosinone",
+        "away_team": "Venezia",
+        "b365_odds": {
+          "home": 2.75,
+          "draw": 3.3,
+          "away": 2.55
+        },
+        "wh_odds": {
+          "home": 2.63,
+          "draw": 3.3,
+          "away": 2.5
+        },
+        "lb_odds": {
+          "home": 2.62,
+          "draw": 3.4,
+          "away": 2.5
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3003872,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-06T21:00:00+00:00",
+        "home_team": "Everton",
+        "away_team": "Man United",
+        "b365_odds": {
+          "home": 3.5,
+          "draw": 3.6,
+          "away": 2.05
+        },
+        "wh_odds": {
+          "home": 3.25,
+          "draw": 3.4,
+          "away": 2.15
+        },
+        "lb_odds": {
+          "home": 3.1,
+          "draw": 3.5,
+          "away": 2.1
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2995334,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-06T21:00:00+00:00",
+        "home_team": "Troyes",
+        "away_team": "Strasbourg",
+        "b365_odds": {
+          "home": 3,
+          "draw": 3.4,
+          "away": 2.38
+        },
+        "wh_odds": {
+          "home": 2.9,
+          "draw": 3.25,
+          "away": 2.3
+        },
+        "lb_odds": {
+          "home": 2.87,
+          "draw": 3.4,
+          "away": 2.37
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2993783,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-06T21:00:00+00:00",
+        "home_team": "Parma",
+        "away_team": "Monza",
+        "b365_odds": {
+          "home": 2.6,
+          "draw": 3,
+          "away": 2.9
+        },
+        "wh_odds": {
+          "home": 2.5,
+          "draw": 2.9,
+          "away": 2.9
+        },
+        "lb_odds": {
+          "home": 2.5,
+          "draw": 3.1,
+          "away": 2.9
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3018798,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-06T21:30:00+00:00",
+        "home_team": "Hamburg",
+        "away_team": "Mainz",
+        "b365_odds": {
+          "home": 2.88,
+          "draw": 3.5,
+          "away": 2.4
+        },
+        "wh_odds": {
+          "home": 2.75,
+          "draw": 3.4,
+          "away": 2.4
+        },
+        "lb_odds": {
+          "home": 2.7,
+          "draw": 3.5,
+          "away": 2.4
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3013680,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-06T22:15:00+00:00",
+        "home_team": "Valencia",
+        "away_team": "Barcelona",
+        "b365_odds": {
+          "home": 10,
+          "draw": 6,
+          "away": 1.25
+        },
+        "wh_odds": {
+          "home": 8.5,
+          "draw": 5.8,
+          "away": 1.3
+        },
+        "lb_odds": {
+          "home": 8.5,
+          "draw": 5.75,
+          "away": 1.3
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2995326,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-06T23:15:00+00:00",
+        "home_team": "Angers",
+        "away_team": "Rennes",
+        "b365_odds": {
+          "home": 4,
+          "draw": 3.75,
+          "away": 1.85
+        },
+        "wh_odds": {
+          "home": 3.75,
+          "draw": 3.6,
+          "away": 1.85
+        },
+        "lb_odds": {
+          "home": 3.7,
+          "draw": 3.75,
+          "away": 1.91
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3003869,
+        "league": "EPL",
+        "round": 3,
+        "match_date": "2026-09-06T23:30:00+00:00",
+        "home_team": "Arsenal",
+        "away_team": "Chelsea",
+        "b365_odds": {
+          "home": 1.67,
+          "draw": 3.9,
+          "away": 5
+        },
+        "wh_odds": {
+          "home": 1.73,
+          "draw": 3.75,
+          "away": 4.6
+        },
+        "lb_odds": {
+          "home": 1.65,
+          "draw": 3.9,
+          "away": 4.4
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3018797,
+        "league": "Bundesliga",
+        "round": 2,
+        "match_date": "2026-09-06T23:30:00+00:00",
+        "home_team": "Ein Frankfurt",
+        "away_team": "Augsburg",
+        "b365_odds": {
+          "home": 1.95,
+          "draw": 3.9,
+          "away": 3.5
+        },
+        "wh_odds": {
+          "home": 1.95,
+          "draw": 3.75,
+          "away": 3.3
+        },
+        "lb_odds": {
+          "home": 1.91,
+          "draw": 4,
+          "away": 3.5
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2993776,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-07T00:00:00+00:00",
+        "home_team": "Bologna",
+        "away_team": "Sassuolo",
+        "b365_odds": {
+          "home": 2.05,
+          "draw": 3.4,
+          "away": 3.75
+        },
+        "wh_odds": {
+          "home": 2,
+          "draw": 3.25,
+          "away": 3.6
+        },
+        "lb_odds": {
+          "home": 2,
+          "draw": 3.4,
+          "away": 3.7
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3013678,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-07T00:30:00+00:00",
+        "home_team": "Malaga",
+        "away_team": "Levante",
+        "b365_odds": {
+          "home": 2.45,
+          "draw": 3.1,
+          "away": 2.88
+        },
+        "wh_odds": {
+          "home": 2.45,
+          "draw": 3.1,
+          "away": 2.9
+        },
+        "lb_odds": {
+          "home": 2.5,
+          "draw": 3.1,
+          "away": 2.87
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3013672,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-07T00:30:00+00:00",
+        "home_team": "Alaves",
+        "away_team": "Osasuna",
+        "b365_odds": {
+          "home": 2.2,
+          "draw": 3.1,
+          "away": 3.4
+        },
+        "wh_odds": {
+          "home": 2.25,
+          "draw": 3,
+          "away": 3.4
+        },
+        "lb_odds": {
+          "home": 2.25,
+          "draw": 3.1,
+          "away": 3.3
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2995330,
+        "league": "Ligue1",
+        "round": 3,
+        "match_date": "2026-09-07T02:45:00+00:00",
+        "home_team": "Marseille",
+        "away_team": "Paris FC",
+        "b365_odds": {
+          "home": 1.75,
+          "draw": 4,
+          "away": 4.1
+        },
+        "wh_odds": {
+          "home": 1.75,
+          "draw": 3.7,
+          "away": 4
+        },
+        "lb_odds": {
+          "home": 1.75,
+          "draw": 4,
+          "away": 4
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2993782,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-07T02:45:00+00:00",
+        "home_team": "Juventus",
+        "away_team": "Milan",
+        "b365_odds": {
+          "home": 2.1,
+          "draw": 3.25,
+          "away": 3.75
+        },
+        "wh_odds": {
+          "home": 2.1,
+          "draw": 3.1,
+          "away": 3.5
+        },
+        "lb_odds": {
+          "home": 2.05,
+          "draw": 3.3,
+          "away": 3.6
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3013676,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-07T03:00:00+00:00",
+        "home_team": "Espanol",
+        "away_team": "Sevilla",
+        "b365_odds": {
+          "home": 2.25,
+          "draw": 3.2,
+          "away": 3.25
+        },
+        "wh_odds": {
+          "home": 2.3,
+          "draw": 3.1,
+          "away": 3.2
+        },
+        "lb_odds": {
+          "home": 2.3,
+          "draw": 3.25,
+          "away": 3.1
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2993777,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-08T00:30:00+00:00",
+        "home_team": "Cagliari",
+        "away_team": "Lecce",
+        "b365_odds": {
+          "home": 2,
+          "draw": 3.1,
+          "away": 4.33
+        },
+        "wh_odds": {
+          "home": 1.95,
+          "draw": 3.1,
+          "away": 3.9
+        },
+        "lb_odds": {
+          "home": 2,
+          "draw": 3.2,
+          "away": 4
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3013677,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-08T01:00:00+00:00",
+        "home_team": "Getafe",
+        "away_team": "Celta",
+        "b365_odds": {
+          "home": 2.63,
+          "draw": 2.8,
+          "away": 3.1
+        },
+        "wh_odds": {
+          "home": 2.5,
+          "draw": 2.8,
+          "away": 3.2
+        },
+        "lb_odds": {
+          "home": 2.5,
+          "draw": 2.87,
+          "away": 3.1
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 2993784,
+        "league": "SerieA",
+        "round": 3,
+        "match_date": "2026-09-08T02:45:00+00:00",
+        "home_team": "Udinese",
+        "away_team": "Lazio",
+        "b365_odds": {
+          "home": 2.88,
+          "draw": 3.1,
+          "away": 2.63
+        },
+        "wh_odds": {
+          "home": 2.8,
+          "draw": 3,
+          "away": 2.5
+        },
+        "lb_odds": {
+          "home": 2.87,
+          "draw": 3.2,
+          "away": 2.5
+        },
+        "match_status": "upcoming"
+      },
+      {
+        "match_id": 3013675,
+        "league": "LaLiga",
+        "round": 4,
+        "match_date": "2026-09-08T03:30:00+00:00",
+        "home_team": "Elche",
+        "away_team": "Sociedad",
+        "b365_odds": {
+          "home": 2.8,
+          "draw": 3.4,
+          "away": 2.35
+        },
+        "wh_odds": {
+          "home": 2.8,
+          "draw": 3.3,
+          "away": 2.4
+        },
+        "lb_odds": {
+          "home": 2.87,
+          "draw": 3.4,
+          "away": 2.37
+        },
+        "match_status": "upcoming"
+      }
+    ]
+  }
+}
