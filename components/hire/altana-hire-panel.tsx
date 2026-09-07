@@ -123,14 +123,14 @@ function AltanaHireInvitation() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-          Or fund it with a session key
+          Or hire with a session key
         </h3>
         <Badge tone="slate">no wallet prompt</Badge>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-        An Altana session key lets an agent fund a job itself - inside a call allowlist, a spend cap and an expiry you
-        set - without a wallet prompt for each hire. The limits are held by the account contract onchain, not by this
-        browser, and you can revoke a key at any time.{' '}
+        An Altana session key lets an agent complete this hire itself - inside a call allowlist, a spend cap and an
+        expiry you set - without asking you to approve each one. The limits are held by the account contract onchain,
+        not by this browser, and you can revoke a key at any time.{' '}
         <a href="/permissions" className="ring-focus rounded font-medium text-slate-300 underline decoration-white/25 underline-offset-2 hover:text-white">
           Set one up
         </a>
@@ -344,7 +344,7 @@ function AltanaHirePanelBody({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-          Or fund it with a session key
+          Or hire with a session key
         </h3>
         <Badge tone="slate">no wallet prompt</Badge>
       </div>

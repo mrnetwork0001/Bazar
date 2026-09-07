@@ -826,8 +826,8 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
               <>
                 <ConnectButton fullWidth />
                 <p className="text-center text-[11px] leading-snug text-slate-500">
-                  Connect the wallet that will fund the job. It becomes the job&apos;s client onchain, and it is the
-                  only address the kernel will let fund or refund it.
+                  Connect the wallet that will pay for this hire. It becomes the job&apos;s client onchain - the only
+                  address the kernel will let fund or refund it.
                 </p>
               </>
             ) : !onTargetChain ? (
