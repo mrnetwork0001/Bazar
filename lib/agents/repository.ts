@@ -100,6 +100,22 @@ const CATEGORY_SEARCH_TERMS: Record<CategoryId, readonly string[]> = {
 const CATEGORY_TERM_LIMIT = 100;
 
 /**
+ * How long a category's search results are cached, in seconds.
+ *
+ * Deliberately an hour rather than the five minutes listings use. Building all
+ * four shelves costs ~19 searches, and the homepage now blocks on them for its
+ * category counts - measured cold, that turned a 0.6s render into 13s against
+ * an index that intermittently 500s and has to be retried.
+ *
+ * An hour is affordable because the number being cached barely moves. BSC
+ * registers agents constantly, but a per-category population of a few dozen
+ * changes by ones, not by hundreds, so a shelf that is up to an hour stale is
+ * showing the same agents in the same order. The index-wide agent count, which
+ * a reader does watch tick, is cached for 60s and is a different call.
+ */
+const CATEGORY_REVALIDATE_SECONDS = 3600;
+
+/**
  * Every agent the index returns for a category's terms, deduplicated.
  *
  * The terms are searched in parallel and merged. A term that fails is skipped
@@ -119,7 +135,10 @@ async function fetchCategoryCandidates(
   const terms = CATEGORY_SEARCH_TERMS[category];
   const settled = await Promise.allSettled(
     terms.map((term) =>
-      fetchAgents({ chainId, search: term, x402Only, limit: CATEGORY_TERM_LIMIT, offset: 0 }, 600),
+      fetchAgents(
+        { chainId, search: term, x402Only, limit: CATEGORY_TERM_LIMIT, offset: 0 },
+        CATEGORY_REVALIDATE_SECONDS,
+      ),
     ),
   );
 
