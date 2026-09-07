@@ -4,8 +4,17 @@ export type LogoSize = 'sm' | 'md' | 'lg';
 
 const MARK_PX: Record<LogoSize, number> = { sm: 26, md: 32, lg: 40 };
 
-/** Rendered height of the horizontal lockup, in px. */
-const LOCKUP_PX: Record<LogoSize, number> = { sm: 52, md: 68, lg: 84 };
+/**
+ * Rendered height of the horizontal lockup, in px.
+ *
+ * These look small next to the previous 52/68/84, and render identically. The
+ * artwork used to carry ~47% dead margin, so more than half of any height set
+ * here was spent on empty pixels; it has since been trimmed to its content box.
+ * The values were scaled by the same ratio (402/747) so the glyphs keep the
+ * size they already had - change them to resize the lockup, not to compensate
+ * for padding that is no longer in the file.
+ */
+const LOCKUP_PX: Record<LogoSize, number> = { sm: 28, md: 37, lg: 45 };
 export interface LogoMarkProps {
   /** Named size or an explicit pixel size */
   size?: LogoSize | number;
@@ -71,13 +80,16 @@ export interface LogoProps {
  * The supplied horizontal lockup, used in the header and the footer.
  *
  * It replaced an inline SVG mark plus a text wordmark. The artwork is a single
- * image at 2106x747, already containing both, so drawing a second wordmark
- * beside it would repeat the name.
+ * image already containing both, so drawing a second wordmark beside it would
+ * repeat the name.
  *
- * The file is light artwork on a near-black field with no alpha channel. That
- * is fine here and nowhere else: the app's ground is #07080B, so the baked
- * background disappears against it. Do not place this on a light surface or on
- * a glass panel with a lifted background - it will show as a rectangle.
+ * The supplied file was opaque RGB: white and BNB gold baked onto a solid black
+ * rectangle. That disappeared against the app's #07080B ground and showed as a
+ * black slab anywhere else - over a scrolled glass header, over any lifted
+ * surface. It is now RGBA with a real alpha channel, recovered by treating the
+ * artwork as premultiplied against its black matte (alpha = max(r,g,b), colour
+ * divided back out) rather than by keying a threshold, which is why the
+ * antialiased edges carry no dark fringe. It may be placed on any background.
  */
 export function Logo({ size = 'md', withWordmark = true, subtitle = false, className }: LogoProps) {
   const height = LOCKUP_PX[size];
