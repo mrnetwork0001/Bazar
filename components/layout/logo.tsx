@@ -5,7 +5,7 @@ export type LogoSize = 'sm' | 'md' | 'lg';
 const MARK_PX: Record<LogoSize, number> = { sm: 26, md: 32, lg: 40 };
 
 /** Rendered height of the horizontal lockup, in px. */
-const LOCKUP_PX: Record<LogoSize, number> = { sm: 26, md: 34, lg: 42 };
+const LOCKUP_PX: Record<LogoSize, number> = { sm: 52, md: 68, lg: 84 };
 export interface LogoMarkProps {
   /** Named size or an explicit pixel size */
   size?: LogoSize | number;
