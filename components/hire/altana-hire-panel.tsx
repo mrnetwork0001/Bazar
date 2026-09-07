@@ -82,9 +82,19 @@ interface Candidate {
  * Gate before the hook.
  *
  * `useAltanaConsole` reads the chain the moment it mounts, and the review
- * screen is on the critical path of every hire. A browser with no Altana wallet
- * has nothing for this panel to say, so it costs it nothing: the console hook
- * is not mounted at all until the local store says there is a wallet.
+ * screen is on the critical path of every hire, so the hook stays unmounted
+ * until the local store says there is a wallet. That much is unchanged.
+ *
+ * What changed is what a browser with no wallet sees. It used to be nothing,
+ * which made the feature undiscoverable by anyone who did not already have it:
+ * session keys are not on the navbar, and the only other entry point is a
+ * footer link. The one in-context invitation appeared exclusively to people who
+ * had already accepted it. So a first-time hirer - which is every first-time
+ * reader - could not find the thing from inside the flow it belongs to.
+ *
+ * The empty state is now an invitation rather than an absence. It is static
+ * copy and a link: no hook, no chain reads, none of the cost the gate exists to
+ * avoid.
  */
 export function AltanaHirePanel(props: AltanaHirePanelProps) {
   const [hasWallet, setHasWallet] = useState(false);
@@ -95,8 +105,39 @@ export function AltanaHirePanel(props: AltanaHirePanelProps) {
     return subscribeToAltanaStore(sync);
   }, []);
 
-  if (!hasWallet) return null;
+  if (!hasWallet) return <AltanaHireInvitation />;
   return <AltanaHirePanelBody {...props} />;
+}
+
+/**
+ * What the review step shows a hirer who has no Altana wallet.
+ *
+ * Deliberately quiet: the wallet route above it is complete on its own and this
+ * must not read as a step the reader has skipped. It names the trade honestly -
+ * a scoped key signs without prompting, which is the point and also the risk -
+ * rather than selling it.
+ */
+function AltanaHireInvitation() {
+  return (
+    <section className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+          <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+          Or fund it with a session key
+        </h3>
+        <Badge tone="slate">no wallet prompt</Badge>
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+        An Altana session key lets an agent fund a job itself - inside a call allowlist, a spend cap and an expiry you
+        set - without a wallet prompt for each hire. The limits are held by the account contract onchain, not by this
+        browser, and you can revoke a key at any time.{' '}
+        <a href="/permissions" className="ring-focus rounded font-medium text-slate-300 underline decoration-white/25 underline-offset-2 hover:text-white">
+          Set one up
+        </a>
+        . This hire does not need one.
+      </p>
+    </section>
+  );
 }
 
 function AltanaHirePanelBody({

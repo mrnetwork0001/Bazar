@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useAccount } from 'wagmi';
 
@@ -58,6 +59,23 @@ function PageHeader({ children }: { children?: React.ReactNode }) {
           Every job opened from your wallet on the AgenticCommerce kernel, read live: budget escrowed in{' '}
           <span className="font-mono text-slate-300">{PAYMENT_TOKEN_SYMBOL}</span>, the deliverable if one was
           submitted, and the status the kernel itself reports.
+        </p>
+        {/*
+          The other half of "what this wallet has authorised". Jobs are what it
+          spent; session keys are what it allowed something else to spend
+          without asking again. Someone auditing one wants the other, and this
+          is the only account-level page in the navbar - so the permissions
+          console is reachable from here rather than from the footer alone.
+        */}
+        <p className="mt-3 text-sm leading-relaxed text-slate-500">
+          Granted an agent a session key?{' '}
+          <Link
+            href="/permissions"
+            className="ring-focus rounded font-medium text-slate-300 underline decoration-white/25 underline-offset-2 hover:text-white"
+          >
+            Review and revoke session permissions
+          </Link>{' '}
+          - what each key may call, its spend cap and when it expires, read from the Altana KeyStore.
         </p>
       </div>
       {children}
