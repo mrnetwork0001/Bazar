@@ -53,15 +53,15 @@ single `data:` frame. One client handles both by sniffing the body.
 Machine time is the median of three samples per leg. Full sample sets are in
 [`results.json`](./results.json).
 
-| # | Task | Category | Agent | Manual | Faster | Who actually answered the question |
+| # | Task | Category | Agent | Manual | Machine time | Who actually answered the question |
 |---|---|---|---|---|---|---|
-| 1 | Pre-match 1X2 odds, five leagues | Trading | 1470.5 ms | 1266.4 ms | manual, 1.16× | **agent only** - the manual route returned no odds at all |
-| 2 | Win rate and risk metrics | Trading | 820.4 ms | 1644.3 ms | agent, 2.00× | **neither** |
-| 3 | Verify an ERC-20 before approving it | Security | 497.5 ms | 1549.0 ms | agent, 3.11× | **both**, but the agent's answer is incomplete |
-| 4 | Best bridge route, 100 USDC | Trading | 1546.3 ms | 1536.7 ms | tie | **both** |
-| 5 | Audit an onchain commit-reveal claim | Security | 1232.3 ms | 6142.3 ms | agent, 4.98× | **manual only** - the agent's "verified" is self-attested |
+| 1 | Pre-match 1X2 odds, five leagues | Trading | 1470.5 ms | 1266.4 ms | no measurable difference | **agent only** - the manual route returned no odds at all |
+| 2 | Win rate and risk metrics | Trading | 820.4 ms | 1644.3 ms | agent, 2.00x | **neither** |
+| 3 | Verify an ERC-20 before approving it | Security | 497.5 ms | 1549.0 ms | agent, 3.11x | **both**, but the agent's answer is incomplete |
+| 4 | Best bridge route, 100 USDC | Trading | 1546.3 ms | 1536.7 ms | no measurable difference | **both** |
+| 5 | Audit an onchain commit-reveal claim | Security | 1232.3 ms | 6142.3 ms | agent, 4.98x | **manual only** - the agent's "verified" is self-attested |
 
-Totals: 5,567.0 ms of agent time against 12,138.7 ms of manual time, a 2.18×
+Totals: 5,567.0 ms of agent time against 12,138.7 ms of manual time, a 2.18x
 ratio. That number is quoted here because it is what was measured, and
 immediately qualified: the manual leg of task 1 produced no answer, so the two
 totals are not measuring equal work, and machine milliseconds are the least
@@ -123,7 +123,8 @@ paid tiers are untested and no claim is made about them.
 
 ### Quality verdict - agent wins on capability, loses on freshness
 
-The manual route was 1.16× faster and returned nothing usable. There is no free,
+The manual route was marginally faster - a 1.16x gap, inside the 20 percent
+noise band this report refuses to call a win - and returned nothing usable. There is no free,
 unauthenticated public source of multi-bookmaker 1X2 odds; the agent is one, and
 that is a real advantage rather than a marginal one.
 
@@ -197,7 +198,7 @@ Zero on both sides.
 
 ### Quality verdict - neither path answers the question
 
-The agent is 2.00× faster at not answering. It gets much closer than the manual
+The agent is 2.00x faster at not answering. It gets much closer than the manual
 route: it discloses the exact denominator (209 predictions, 179 settled), the
 exact onchain coverage (177 committed, 177 revealed, 0 errors) and a metrics
 contract precise enough that its emptiness is unambiguous rather than vague. The
@@ -267,10 +268,10 @@ Raw return data: [`outputs/token-contract-check.manual.json`](./outputs/token-co
 Zero on both sides. The manual route used a public BNB Chain dataseed node with
 no key.
 
-### Quality verdict - agent 3.11× faster, and correct, and not sufficient
+### Quality verdict - agent 3.11x faster, and correct, and not sufficient
 
 Every field the agent returned matches the chain exactly. Four out of four,
-including the supply to the last of fifteen significant figures. There is no
+including the supply to its final digit. There is no
 discrepancy to report and none is manufactured.
 
 The agent returned six fields. Two of them are `address` and `chain`, which the
@@ -458,7 +459,7 @@ predates kickoff by nearly two days, and the revealed content hashes to exactly
 the committed value. Nothing about this record is fabricated and the audit found
 no discrepancy.
 
-The agent was also 4.98× faster at asserting it than the chain was at confirming
+The agent was also 4.98x faster at asserting it than the chain was at confirming
 it, and its assertion carried `verification_source: "local_db"`. Had the
 commitment been absent from every chain, `verify_prediction` would have returned
 the same `"verified"`. The word means "consistent with my own records". It does
