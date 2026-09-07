@@ -29,12 +29,17 @@ export interface ResultsHeaderProps {
  * agents and Bazar shows a ranked window into it, so the copy never claims the
  * whole set is being browsed.
  *
- * A category page never quotes a total next to the category name. Classification
- * is local - the registry has no category field - so a per-category count does
- * not exist on the index and cannot be implied by putting the index-wide number
- * after "in Grid Trading". Instead the line reports the positions scanned, and
- * the index-wide count is stated separately, in its own sentence, as what it is.
- * Server-safe.
+ * A category page may now quote a total next to the category name, because one
+ * finally exists: the shelf is fetched by searching the index for the
+ * category's own terms, so `basis: 'category'` counts agents whose registration
+ * text files them there. That is a real count of the category and is printed as
+ * one.
+ *
+ * The older wording is still reachable and still required. Combining a category
+ * with a free-text search falls back to classifying one fetched window, and in
+ * that mode no per-category count exists; the line then reports the ranking
+ * positions scanned and states the index-wide number separately, as what it is,
+ * rather than implying it counts the category. Server-safe.
  */
 export function ResultsHeader({
   count,
@@ -47,7 +52,10 @@ export function ResultsHeader({
   sort,
   degraded,
 }: ResultsHeaderProps) {
-  const scanned = Boolean(categoryName);
+  // 'category' totals count the shelf itself, so the page is showing a real set
+  // rather than a scanned window into the ranking. Only the fallback mode -
+  // category plus a search - is still a scan.
+  const scanned = Boolean(categoryName) && total.basis !== 'category';
   const start = offset + 1;
   const rawEnd = offset + (scanned ? step : count);
   // Never advertise a window wider than the set it is a window into: a narrow
@@ -55,7 +63,11 @@ export function ResultsHeader({
   const end = total.known && total.value > 0 ? Math.min(rawEnd, Math.max(total.value, start)) : rawEnd;
   const showRange = count > 0;
   const showTotalInline = showRange && !scanned && total.known && total.value > 0;
-  const showClassified = !degraded && count > 0 && classified !== undefined;
+  // The unclassified note only earns its space when the page actually contains
+  // an unclassified agent. A category shelf built from search does not, so the
+  // paragraph would explain a coverage placement the reader cannot see.
+  const showClassified =
+    !degraded && count > 0 && classified !== undefined && classified < count;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm">
@@ -88,7 +100,11 @@ export function ResultsHeader({
                   <>
                     {' of '}
                     <span className="tabular">{formatNumber(total.value, { compact: false })}</span>{' '}
-                    {total.basis === 'matching' ? 'matching' : 'indexed'}
+                    {total.basis === 'matching'
+                      ? 'matching'
+                      : total.basis === 'category'
+                        ? 'in this category'
+                        : 'indexed'}
                   </>
                 )}
               </span>

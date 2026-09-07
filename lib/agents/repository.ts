@@ -55,6 +55,89 @@ const SORT_MAP: Record<SortKey, { sortBy: NonNullable<ScanQuery['sortBy']>; orde
 const CATEGORY_FETCH_MULTIPLIER = 4;
 const MAX_SCAN_LIMIT = 100;
 
+/**
+ * The terms each category is fetched by, pushed down to the index's `search`.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY THIS EXISTS
+ *
+ * Category shelves used to be built by pulling one raw page of the index and
+ * keeping whatever classified into the selected category. That quietly did not
+ * work. Measured on 2026-09-07 against the live BSC index, agents matching a
+ * given category are roughly 0.1% of the registry, so a 100-row window
+ * contained on average less than one real match: a 200-agent sample returned 60
+ * grid-trading agents, 4 yield, and zero rebalancing or health-factor. The
+ * shelves were not empty only because `classify` hash-assigns the unmatched
+ * tail across all four for coverage - so "Health Factor" was a page of agents
+ * that had never claimed to be anything of the kind.
+ *
+ * The agents do exist; a 100-row window is just the wrong instrument for
+ * finding a 0.1% population in 306,000 rows. Searching for them finds them.
+ * Index-wide totals per term, same date:
+ *
+ *   rebalancing:    rebalancing 52,  rebalance 45,   portfolio 182
+ *   grid-trading:   arbitrage 387,   trading bot 289, grid trading 17
+ *   yield:          apy 435,         yield 299,      liquid staking 52
+ *   health-factor:  liquidation 349, lending 54,     health factor 24
+ *
+ * ---------------------------------------------------------------------------
+ * WHAT THESE TERMS ARE ALLOWED TO BE
+ *
+ * Every term is a word the agent wrote about itself. A hit means the agent's
+ * own registration text carries it, so a shelf built this way lists agents that
+ * made the claim - which is the whole difference between this and the hash
+ * placement it replaces. Terms were kept only if the index really returned rows
+ * for them; nothing here is aspirational.
+ */
+const CATEGORY_SEARCH_TERMS: Record<CategoryId, readonly string[]> = {
+  rebalancing: ['rebalancing', 'rebalance', 'portfolio', 'asset allocation'],
+  'grid-trading': ['grid trading', 'grid bot', 'arbitrage', 'trading bot', 'market maker'],
+  yield: ['yield', 'apy', 'farming', 'liquid staking', 'auto-compound'],
+  'health-factor': ['health factor', 'liquidation', 'venus', 'collateral', 'lending'],
+};
+
+/** Rows pulled per term. The index caps `limit` at 100. */
+const CATEGORY_TERM_LIMIT = 100;
+
+/**
+ * Every agent the index returns for a category's terms, deduplicated.
+ *
+ * The terms are searched in parallel and merged. A term that fails is skipped
+ * rather than failing the shelf: `fetchAgents` already retries transient index
+ * errors, and a category with four working terms out of five is still a real
+ * shelf. If every term fails the caller sees an empty candidate set and
+ * degrades exactly as before.
+ *
+ * Agents are deduplicated by `agent_id`, since the terms overlap by design -
+ * an agent describing itself as a "grid trading bot" answers to three of them.
+ */
+async function fetchCategoryCandidates(
+  category: CategoryId,
+  chainId: SupportedChainId,
+  x402Only?: boolean,
+): Promise<{ items: ScanAgent[]; failedTerms: number }> {
+  const terms = CATEGORY_SEARCH_TERMS[category];
+  const settled = await Promise.allSettled(
+    terms.map((term) =>
+      fetchAgents({ chainId, search: term, x402Only, limit: CATEGORY_TERM_LIMIT, offset: 0 }, 600),
+    ),
+  );
+
+  const byId = new Map<string, ScanAgent>();
+  let failedTerms = 0;
+  for (const result of settled) {
+    if (result.status !== 'fulfilled') {
+      failedTerms++;
+      continue;
+    }
+    for (const item of result.value.items) {
+      if (!byId.has(item.agent_id)) byId.set(item.agent_id, item);
+    }
+  }
+  return { items: [...byId.values()], failedTerms };
+}
+
+
 function errorMessage(err: unknown): string {
   if (err instanceof ScanError) return err.message;
   return err instanceof Error ? err.message : String(err);
@@ -82,6 +165,26 @@ export interface AgentPage {
   error?: string;
 }
 
+/**
+ * Orders a category shelf locally.
+ *
+ * The index's own `sort_by` cannot be used here: a shelf is merged from several
+ * `search` responses, so whatever order each arrived in is meaningless once
+ * they are combined. These read the same fields the index sorts on, so the
+ * ordering a reader gets is the one the control promises.
+ */
+function compareBy(sort: SortKey): (a: IndexedAgent, b: IndexedAgent) => number {
+  switch (sort) {
+    case 'feedback':
+      return (a, b) => b.reputation.totalFeedbacks - a.reputation.totalFeedbacks;
+    case 'newest':
+      return (a, b) => Date.parse(b.registeredAt) - Date.parse(a.registeredAt);
+    case 'reputation':
+    default:
+      return (a, b) => b.reputation.totalScore - a.reputation.totalScore;
+  }
+}
+
 export async function queryAgents(query: AgentQuery = {}): Promise<AgentPage> {
   const {
     category = 'all',
@@ -93,6 +196,54 @@ export async function queryAgents(query: AgentQuery = {}): Promise<AgentPage> {
     offset = 0,
     chainId = DEFAULT_CHAIN_ID,
   } = query;
+
+  // A category shelf is fetched by searching the index for that category's own
+  // terms, not by filtering a raw page - see CATEGORY_SEARCH_TERMS for the
+  // measurement that forced this. A user-supplied search is a narrower request
+  // and wins; it goes down the ordinary path below and is still classified.
+  if (category !== 'all' && !search) {
+    try {
+      const { items, failedTerms } = await fetchCategoryCandidates(category, chainId, x402Only);
+      // Both conditions are load-bearing. `category` alone is not enough: an
+      // agent the index's fuzzy search returned but whose own text carries no
+      // category term is classified 'unclassified' and then hash-assigned to
+      // one of the four buckets for coverage - and roughly a quarter of those
+      // land on the very category being requested, which would smuggle an
+      // agent that claimed nothing onto a shelf that is supposed to mean it
+      // claimed something. Requiring 'matched' is what makes the shelf's
+      // promise true.
+      let agents = mapAgents(items).filter(
+        (a) => a.category === category && a.categoryConfidence === 'matched',
+      );
+      if (verifiedOnly) agents = agents.filter((a) => a.verified);
+      agents.sort(compareBy(sort));
+
+      // Every term failing is indistinguishable from the index being down, and
+      // must not be reported as "this category has no agents".
+      if (items.length === 0 && failedTerms === CATEGORY_SEARCH_TERMS[category].length) {
+        return {
+          agents: [],
+          total: 0,
+          limit,
+          offset,
+          degraded: true,
+          error: 'Every category query failed against the index.',
+        };
+      }
+
+      return {
+        agents: agents.slice(offset, offset + limit),
+        // A real count of this category, which no caller could quote before:
+        // the deduplicated agents whose own registration text puts them here.
+        total: agents.length,
+        limit,
+        offset,
+        degraded: false,
+      };
+    } catch (err) {
+      return { agents: [], total: 0, limit, offset, degraded: true, error: errorMessage(err) };
+    }
+  }
 
   const needsLocalFilter = category !== 'all' || verifiedOnly;
   const scanLimit = Math.min(

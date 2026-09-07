@@ -338,9 +338,17 @@ export interface A2AAgentsResponse {
   offset: number;
   query: A2AAgentsQueryEcho;
   /**
-   * `total` is the index-wide match count from 8004scan, counted before Bazar
-   * applies its local category classification, so a category-filtered page can
-   * carry fewer than `limit` agents while `total` is still large.
+   * Whether `total` counts more than this page's category.
+   *
+   * False for a plain category request, which is now served by searching the
+   * index for that category's own terms: `total` is then a real count of the
+   * agents whose registration text puts them in it - 27 for health-factor, 56
+   * for rebalancing, on 2026-09-07.
+   *
+   * True only when a category and a free-text `search` are combined. That
+   * still goes through one index query filtered locally, so `total` is
+   * 8004scan's match count for the search, counted before classification, and
+   * the page can carry fewer than `limit` agents while `total` stays large.
    */
   totalIsPreCategoryFilter: boolean;
 }
@@ -360,7 +368,7 @@ export function buildAgentsResponse(
     limit: meta.limit,
     offset: meta.offset,
     query: { category: meta.category, search: meta.search, sort: meta.sort, chainId: meta.chainId },
-    totalIsPreCategoryFilter: meta.category !== 'all',
+    totalIsPreCategoryFilter: meta.category !== 'all' && Boolean(meta.search),
   };
 }
 

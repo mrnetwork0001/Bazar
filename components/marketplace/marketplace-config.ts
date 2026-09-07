@@ -75,18 +75,16 @@ export const PAGE_SIZE = 24;
 /**
  * How far `offset` advances between pages.
  *
- * Categories are classified locally (`lib/indexer/classify.ts`) because the
- * index carries no category field, so a category filter cannot be pushed down.
- * `lib/agents/repository.ts` compensates by requesting `min(limit * 4, 100)`
- * raw records and keeping the ones that classify into the selected category.
- * Stepping by the page size while a category is selected would therefore
- * re-request records the previous page already consumed; the step mirrors the
- * repository's fetch window instead.
+ * One page size for every view now. A category shelf used to be built by
+ * over-fetching a raw index window and keeping whatever classified into the
+ * category, so the step had to mirror that window (100) rather than the page.
+ * `lib/agents/repository.ts` now fetches a category by searching the index for
+ * its own terms and holds the whole merged, deduplicated set, so a page of a
+ * category is a slice of a list Bazar already has - and stepping by anything
+ * other than the page size would skip agents that were never re-requested.
  */
-export const CATEGORY_PAGE_STEP = Math.min(PAGE_SIZE * 4, 100);
-
-export function pageStep(category?: CategoryId): number {
-  return category ? CATEGORY_PAGE_STEP : PAGE_SIZE;
+export function pageStep(_category?: CategoryId): number {
+  return PAGE_SIZE;
 }
 
 /** Guards against a hand-edited `?offset=` walking the index forever. */
@@ -304,11 +302,13 @@ export function hasActiveFilters(p: MarketplaceParams): boolean {
  * `index` - every agent the ERC-8004 index holds for this chain.
  * `matching` - rows matching the index-side filters (`q`, `x402`) of this query.
  *
- * There is deliberately no `category` basis. Categories are classified locally
- * over the fetched window, so no per-category total exists anywhere; a surface
- * showing a category must never present either number as one.
+ * `category` - agents whose own registration text files them under the
+ * selected category, counted across the whole index rather than within one
+ * fetched window. This basis exists now that a category shelf is fetched by
+ * searching the index for the category's terms; before that no per-category
+ * total existed anywhere and no surface was allowed to imply one.
  */
-export type TotalBasis = 'index' | 'matching';
+export type TotalBasis = 'index' | 'matching' | 'category';
 
 export interface QuotedTotal {
   value: number;
@@ -336,10 +336,17 @@ export interface QuotedTotal {
  * into a count of that category.
  */
 export function resolveTotal(
-  params: Pick<MarketplaceParams, 'q' | 'x402Only'>,
+  params: Pick<MarketplaceParams, 'q' | 'x402Only' | 'category'>,
   page: { total: number; degraded: boolean },
   stats: { indexedAgents: number; degraded: boolean },
 ): QuotedTotal {
+  // A category with no free-text search is served by searching the index for
+  // that category's terms, so the listing's own total counts exactly the shelf
+  // being shown - the one case where it is neither the index nor a raw match
+  // count.
+  if (params.category && !params.q) {
+    return { value: page.total, basis: 'category', known: !page.degraded };
+  }
   const narrowed = Boolean(params.q) || params.x402Only;
   if (narrowed) {
     return { value: page.total, basis: 'matching', known: !page.degraded };

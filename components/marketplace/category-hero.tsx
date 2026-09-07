@@ -41,11 +41,16 @@ export function CategoryHero({ category, agents }: CategoryHeroProps) {
   const withA2A = agents.filter((a) => hasProtocol(a, 'A2A')).length;
   const withMcp = agents.filter((a) => hasProtocol(a, 'MCP')).length;
   const withX402 = agents.filter((a) => a.x402).length;
-  // How many of these agents Bazar can point at a matched term for. The rest
-  // matched nothing and were spread across the four buckets for coverage, which
-  // the copy has to say out loud rather than implying every filing is derived
-  // from the agent's own words.
+  // How many of these agents Bazar can point at a matched term for.
+  //
+  // A category shelf is now fetched by searching the index for the category's
+  // own terms, so this is normally all of them and the copy says so plainly.
+  // The coverage sentence is still needed for the one case that still classifies
+  // a fetched window - a category combined with a free-text search - where an
+  // unclassified agent can still appear. Branch on the count rather than
+  // assuming either shape.
   const matched = countClassified(agents);
+  const allMatched = n > 0 && matched === n;
 
   return (
     <section
@@ -75,13 +80,23 @@ export function CategoryHero({ category, agents }: CategoryHeroProps) {
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-400">{category.description}</p>
             <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-400">
               Figures below describe the {formatNumber(n, { compact: false })} agent{n === 1 ? '' : 's'} on this page.
-              ERC-8004 has no category field, so Bazar reads the text each agent registered onchain:{' '}
-              <span className="font-medium text-slate-200">
-                {formatNumber(matched, { compact: false })} of {formatNumber(n, { compact: false })}
-              </span>{' '}
-              matched a term for this category and carry the coloured chip. The remainder matched nothing, are marked{' '}
-              <span className="font-medium text-slate-200">Unclassified</span>, and are shown here for coverage rather
-              than because they claimed this category.
+              ERC-8004 has no category field, so Bazar reads the text each agent registered onchain.{' '}
+              {allMatched ? (
+                <>
+                  Every agent here{' '}
+                  <span className="font-medium text-slate-200">named this category in its own registration</span> - the
+                  shelf is built by searching the index for those terms, not by filing agents that said nothing.
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-slate-200">
+                    {formatNumber(matched, { compact: false })} of {formatNumber(n, { compact: false })}
+                  </span>{' '}
+                  matched a term for this category and carry the coloured chip. The remainder matched nothing, are
+                  marked <span className="font-medium text-slate-200">Unclassified</span>, and are shown here for
+                  coverage rather than because they claimed this category.
+                </>
+              )}
             </p>
           </div>
         </div>

@@ -41,12 +41,14 @@ const COLUMNS: FooterColumn[] = [
     links: [
       { label: 'Marketplace', href: '/marketplace' },
       { label: 'PancakeSwap agents', href: '/pancakeswap' },
-      ...CATEGORIES.map((c) => ({ label: c.name, href: `/marketplace?category=${c.id}` })),
       // Session permissions is an account control, not a browse destination, so
       // it stays off the navbar. It is reached in context from the hire flow's
       // review step, and from here for someone who wants to revoke a key
-      // without starting a hire they have no intention of finishing.
+      // without starting a hire they have no intention of finishing. It sits
+      // above the category rows rather than below them: trailing the four
+      // marketplace filters, it read as a fifth category.
       { label: 'Session permissions', href: '/permissions' },
+      ...CATEGORIES.map((c) => ({ label: c.name, href: `/marketplace?category=${c.id}` })),
     ],
   },
   {

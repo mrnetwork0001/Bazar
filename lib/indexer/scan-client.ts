@@ -155,23 +155,79 @@ function buildUrl(q: ScanQuery): string {
 }
 
 /**
- * Fetch one page of agents. Cached by the Next data cache so the marketplace
- * does not hit the indexer on every render.
+ * How long any single attempt may block a render before it is given up on.
+ *
+ * The index has been observed hanging rather than refusing: a request to a deep
+ * offset sat open for 40s in testing. A server component awaiting that stalls
+ * the whole page, so every attempt is raced against this.
+ *
+ * The timeout is a race rather than an AbortSignal deliberately - passing a
+ * signal into `fetch` changes how Next keys its data cache, and the cache is
+ * what keeps the marketplace off the indexer for most renders.
  */
-export async function fetchAgents(q: ScanQuery = {}, revalidateSeconds = 300): Promise<ScanPage> {
-  const url = buildUrl(q);
+const ATTEMPT_TIMEOUT_MS = 6_000;
+const MAX_ATTEMPTS = 3;
+
+/**
+ * The last good answer for a given URL, kept so a transient failure degrades to
+ * slightly-old real data instead of an empty shelf.
+ *
+ * This is real data the index really returned, with the time it was fetched, so
+ * a caller can say how old it is. It is never a substitute for data that was
+ * never there: an empty result is cached as empty, and a URL that has never
+ * succeeded has no entry and still throws.
+ */
+interface Snapshot {
+  page: ScanPage;
+  at: number;
+}
+const lastGood = new Map<string, Snapshot>();
+
+/** How stale a fallback may be before it is no longer worth showing: 1 hour. */
+const MAX_STALE_MS = 60 * 60 * 1000;
+
+export interface FetchAgentsResult extends ScanPage {
+  /** Set when this came from `lastGood` because every live attempt failed. */
+  stale?: { ageMs: number };
+}
+
+function timeout(ms: number): Promise<never> {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new ScanError(`8004scan did not answer within ${ms}ms`)), ms),
+  );
+}
+
+/**
+ * One attempt. Throws `ScanError` on anything the caller should retry.
+ *
+ * The index signals failure two different ways and only one of them is an HTTP
+ * error: a failing query comes back as a 200 carrying
+ * `{"success":false,"error":{"code":"DATABASE_ERROR"}}`. Treating a missing
+ * `items` array as a permanent shape error - which is what this used to do -
+ * turned that transient database hiccup into a blank marketplace, so the
+ * envelope is recognised and retried.
+ */
+async function attempt(url: string, revalidateSeconds: number): Promise<ScanPage> {
   let res: Response;
   try {
-    res = await fetch(url, {
-      headers: { accept: 'application/json' },
-      next: { revalidate: revalidateSeconds },
-    });
+    res = await Promise.race([
+      fetch(url, { headers: { accept: 'application/json' }, next: { revalidate: revalidateSeconds } }),
+      timeout(ATTEMPT_TIMEOUT_MS),
+    ]);
   } catch (cause) {
+    if (cause instanceof ScanError) throw cause;
     throw new ScanError(`8004scan unreachable: ${(cause as Error).message}`);
   }
-  if (!res.ok) throw new ScanError(`8004scan returned ${res.status} for ${url}`, res.status);
+  if (!res.ok) throw new ScanError(`8004scan returned ${res.status}`, res.status);
 
-  const body = (await res.json()) as Partial<ScanPage>;
+  const body = (await res.json()) as Partial<ScanPage> & {
+    success?: boolean;
+    error?: { code?: string; message?: string };
+  };
+
+  if (body.success === false || body.error) {
+    throw new ScanError(`8004scan query failed: ${body.error?.code ?? 'unknown'}`);
+  }
   if (!Array.isArray(body.items)) throw new ScanError('8004scan response missing `items`');
 
   return {
@@ -180,6 +236,45 @@ export async function fetchAgents(q: ScanQuery = {}, revalidateSeconds = 300): P
     limit: body.limit ?? body.items.length,
     offset: body.offset ?? 0,
   };
+}
+
+/**
+ * Fetch one page of agents, retrying transient index failures.
+ *
+ * Measured on 2026-09-07, the index fails roughly one request in five at
+ * offset 0 and considerably more often on deep offsets and on `search`, with a
+ * mix of 500s, 502s, open-ended hangs and 200s carrying a DATABASE_ERROR body.
+ * The failures are not term-dependent - the same query succeeds and fails
+ * minutes apart - so they are worth retrying rather than reporting.
+ *
+ * Three bounded attempts take an independent 20% failure rate to under 1%. If
+ * all three fail, the last good answer for this exact URL is served and marked
+ * stale, and only if there has never been one does this throw.
+ */
+export async function fetchAgents(q: ScanQuery = {}, revalidateSeconds = 300): Promise<FetchAgentsResult> {
+  const url = buildUrl(q);
+  let lastErr: unknown;
+
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    try {
+      const page = await attempt(url, revalidateSeconds);
+      lastGood.set(url, { page, at: Date.now() });
+      return page;
+    } catch (err) {
+      lastErr = err;
+      // Linear backoff. The failures look like load, so pausing helps; the
+      // total budget still has to fit inside a page render.
+      if (i < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+  }
+
+  const snap = lastGood.get(url);
+  if (snap) {
+    const ageMs = Date.now() - snap.at;
+    if (ageMs < MAX_STALE_MS) return { ...snap.page, stale: { ageMs } };
+  }
+
+  throw lastErr instanceof ScanError ? lastErr : new ScanError(String(lastErr));
 }
 
 /**

@@ -303,9 +303,11 @@ export default async function DevelopersPage() {
                   responseTitle={`GET /api/v1/a2a/agents${docs.agentsListQuery}`}
                   note={
                     <>
-                      <code className="font-mono text-slate-300">total</code> is the index-wide match count, counted{' '}
-                      <span className="text-slate-300">before</span> Bazar applies its local category classification -
-                      that is what <code className="font-mono text-slate-300">totalIsPreCategoryFilter</code> flags. When
+                      For a category request, <code className="font-mono text-slate-300">total</code> is a real count of
+                      that category: the shelf is fetched by searching the index for the category&apos;s own terms, so the
+                      number counts agents whose registration text puts them there. Combining a category with{' '}
+                      <code className="font-mono text-slate-300">search</code> falls back to one query filtered locally,
+                      and <code className="font-mono text-slate-300">totalIsPreCategoryFilter</code> flags that case. When
                       the index is unreachable the route answers{' '}
                       <span className="tabular">503 INDEX_UNAVAILABLE</span>, never an empty{' '}
                       <code className="font-mono text-slate-300">data: []</code>, so &quot;no matches&quot; and
