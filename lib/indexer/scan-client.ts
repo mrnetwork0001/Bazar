@@ -29,6 +29,32 @@ import { BSC_MAINNET, type SupportedChainId } from '@/lib/chain/addresses';
 export const SCAN_API_BASE = 'https://8004scan.io/api/v1';
 
 /**
+ * Request headers for every index call, including the API key when one is set.
+ *
+ * Measured against the live API on 2026-09-07: unauthenticated requests are
+ * capped at 180/minute and 20,000/day, while the same request carrying
+ * `x-api-key` reports 600/minute and 100,000/day. Bazar renders nothing that is
+ * not read from this index, and judging puts several readers on it at once, so
+ * the key is worth having - but it is optional, and every route works without
+ * one at the lower ceiling.
+ *
+ * `SCAN_API_KEY` is the name to use. `API_Key` is accepted because that is what
+ * the key was first pasted in as, and a silently ignored key is worse than an
+ * ugly name.
+ *
+ * This is deliberately NOT a `NEXT_PUBLIC_` variable. Every caller of this
+ * module runs on the server (server components, route handlers), so the key
+ * stays out of the browser bundle; a client import would see `undefined` and
+ * fall back to the unauthenticated tier rather than leaking it.
+ */
+function scanHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { accept: 'application/json' };
+  const key = (process.env.SCAN_API_KEY ?? process.env.API_Key ?? '').trim();
+  if (key) headers['x-api-key'] = key;
+  return headers;
+}
+
+/**
  * The chains Bazar reads, and the only ones any lookup may be issued for.
  *
  * The index answers happily for Ethereum, Base and the rest, so without this
@@ -211,7 +237,7 @@ async function attempt(url: string, revalidateSeconds: number): Promise<ScanPage
   let res: Response;
   try {
     res = await Promise.race([
-      fetch(url, { headers: { accept: 'application/json' }, next: { revalidate: revalidateSeconds } }),
+      fetch(url, { headers: scanHeaders(), next: { revalidate: revalidateSeconds } }),
       timeout(ATTEMPT_TIMEOUT_MS),
     ]);
   } catch (cause) {
@@ -329,7 +355,7 @@ export async function fetchAgentRecord(
   let res: Response;
   try {
     res = await fetch(`${SCAN_API_BASE}/agents/${chainId}/${encodeURIComponent(tokenId)}`, {
-      headers: { accept: 'application/json' },
+      headers: scanHeaders(),
       next: { revalidate: revalidateSeconds },
     });
   } catch {
