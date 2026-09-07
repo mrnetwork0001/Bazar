@@ -165,6 +165,50 @@ export interface AgentPage {
   error?: string;
 }
 
+/** A real, index-wide count per category, plus whether any of them failed. */
+export interface CategoryTotals {
+  counts: Record<CategoryId, number>;
+  /** True when at least one category could not be counted at all. */
+  degraded: boolean;
+}
+
+/**
+ * How many agents each category actually holds, across the whole index.
+ *
+ * This is the same work `queryAgents` does for a category shelf, so the four
+ * counts and the four shelves cannot disagree - and because the underlying
+ * searches are cached by URL, asking for the totals costs nothing on top of a
+ * marketplace visit that already warmed them.
+ *
+ * A category that fails every one of its terms is reported as `null` upstream
+ * rather than as zero: "we could not count" and "there are none" are different
+ * claims, and only one of them is an insult to the agents involved.
+ */
+export async function getCategoryTotals(
+  chainId: SupportedChainId = DEFAULT_CHAIN_ID,
+): Promise<CategoryTotals> {
+  const ids = Object.keys(CATEGORY_SEARCH_TERMS) as CategoryId[];
+  const settled = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const { items, failedTerms } = await fetchCategoryCandidates(id, chainId);
+        if (items.length === 0 && failedTerms === CATEGORY_SEARCH_TERMS[id].length) return null;
+        return mapAgents(items).filter(
+          (a) => a.category === id && a.categoryConfidence === 'matched',
+        ).length;
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  const counts = Object.fromEntries(ids.map((id, i) => [id, settled[i] ?? 0])) as Record<
+    CategoryId,
+    number
+  >;
+  return { counts, degraded: settled.some((v) => v === null) };
+}
+
 /**
  * Orders a category shelf locally.
  *

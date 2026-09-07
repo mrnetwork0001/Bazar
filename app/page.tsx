@@ -3,13 +3,13 @@ import { CategoryGrid } from '@/components/home/category-grid';
 import { DualLayer } from '@/components/home/dual-layer';
 import { FeaturedAgents } from '@/components/home/featured-agents';
 import { FinalCta } from '@/components/home/final-cta';
-import { RANKED_SAMPLE_SIZE, hasSignal, pickShowcase, tallyCategories } from '@/components/home/home-data';
+import { RANKED_SAMPLE_SIZE, hasSignal, pickShowcase } from '@/components/home/home-data';
 import { Hero } from '@/components/home/hero';
 import { HowItWorks } from '@/components/home/how-it-works';
 import { PartnerMarquee } from '@/components/home/partner-marquee';
 import { StatsStrip } from '@/components/home/stats-strip';
 import { TrustRegistries } from '@/components/home/trust-registries';
-import { getMarketStats, queryAgents } from '@/lib/agents/repository';
+import { getCategoryTotals, getMarketStats, queryAgents } from '@/lib/agents/repository';
 import { BSC_MAINNET } from '@/lib/chain/addresses';
 import { readKernelInfo } from '@/lib/jobs/read';
 import { formatNumber } from '@/lib/utils';
@@ -42,15 +42,17 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   // Two index calls for the whole page. Everything below is derived locally.
-  const [stats, ranked, kernel] = await Promise.all([
+  const [stats, ranked, kernel, categoryTotals] = await Promise.all([
     getMarketStats(),
     queryAgents({ sort: 'reputation', limit: RANKED_SAMPLE_SIZE }),
     readKernelInfo(BSC_MAINNET),
+    // Index-wide, and shares its cached searches with the marketplace shelves,
+    // so the four cards and the four shelves quote the same numbers.
+    getCategoryTotals(BSC_MAINNET),
   ]);
 
   const showcase = pickShowcase(ranked.agents, 4);
   const heroAgent = showcase[0] ?? null;
-  const categories = tallyCategories(ranked.agents);
 
   return (
     <>
@@ -71,12 +73,7 @@ export default async function HomePage() {
         degraded={stats.degraded}
       />
       <PartnerMarquee />
-      <CategoryGrid
-        counts={categories.counts}
-        unclassified={categories.unclassified}
-        sampleSize={ranked.agents.length}
-        degraded={ranked.degraded}
-      />
+      <CategoryGrid counts={categoryTotals.counts} degraded={categoryTotals.degraded} />
       <FeaturedAgents agents={showcase} degraded={ranked.degraded} />
       <DualLayer indexedAgents={stats.indexedAgents} x402Agents={stats.x402Agents} degraded={stats.degraded} />
       <HowItWorks />

@@ -27,19 +27,15 @@ const ACCENT: Record<Category['accent'], { text: string; hover: string; tile: st
 
 export interface CategoryGridProps {
   /**
-   * Tallies within the ranked sample only - never an index-wide total, and
-   * never including agents Bazar could not classify from their own text.
+   * Index-wide counts: agents whose own registration text files them under
+   * each category, across the whole ERC-8004 index rather than a sample.
    */
   counts: CategoryCounts;
-  /** Ranked agents in the sample that matched no category rule. */
-  unclassified: number;
-  /** How many ranked agents those tallies cover. */
-  sampleSize: number;
   degraded: boolean;
 }
 
-export function CategoryGrid({ counts, unclassified, sampleSize, degraded }: CategoryGridProps) {
-  const showCounts = !degraded && sampleSize > 0;
+export function CategoryGrid({ counts, degraded }: CategoryGridProps) {
+  const showCounts = !degraded;
 
   return (
     <section id="categories" className="container-x py-16 sm:py-20">
@@ -92,7 +88,7 @@ export function CategoryGrid({ counts, unclassified, sampleSize, degraded }: Cat
                       {showCounts ? count : '--'}
                     </span>
                     <span className="mt-1 block text-[10px] uppercase tracking-wider text-slate-500">
-                      {showCounts ? `of top ${sampleSize}` : 'unavailable'}
+                      {showCounts ? 'on BNB Chain' : 'unavailable'}
                     </span>
                   </span>
                 </div>
@@ -119,16 +115,10 @@ export function CategoryGrid({ counts, unclassified, sampleSize, degraded }: Cat
         <p className="text-xs leading-relaxed text-slate-500">
           {showCounts ? (
             <>
-              Counted across the top <span className="tabular text-slate-400">{sampleSize}</span> agents by onchain
-              reputation, not the whole index - classification reads each agent&apos;s own registration text, so an
-              index-wide per-category total does not exist and is not invented.
-              {unclassified > 0 && (
-                <>
-                  {' '}
-                  <span className="tabular text-slate-400">{unclassified}</span> published nothing a rule matched; they
-                  are shown as Unclassified and counted in none of the four.
-                </>
-              )}
+              Counted across the whole ERC-8004 index on BNB Smart Chain, not a sample. Each figure is the number of
+              agents whose own registration text names that category - the shelf is built by searching the index for
+              those terms, so the number and the listing behind it are the same set. Agents that published no category
+              signal are marked Unclassified and counted in none of the four.
             </>
           ) : (
             <>The ERC-8004 index is not answering, so no tallies are shown rather than estimated.</>
