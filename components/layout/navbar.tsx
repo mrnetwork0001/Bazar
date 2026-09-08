@@ -86,7 +86,11 @@ export function Navbar() {
               >
                 Register agent
               </Button>
-              <ConnectButton size="sm" />
+              {/* The drawer carries a full-width Connect Wallet of its own, so
+                  below lg this was the same control twice - and the one that
+                  lost was the hamburger, squeezed against it on a narrow
+                  header. */}
+              <ConnectButton size="sm" className="hidden lg:inline-flex" />
               <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}

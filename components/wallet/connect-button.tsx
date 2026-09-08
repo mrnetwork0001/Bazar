@@ -106,7 +106,11 @@ export function ConnectButton({ size = 'md', className, fullWidth }: ConnectButt
   };
 
   const iconCls = ICON[size];
-  const widthCls = fullWidth ? 'w-full' : undefined;
+  // `className` was declared on the props and then never applied, so every
+  // caller passing one was silently ignored - including the navbar trying to
+  // hide this control on mobile. Merged here rather than at each of the four
+  // render branches, so a fifth cannot forget it.
+  const widthCls = cn(fullWidth && 'w-full', className) || undefined;
   const errorMessage = describeWalletError(connectError ?? switchError);
 
   const disconnectedButton = (

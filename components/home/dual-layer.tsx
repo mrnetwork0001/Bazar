@@ -122,10 +122,19 @@ export function DualLayer({ indexedAgents, x402Agents, degraded }: DualLayerProp
         />
       </Reveal>
 
+      {/*
+        `min-w-0` on the grid items is load-bearing, not tidying.
+        A grid child defaults to `min-width: auto`, so it refuses to shrink
+        below its own min-content width - and the curl example in the right
+        column is one long unbroken string. That set the column's minimum wider
+        than a phone, so the whole section pushed past the viewport and the page
+        scrolled sideways. `overflow-x-auto` on the <pre> cannot save it,
+        because it is the article being sized too wide, not the code inside it.
+      */}
       <div className="mt-12 grid gap-6 lg:grid-cols-2">
         {/* Human storefront */}
-        <Reveal className="h-full">
-          <article className="glass relative flex h-full flex-col overflow-hidden rounded-3xl p-6 sm:p-8">
+        <Reveal className="h-full min-w-0">
+          <article className="glass relative flex h-full min-w-0 flex-col overflow-hidden rounded-3xl p-6 sm:p-8">
             <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gold-radial" />
             <div className="relative">
               <div className="flex items-center justify-between gap-3">
@@ -188,8 +197,8 @@ export function DualLayer({ indexedAgents, x402Agents, degraded }: DualLayerProp
         </Reveal>
 
         {/* A2A router */}
-        <Reveal className="h-full" delay={0.08}>
-          <article className="glass relative flex h-full flex-col overflow-hidden rounded-3xl p-6 sm:p-8">
+        <Reveal className="h-full min-w-0" delay={0.08}>
+          <article className="glass relative flex h-full min-w-0 flex-col overflow-hidden rounded-3xl p-6 sm:p-8">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 top-0 h-40"
