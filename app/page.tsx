@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { CategoryGrid } from '@/components/home/category-grid';
 import { DualLayer } from '@/components/home/dual-layer';
 import { FeaturedAgents } from '@/components/home/featured-agents';
@@ -42,13 +43,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   // Two index calls for the whole page. Everything below is derived locally.
-  const [stats, ranked, kernel, categoryTotals] = await Promise.all([
+  const [stats, ranked, kernel] = await Promise.all([
     getMarketStats(),
     queryAgents({ sort: 'reputation', limit: RANKED_SAMPLE_SIZE }),
     readKernelInfo(BSC_MAINNET),
-    // Index-wide, and shares its cached searches with the marketplace shelves,
-    // so the four cards and the four shelves quote the same numbers.
-    getCategoryTotals(BSC_MAINNET),
   ]);
 
   const showcase = pickShowcase(ranked.agents, 4);
@@ -73,7 +71,20 @@ export default async function HomePage() {
         degraded={stats.degraded}
       />
       <PartnerMarquee />
-      <CategoryGrid counts={categoryTotals.counts} degraded={categoryTotals.degraded} />
+      {/*
+        Streamed, not awaited above. Counting all four categories costs ~19
+        index searches - roughly nineteen of this page's twenty-one - and feeds
+        this one section, which sits below the fold. Awaiting it held the hero
+        hostage to it: measured 2026-09-08 against an index that answers the
+        ranked query in 5.4s or 500s in 10.6s, the same homepage took 0.65s and
+        17.9s on consecutive requests.
+
+        Behind a boundary, the shell, hero and stats ship as soon as their three
+        cheap calls resolve and the counts arrive when they arrive.
+      */}
+      <Suspense fallback={<CategoryGrid counts={null} degraded={false} />}>
+        <CategorySection />
+      </Suspense>
       <FeaturedAgents agents={showcase} degraded={ranked.degraded} />
       <DualLayer indexedAgents={stats.indexedAgents} x402Agents={stats.x402Agents} degraded={stats.degraded} />
       <HowItWorks />
@@ -81,4 +92,17 @@ export default async function HomePage() {
       <FinalCta indexedAgents={stats.indexedAgents} degraded={stats.degraded} />
     </>
   );
+}
+
+/**
+ * The four category cards, counted index-wide.
+ *
+ * Its own component so that its ~19 searches sit inside a Suspense boundary
+ * instead of in the page's top-level await. A failure is reported as degraded
+ * rather than as four zeroes: "could not count" and "there are none" are
+ * different claims about an agent's category.
+ */
+async function CategorySection() {
+  const totals = await getCategoryTotals(BSC_MAINNET);
+  return <CategoryGrid counts={totals.counts} degraded={totals.degraded} />;
 }

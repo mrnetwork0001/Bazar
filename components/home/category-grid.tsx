@@ -29,13 +29,18 @@ export interface CategoryGridProps {
   /**
    * Index-wide counts: agents whose own registration text files them under
    * each category, across the whole ERC-8004 index rather than a sample.
+   *
+   * `null` means they are still being counted. Counting all four costs ~19
+   * index searches, so this section streams in behind a Suspense boundary
+   * rather than holding the rest of the page - see app/page.tsx.
    */
-  counts: CategoryCounts;
+  counts: CategoryCounts | null;
   degraded: boolean;
 }
 
 export function CategoryGrid({ counts, degraded }: CategoryGridProps) {
-  const showCounts = !degraded;
+  const pending = counts === null;
+  const showCounts = !degraded && !pending;
 
   return (
     <section id="categories" className="container-x py-16 sm:py-20">
@@ -52,7 +57,7 @@ export function CategoryGrid({ counts, degraded }: CategoryGridProps) {
         {CATEGORIES.map((cat, i) => {
           const Icon = ICONS[cat.icon];
           const accent = ACCENT[cat.accent];
-          const count = counts[cat.id];
+          const count = counts ? counts[cat.id] : null;
           return (
             <Reveal key={cat.id} delay={i * 0.06} className="h-full">
               <Link
@@ -85,10 +90,26 @@ export function CategoryGrid({ counts, degraded }: CategoryGridProps) {
                   </span>
                   <span className="text-right">
                     <span className={cn('tabular block text-2xl font-semibold leading-none', accent.text)}>
-                      {showCounts ? count : '--'}
+                      {/*
+                        Only the number is unknown while counting. Everything
+                        else on this card - the icon, the name, the tagline, the
+                        agent type - is static, so the pending state renders the
+                        real card and pulses one figure. Nothing moves when the
+                        count lands, and the section is readable before it does.
+                      */}
+                      {pending ? (
+                        <span
+                          className="block h-6 w-10 animate-pulse rounded bg-white/10"
+                          aria-hidden
+                        />
+                      ) : showCounts ? (
+                        count
+                      ) : (
+                        '--'
+                      )}
                     </span>
                     <span className="mt-1 block text-[10px] uppercase tracking-wider text-slate-500">
-                      {showCounts ? 'on BNB Chain' : 'unavailable'}
+                      {pending ? 'counting' : showCounts ? 'on BNB Chain' : 'unavailable'}
                     </span>
                   </span>
                 </div>
@@ -113,7 +134,9 @@ export function CategoryGrid({ counts, degraded }: CategoryGridProps) {
 
       <Reveal className="mt-4" delay={0.24}>
         <p className="text-xs leading-relaxed text-slate-500">
-          {showCounts ? (
+          {pending ? (
+            <>Counting each category across the whole ERC-8004 index on BNB Smart Chain.</>
+          ) : showCounts ? (
             <>
               Counted across the whole ERC-8004 index on BNB Smart Chain, not a sample. Each figure is the number of
               agents whose own registration text names that category - the shelf is built by searching the index for
