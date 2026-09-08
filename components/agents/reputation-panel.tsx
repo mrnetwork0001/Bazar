@@ -8,21 +8,39 @@ import { clamp, cn, formatDate, formatNumber } from '@/lib/utils';
 
 /* --------------------------------- shell -------------------------------- */
 
+/**
+ * One reputation metric.
+ *
+ * `note` is a single line and `detail` is the sentence it compresses, carried
+ * on the card as a title. These were one three-line paragraph per card, pinned
+ * to the bottom by a `flex-1` spacer: on the Health card, whose content is a
+ * number and a bar, that opened a hand-sized hole between the two and set the
+ * caveat in more space than the measurement.
+ *
+ * The provenance those paragraphs carried is worth keeping - each says what
+ * its number is not, which is the part a hirer gets wrong - so none of it is
+ * deleted, only compressed to a line with the rest a hover away.
+ */
 function Card({
   title,
   icon,
   accent,
-  footer,
+  note,
+  detail,
   children,
 }: {
   title: string;
   icon: ReactNode;
   accent: string;
-  footer: ReactNode;
+  note: ReactNode;
+  detail?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-xl sm:p-5">
+    <div
+      title={detail}
+      className="flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-xl sm:p-5"
+    >
       <div className="flex items-center gap-2">
         <span
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border"
@@ -32,8 +50,10 @@ function Card({
         </span>
         <h3 className="text-sm font-semibold text-white">{title}</h3>
       </div>
-      <div className="mt-4 flex-1">{children}</div>
-      <p className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-slate-500">{footer}</p>
+      {/* No flex-1 spacer: the caption follows the content instead of being
+          pushed to a shared baseline the shortest card cannot reach. */}
+      <div className="mt-4">{children}</div>
+      <p className="mt-3 text-[11px] leading-relaxed text-slate-500">{note}</p>
     </div>
   );
 }
@@ -148,12 +168,8 @@ export function ReputationPanel({ agent, scores, scoredAt, className }: Reputati
           title="Reputation score"
           icon={<Trophy className="h-3.5 w-3.5" aria-hidden />}
           accent="#F0B90B"
-          footer={
-            <>
-              The aggregate score published by the ERC-8004 reputation index for this identity. Bazar ranks and sorts on
-              it, and never recomputes or smooths it.
-            </>
-          }
+          note="Published by the index - never recomputed here."
+          detail="The aggregate score published by the ERC-8004 reputation index for this identity. Bazar ranks and sorts on it, and never recomputes or smooths it."
         >
           <div className="flex items-center gap-4">
             <ScoreRing score={rep.totalScore} accent="#F0B90B" />
@@ -194,12 +210,8 @@ export function ReputationPanel({ agent, scores, scoredAt, className }: Reputati
           title="Feedback"
           icon={<MessageSquare className="h-3.5 w-3.5" aria-hidden />}
           accent="#22D3EE"
-          footer={
-            <>
-              Feedback entries and stars recorded against this identity in the Reputation Registry. The registry
-              publishes counts and an average - not a positive/negative split - so Bazar shows no split.
-            </>
-          }
+          note="Counts and a mean only - the registry publishes no split."
+          detail="Feedback entries and stars recorded against this identity in the Reputation Registry. The registry publishes counts and an average, not a positive/negative split, so Bazar shows no split."
         >
           {hasFeedback ? (
             <>
@@ -226,7 +238,7 @@ export function ReputationPanel({ agent, scores, scoredAt, className }: Reputati
                     <Meter value={rep.averageScore} accent="#22D3EE" />
                   </div>
                   <p className="mt-2 text-[11px] leading-snug text-slate-500">
-                    Published by the index on a 0-100 scale, not as a five-star rating.
+                    On a 0-100 scale, not five stars.
                   </p>
                 </div>
               ) : (
@@ -246,7 +258,7 @@ export function ReputationPanel({ agent, scores, scoredAt, className }: Reputati
               </dl>
             </>
           ) : (
-            <div className="flex h-full flex-col justify-center rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-3.5 py-4">
+            <div className="rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-3.5 py-4">
               <p className="text-sm font-medium text-slate-300">No feedback recorded yet</p>
               <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
                 Nobody has written a feedback entry for this agent. That is the norm rather than a warning: most
@@ -269,23 +281,23 @@ export function ReputationPanel({ agent, scores, scoredAt, className }: Reputati
           title="Health score"
           icon={<Activity className="h-3.5 w-3.5" aria-hidden />}
           accent="#34D399"
-          footer={
+          note={
             <>
-              A completeness and liveness measure computed by the index over the registry record itself - not a trading
-              or uptime metric.{' '}
+              Record completeness, not trading or uptime.{' '}
               <a
                 href="https://8004scan.io"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-0.5 text-slate-400 transition-colors hover:text-bnb ring-focus"
+                className="ring-focus text-slate-400 transition-colors hover:text-bnb"
               >
-                Source: 8004scan
+                8004scan
               </a>
             </>
           }
+          detail="A completeness and liveness measure computed by the index over the registry record itself, not a trading or uptime metric. Source: 8004scan."
         >
           {rep.healthScore === null ? (
-            <div className="flex h-full flex-col justify-center rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-3.5 py-4">
+            <div className="rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-3.5 py-4">
               <p className="text-sm font-medium text-slate-300">Not computed</p>
               <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
                 The index has not published a health score for this identity. Bazar leaves the field empty rather than

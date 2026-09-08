@@ -243,9 +243,19 @@ export default async function AgentPage({ params }: AgentPageProps) {
             <div className="space-y-6">
               <div className="rounded-2xl border border-white/[0.12] bg-white/[0.05] p-5 shadow-card backdrop-blur-2xl">
                 <h2 className="break-words text-sm font-semibold text-white">Hire {agent.name}</h2>
-                <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
-                  Pricing is negotiated onchain via ERC-8183. ERC-8004 publishes identity and reputation only, so
-                  Bazar shows no rate card and no quote.
+                {/*
+                  Three lines of protocol explanation used to sit between the
+                  agent's name and the button that hires it. The claim matters -
+                  a marketplace showing no price should say why - but it is the
+                  same sentence on every agent page, and the hire modal states
+                  it again at the moment a budget is actually typed. One line
+                  here, the rest on hover.
+                */}
+                <p
+                  className="mt-1.5 text-xs leading-relaxed text-slate-400"
+                  title="Pricing is negotiated onchain via ERC-8183. ERC-8004 publishes identity and reputation only, so Bazar shows no rate card and no quote."
+                >
+                  You set the budget - ERC-8004 publishes no prices.
                 </p>
 
                 <HireButton agent={agent} size="lg" variant="primary" className="mt-4 w-full" />
