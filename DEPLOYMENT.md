@@ -2,8 +2,12 @@
 
 Bazar is a stateless Next.js app. It holds no database, no keys and no
 background workers: it reads the ERC-8004 index and the BNB Chain RPCs on
-request, and every transaction is signed in the visitor's own wallet. That is
-why it needs no VPS - serverless is a complete fit.
+request, and every transaction is signed in the visitor's own wallet.
+
+Serverless is therefore a complete fit, and section A covers it. Bazar is
+currently served from a VPS instead - not because it needs one, but because the
+box was already there behind Caddy; section B records that deployment exactly as
+it runs at https://usebazar.xyz.
 
 ## 1. Import the repository
 
@@ -98,3 +102,113 @@ No database, no cron, no queue, no VPS. Bazar stores nothing between requests:
 agents come from the index, jobs come from the kernel, and the only state that
 matters lives on BNB Chain. Anything that needs to persist should go on chain,
 not into infrastructure beside the app.
+
+---
+
+# B. Deploying to a VPS behind Caddy
+
+This is how https://usebazar.xyz actually runs: Ubuntu 24.04, Node 22, Caddy
+already terminating TLS for several other sites on the same host. The whole
+point of the arrangement below is that Bazar is additive - it introduces one
+directory, one systemd unit and one Caddy file, and touches nothing that was
+already running.
+
+## Swap first, if there is none
+
+A `next build` peaks well above what a 2-core box has spare, and the kernel's
+OOM killer chooses its victim by score, not by whose build it is. On a host
+running other production services, an unswapped build risks killing one of
+them.
+
+```bash
+fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+sysctl -w vm.swappiness=10
+```
+
+The build used 699 MB of it. Without swap that would have come out of RAM with
+3.3 GB free.
+
+## Build
+
+```bash
+git clone https://github.com/mrnetwork0001/Bazar.git /opt/bazar && cd /opt/bazar
+npm ci --no-audit --no-fund
+printf 'SCAN_API_KEY=...\nNEXT_PUBLIC_APP_URL=https://usebazar.xyz\n' > .env
+chmod 600 .env
+NODE_OPTIONS="--max-old-space-size=2048" npm run build
+```
+
+The heap cap matters more than the swap: it stops Node ballooning in the first
+place rather than catching it after.
+
+## systemd
+
+Bound to loopback, so nothing reaches Bazar except through Caddy. `MemoryMax`
+is set so that a leak here is killed as Bazar rather than costing a neighbour.
+
+```ini
+[Unit]
+Description=Bazar - ERC-8004 agent marketplace for BNB Chain
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/bazar
+EnvironmentFile=/opt/bazar/.env
+Environment=NODE_ENV=production
+ExecStart=/opt/bazar/node_modules/.bin/next start -p 3210 -H 127.0.0.1
+Restart=always
+RestartSec=5
+MemoryMax=1500M
+SyslogIdentifier=bazar
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`ExecStart` names the binary in `node_modules/.bin` rather than `npx`, whose
+path varies by install method - systemd performs no shell lookup, so a wrong
+path is a service that simply never starts.
+
+## Caddy
+
+One file at `/etc/caddy/conf.d/bazar.caddy`, picked up by the `import
+/etc/caddy/conf.d/*.caddy` already at the foot of the main Caddyfile. Caddy
+obtains and renews the certificate itself; certbot is not involved.
+
+```
+usebazar.xyz, www.usebazar.xyz {
+        encode zstd gzip
+        header {
+                X-Content-Type-Options nosniff
+                X-Frame-Options SAMEORIGIN
+                Referrer-Policy strict-origin-when-cross-origin
+        }
+        reverse_proxy 127.0.0.1:3210 {
+                transport http { read_timeout 120s }
+        }
+}
+```
+
+Two things that are load-bearing:
+
+**No CORS headers here.** `vercel.json` sets them for the A2A routes, but that
+file does nothing on a VPS, so the temptation is to restate them in Caddy. The
+route handlers already emit them, and doing both produced two
+`Access-Control-Allow-Origin` headers - which browsers treat as invalid and
+reject, breaking the router for precisely the callers the headers admit. One
+owner per header.
+
+**A 120s read timeout.** 8004scan answers in about 5s when healthy and takes
+10s or more to fail, and the client retries. A short proxy timeout converts a
+slow index into a 502 that the app was already handling.
+
+## Updating
+
+```bash
+cd /opt/bazar && git pull --ff-only && npm ci --no-audit --no-fund \
+  && NODE_OPTIONS="--max-old-space-size=2048" npm run build \
+  && systemctl restart bazar
+```
