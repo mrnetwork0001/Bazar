@@ -288,16 +288,27 @@ export async function fetchAgents(q: ScanQuery = {}, revalidateSeconds = 300): P
       return page;
     } catch (err) {
       lastErr = err;
+
+      // Retrying is only worth a reader's time when there is nothing better to
+      // show them. Measured 2026-09-08, the ranked listing query answers 500
+      // after ~10.6s or 200 after ~5.4s, so a failed first attempt plus a
+      // successful retry costs upwards of ten seconds of blank page - and
+      // repeats for every request, because a failed fetch leaves nothing in
+      // Next's data cache to serve.
+      //
+      // So the moment an attempt fails, a usable snapshot wins. The reader gets
+      // real data this index really returned, marked stale, in microseconds
+      // instead of waiting out a retry that may fail anyway.
+      const snap = lastGood.get(url);
+      if (snap) {
+        const ageMs = Date.now() - snap.at;
+        if (ageMs < MAX_STALE_MS) return { ...snap.page, stale: { ageMs } };
+      }
+
       // Linear backoff. The failures look like load, so pausing helps; the
       // total budget still has to fit inside a page render.
       if (i < MAX_ATTEMPTS - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
     }
-  }
-
-  const snap = lastGood.get(url);
-  if (snap) {
-    const ageMs = Date.now() - snap.at;
-    if (ageMs < MAX_STALE_MS) return { ...snap.page, stale: { ageMs } };
   }
 
   throw lastErr instanceof ScanError ? lastErr : new ScanError(String(lastErr));
