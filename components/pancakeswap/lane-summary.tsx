@@ -261,36 +261,30 @@ export function LaneMethod({ lane }: { lane: LaneResult }) {
         </div>
         <ol className="mt-3 space-y-3 text-[12px] leading-relaxed text-slate-400">
           <li>
-            <span className="font-mono text-slate-300">1.</span> Bazar queries the public 8004scan
-            index for {lane.searchTerms.length}{' '}
-            {lane.searchTerms.length === 1 ? 'term' : 'terms'} on chain 56 and takes the union. This
-            is a recall net, not evidence: the index&rsquo;s free-text search also matches tags its
-            own LLM wrote.
+            <span className="font-mono text-slate-300">1.</span> Query the index for{' '}
+            {lane.searchTerms.length} {lane.searchTerms.length === 1 ? 'term' : 'terms'} and take the
+            union - a recall net, not evidence.
           </li>
           <li>
-            <span className="font-mono text-slate-300">2.</span> Each candidate&rsquo;s name and
-            description - the text its registrant published - is tested for the venue. No mention,
-            no lane, whatever the tags say.
+            <span className="font-mono text-slate-300">2.</span> Keep only agents whose own
+            registration text names PancakeSwap. Tags do not count.
           </li>
           <li>
-            <span className="font-mono text-slate-300">3.</span> The same text is read for a trader
-            or LP job. At least one phrase that names the job outright is required; corroborating
-            words like &ldquo;monitor&rdquo; or &ldquo;reward&rdquo; can raise a placement but never
-            make one, because most of the index uses them.
+            <span className="font-mono text-slate-300">3.</span> Read that same text for a trader or
+            LP job. A phrase naming the job outright is required.
           </li>
           <li>
-            <span className="font-mono text-slate-300">4.</span> Identities registering byte-identical
-            text collapse onto one card, highest reputation first. The rest are named on that card.
+            <span className="font-mono text-slate-300">4.</span> Collapse byte-identical
+            registrations onto one card, highest reputation first.
           </li>
         </ol>
-        <p className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-slate-500">
-          On {SWEEP_DATE} a wider sweep of {SWEEP_TERMS} terms across{' '}
+        <p
+          className="mt-4 border-t border-white/[0.06] pt-3 text-[11px] leading-relaxed text-slate-500"
+          title={`On ${SWEEP_DATE} a wider sweep of ${SWEEP_TERMS} terms across ${formatNumber(SWEEP_IDENTITIES, { compact: false })} distinct identities - liquidity, LP, pool, impermanent loss, slippage, MEV, APY, arbitrage, honeypot, fee tier and the rest - found ${SWEEP_NAMED} agents naming PancakeSwap in their own text, and every one was already reachable from the venue queries above.`}
+        >
+          A wider sweep of {SWEEP_TERMS} terms across{' '}
           <span className="tabular">{formatNumber(SWEEP_IDENTITIES, { compact: false })}</span>{' '}
-          distinct identities - liquidity, LP, pool, impermanent loss, slippage, MEV, APY, arbitrage,
-          honeypot, fee tier and the rest - found{' '}
-          <span className="tabular">{SWEEP_NAMED}</span> agents naming PancakeSwap in their own text,
-          and every one of them was already reachable from the venue queries above. That measurement
-          was taken once, on that date; the figures elsewhere on this page are live.
+          identities on {SWEEP_DATE} found nothing these {lane.searchTerms.length} queries had missed.
         </p>
       </GlassCard>
 
@@ -303,36 +297,33 @@ export function LaneMethod({ lane }: { lane: LaneResult }) {
           <li className="flex gap-2">
             <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
             <span>
-              <span className="font-medium text-slate-200">No affiliation.</span> Bazar has no
-              partnership with, endorsement from or relationship of any kind with PancakeSwap. This
-              lane is Bazar reading a public registry, and PancakeSwap has no part in it.
+              <span className="font-medium text-slate-200">No affiliation.</span> No partnership
+              with, endorsement from or relationship of any kind with PancakeSwap. This is Bazar
+              reading a public registry.
             </span>
           </li>
           <li className="flex gap-2">
             <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
             <span>
-              <span className="font-medium text-slate-200">Not a verification.</span> That an agent
-              says it manages a v3 range is not proof it does. Bazar has not run these agents, has
-              not measured their results, and the ERC-8004 registries publish no performance data to
-              measure them against.
+              <span className="font-medium text-slate-200">Not a verification.</span> Saying it
+              manages a v3 range is not proof it does. Bazar has not run these agents, and the
+              registries publish no performance data to check them against.
             </span>
           </li>
           <li className="flex gap-2">
             <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
             <span>
               <span className="font-medium text-slate-200">The placement is Bazar&rsquo;s reading.</span>{' '}
-              ERC-8004 has no venue field and no capability field, so the shelf is a keyword match
-              against registration text. That is exactly why the text is quoted under every card
-              rather than summarised.
+              ERC-8004 has no venue or capability field, so this is a keyword match against
+              registration text - which is why that text is quoted under every card.
             </span>
           </li>
           <li className="flex gap-2">
             <span aria-hidden className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-600" />
             <span>
-              <span className="font-medium text-slate-200">No ranking of fitness.</span> Cards are
-              ordered by the aggregate ERC-8004 reputation score the index publishes, which for most
-              of this shelf rests on no feedback at all. It is a registry figure, not a
-              recommendation.
+              <span className="font-medium text-slate-200">No ranking of fitness.</span> Ordered by
+              the index&rsquo;s reputation score, which for most of this shelf rests on no feedback
+              at all. A registry figure, not a recommendation.
             </span>
           </li>
         </ul>
@@ -357,12 +348,10 @@ export function LaneUnplaced({ lane }: { lane: LaneResult }) {
         <span className="tabular font-medium text-slate-200">
           {formatNumber(identities, { compact: false })}
         </span>{' '}
-        further {identities === 1 ? 'identity mentions' : 'identities mention'} the exchange in text
-        their registrant wrote, and then describe nothing a trader or LP could hire. What that
-        currently means, reading down the list: agent-championship placeholders, memecoin launch bots
-        for which PancakeSwap is only where a token graduates once its bonding curve fills, and the
-        exchange&rsquo;s own social profile. They are here because a lane that quietly discarded them
-        would report a cleaner result than it earned.
+        further {identities === 1 ? 'identity names' : 'identities name'} the exchange and then
+        describe nothing a trader or LP could hire - championship placeholders, launch bots that only
+        graduate a token to it, the exchange&rsquo;s own profile. Listed rather than dropped, because
+        a lane that hid them would report a cleaner result than it earned.
       </p>
       <ul role="list" className="mt-5 max-w-3xl">
         {lane.unplaced.map((entry) => (

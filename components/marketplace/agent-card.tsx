@@ -4,7 +4,7 @@ import { BadgeCheck, CircleDashed, Coins, HeartPulse, MessageSquare, Star } from
 import type { IndexedAgent } from '@/lib/types';
 import { CATEGORY_MAP } from '@/lib/data/categories';
 import { Badge } from '@/components/ui/badge';
-import { cn, clamp, formatNumber, shortAddress } from '@/lib/utils';
+import { cn, clamp, formatNumber, shortAddress, truncateWords } from '@/lib/utils';
 import {
   CATEGORY_GLOW,
   CATEGORY_ICONS,
@@ -272,7 +272,12 @@ export function AgentCard({ agent, compact, index }: AgentCardProps) {
 
         {/* description */}
         {agent.description ? (
-          <p className="mt-3 line-clamp-2 min-h-[2.5rem] text-sm leading-relaxed text-slate-400">{agent.description}</p>
+          /* Trimmed in JS as well as clamped in CSS: `line-clamp` ends the
+             paragraph wherever the line box runs out, which for registry text
+             written by strangers is regularly the middle of a word. */
+          <p className="mt-3 line-clamp-2 min-h-[2.5rem] text-sm leading-relaxed text-slate-400">
+            {truncateWords(agent.description, 150)}
+          </p>
         ) : (
           <p className="mt-3 min-h-[2.5rem] text-sm leading-relaxed text-slate-400">
             No description published in the registry.

@@ -142,6 +142,8 @@ const QUOTE_AFTER = 130;
  * two words that could as easily be about breakfast. The name is the fallback
  * for the agents that name the venue nowhere else.
  */
+const WORD_CHAR = /[\p{L}\p{N}]/u;
+
 function findVenue(agent: IndexedAgent): VenueEvidence | null {
   const fields: ReadonlyArray<[EvidenceField, string]> = [
     ['description', agent.description],
@@ -154,15 +156,20 @@ function findVenue(agent: IndexedAgent): VenueEvidence | null {
     if (field === 'name') {
       return { match: hit[0], field, quote: text, truncated: false };
     }
-    const start = Math.max(0, hit.index - QUOTE_BEFORE);
-    const end = Math.min(text.length, hit.index + hit[0].length + QUOTE_AFTER);
+    let start = Math.max(0, hit.index - QUOTE_BEFORE);
+    let end = Math.min(text.length, hit.index + hit[0].length + QUOTE_AFTER);
+    // Snap both edges out of the middle of a word. A fixed character window
+    // lands wherever it lands, and "…sma, HyperEVM" - the tail of "Plasma" -
+    // reads as a broken render rather than as a quotation. `surfaceForm` below
+    // already does this for the matched phrase; the window either side of it
+    // deserves the same treatment.
+    while (start > 0 && WORD_CHAR.test(text[start - 1]) && WORD_CHAR.test(text[start])) start += 1;
+    while (end < text.length && WORD_CHAR.test(text[end]) && WORD_CHAR.test(text[end - 1])) end -= 1;
     const slice = text.slice(start, end).replace(/\s+/g, ' ').trim();
     return { match: hit[0], field, quote: slice, truncated: start > 0 || end < text.length };
   }
   return null;
 }
-
-const WORD_CHAR = /[\p{L}\p{N}]/u;
 
 /**
  * The registrant's own word for a phrase the lane matched.

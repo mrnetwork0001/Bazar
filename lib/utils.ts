@@ -132,3 +132,28 @@ export function bscScanTx(tx: string, chainId: number = 56) {
 export function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
+
+/**
+ * Trim text to a length without cutting a word in half.
+ *
+ * CSS `line-clamp` ends a paragraph wherever the line box runs out, which is
+ * frequently the middle of a word - "Monitors the positio…" - and reads as a
+ * rendering fault rather than as an abbreviation. Registry descriptions are
+ * arbitrary text written by strangers, so this is the common case, not the
+ * edge one.
+ *
+ * The cut falls back to the last space inside the budget and then drops any
+ * trailing punctuation, so a clause ending in a comma does not become
+ * "Optimism,…". If a single word is longer than the budget there is no space to
+ * fall back to and it is cut where it must be, which is the one case where the
+ * alternative is worse.
+ */
+export function truncateWords(text: string, maxChars: number): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.length <= maxChars) return clean;
+
+  const cut = clean.slice(0, maxChars);
+  const lastSpace = cut.lastIndexOf(' ');
+  const body = lastSpace > maxChars * 0.5 ? cut.slice(0, lastSpace) : cut;
+  return `${body.replace(/[\s,;:.\-–—]+$/, '')}…`;
+}
