@@ -177,9 +177,17 @@ export default async function AgentPage({ params }: AgentPageProps) {
           </ol>
         </nav>
 
-        <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        {/*
+          A flex column on mobile so `order` applies, a grid from lg up.
+          As a plain one-column grid the rail followed the whole article in DOM
+          order, which put Hire agent below the reputation panel, the
+          capabilities, the feedback list and the identity panel - a reader on a
+          phone had to scroll the entire page to find the button the page
+          exists for. The rail now leads on mobile and is unchanged on desktop.
+        */}
+        <div className="mt-6 flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_22rem]">
           {/* ------------------------------ main ------------------------------ */}
-          <div className="min-w-0 space-y-10">
+          <div className="order-2 min-w-0 space-y-10 lg:order-none lg:col-start-1 lg:row-start-1 lg:row-span-2">
             <AgentHeader agent={agent} endpoints={extras.endpoints} />
 
             <AgentSection
@@ -239,7 +247,7 @@ export default async function AgentPage({ params }: AgentPageProps) {
           </div>
 
           {/* ------------------------------ rail ------------------------------ */}
-          <aside className="min-w-0 lg:sticky lg:top-24">
+          <aside className="order-1 min-w-0 lg:order-none lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24">
             <div className="space-y-6">
               <div className="rounded-2xl border border-white/[0.12] bg-white/[0.05] p-5 shadow-card backdrop-blur-2xl">
                 <h2 className="break-words text-sm font-semibold text-white">Hire {agent.name}</h2>
@@ -288,18 +296,26 @@ export default async function AgentPage({ params }: AgentPageProps) {
                 </dl>
               </div>
 
-              <div>
-                <h2 className="break-words text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                  Similar {category.shortName.toLowerCase()} agents
-                </h2>
-                {/* Suspended so the agent renders immediately: this is a second
-                    serial round trip against the index that only fills a rail. */}
-                <Suspense fallback={<PeerRailSkeleton />}>
-                  <PeerRail category={agent.category} slug={agent.slug} />
-                </Suspense>
-              </div>
             </div>
           </aside>
+
+          {/*
+            Peers are their own grid child rather than a second block inside the
+            rail. Ordering the rail to the top of a phone would otherwise carry
+            this list with it, putting "similar agents" above the agent the
+            reader actually opened. Third on mobile, under the hire card on
+            desktop, where it was.
+          */}
+          <div className="order-3 min-w-0 lg:order-none lg:col-start-2 lg:row-start-2">
+            <h2 className="break-words text-[11px] font-medium uppercase tracking-wider text-slate-500">
+              Similar {category.shortName.toLowerCase()} agents
+            </h2>
+            {/* Suspended so the agent renders immediately: this is a second
+                serial round trip against the index that only fills a rail. */}
+            <Suspense fallback={<PeerRailSkeleton />}>
+              <PeerRail category={agent.category} slug={agent.slug} />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>
