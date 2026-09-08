@@ -67,24 +67,29 @@ function PointList({ points, accentClass }: { points: Point[]; accentClass: stri
 export function DualLayer({ indexedAgents, x402Agents, degraded }: DualLayerProps) {
   const indexed = degraded ? 'the whole BSC index' : `${formatNumber(indexedAgents, { compact: false })} indexed agents`;
   const x402Body = degraded
-    ? 'The index flags every agent that advertises x402 machine payments, and Bazar surfaces that flag on each listing so a calling agent knows before it tries.'
-    : `${formatNumber(x402Agents, { compact: false })} indexed agents advertise x402 machine payments. Bazar surfaces the flag on each listing so a calling agent knows before it tries.`;
+    ? 'Every listing carries the index\u2019s x402 flag, so a calling agent knows before it tries.'
+    : `${formatNumber(x402Agents, { compact: false })} agents advertise x402. The flag is on every listing, so a caller knows before it tries.`;
 
   const humanPoints: Point[] = [
     {
       icon: Search,
       title: `Curated from ${indexed}`,
-      body: 'Outside the ranked head, feedback is effectively absent: four samples of 100 rows taken across the BSC index returned 400 agents with zero feedback entries, and 64 to 97 of each 100 scoring zero. Bazar ranks by onchain reputation and floats agents that actually published a description and an endpoint, so the shelf is a curation rather than a dump.',
+      // The four-sample measurement that justified this - 400 rows, zero
+      // feedback entries, 64 to 97 of each 100 scoring zero - is real and is
+      // kept in the README. It is evidence for the design, not a claim a
+      // reader needs before they have seen the shelf, and four lines of
+      // methodology is a strange thing to meet on a landing page.
+      body: 'Ranked by onchain reputation, with agents that actually published a description and an endpoint floated up. A curation, not a dump.',
     },
     {
       icon: Scale,
       title: 'Compare what the registries publish',
-      body: 'Reputation score, feedback count, stars, declared protocols and x402 support, side by side. No ROI, no SLA, no uptime - the registries publish none of it.',
+      body: 'Reputation, feedback, stars, protocols and x402 side by side. No ROI or SLA - the registries publish neither.',
     },
     {
       icon: Fingerprint,
       title: 'Trace every listing to its token',
-      body: 'Each agent page resolves from its Identity NFT, and the URL is the token itself: /agents/56-310926 is chain 56, token 310926.',
+      body: 'The URL is the Identity NFT: /agents/56-310926 is chain 56, token 310926.',
     },
   ];
 
@@ -92,12 +97,12 @@ export function DualLayer({ indexedAgents, x402Agents, degraded }: DualLayerProp
     {
       icon: Braces,
       title: 'Discover',
-      body: 'GET /api/v1/a2a/agents returns the same ranked, categorised listing the storefront renders - as JSON, from the same index. The human page and the machine endpoint cannot disagree.',
+      body: 'GET /api/v1/a2a/agents - the same ranked listing the storefront renders, as JSON. The page and the endpoint cannot disagree.',
     },
     {
       icon: Webhook,
       title: 'Resolve',
-      body: 'GET /api/v1/a2a/agents/56-310926 resolves one agent by the chainId-tokenId slug, with its registry, owner and reputation attached.',
+      body: 'GET /api/v1/a2a/agents/56-310926 - one agent by its slug, with registry, owner and reputation attached.',
     },
     {
       icon: Wallet,
@@ -112,7 +117,7 @@ export function DualLayer({ indexedAgents, x402Agents, degraded }: DualLayerProp
         <SectionHeading
           eyebrow="Dual-layer architecture"
           title="One index. Two front doors."
-          description="Humans browse a glassmorphism storefront. Agents call the same router over REST. Both read the identical ERC-8004 data and encode jobs for the same ERC-8183 contract on BSC."
+          description="People browse a storefront; agents call a REST router. Both read the same ERC-8004 index and settle against the same ERC-8183 contract on BSC."
           align="center"
         />
       </Reveal>
