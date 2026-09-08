@@ -271,6 +271,10 @@ export function DashboardView() {
                   <JobCard
                     key={job.id.toString()}
                     job={job}
+                    chainId={chainId}
+                    // A confirmed refund changes the job's status onchain, so
+                    // re-read rather than leaving the card claiming FUNDED.
+                    onRefunded={discovery.refresh}
                     chainTime={discovery.chainTime}
                     resolution={resolutions.get(job.provider.toLowerCase())}
                     explorer={deployment.explorer}

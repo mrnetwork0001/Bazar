@@ -126,6 +126,8 @@ export function JobLookup({ chainId, chainTime, explorer, kernel, wallet }: JobL
           <ul className="list-none">
             <JobCard
               job={state.job}
+              chainId={chainId}
+              canRefund={!foreign}
               chainTime={chainTime}
               resolution={resolutions.get(state.job.provider.toLowerCase())}
               explorer={explorer}

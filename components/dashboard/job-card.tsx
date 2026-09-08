@@ -18,6 +18,8 @@ import { canClaimRefund, isExpiredAt } from '@/lib/chain/job-status';
 import { isSettled, JOB_STATUS_META } from '@/lib/jobs/lifecycle';
 import { formatBudgetLabel, type OnchainJob } from '@/lib/jobs/read';
 import type { Address } from '@/lib/types';
+import type { SupportedChainId } from '@/lib/chain/addresses';
+import { ClaimRefundButton } from '@/components/dashboard/claim-refund-button';
 import { cn, shortAddress } from '@/lib/utils';
 
 import { formatDelta, formatUtcDateTime } from './format';
@@ -41,6 +43,17 @@ import { ZERO_ADDRESS, type ProviderResolution } from './use-provider-agents';
 
 export interface JobCardProps {
   job: OnchainJob;
+  /** Chain the job lives on, for the refund write. */
+  chainId: SupportedChainId;
+  /** Re-read this wallet's jobs once a refund confirms. */
+  onRefunded?: () => void;
+  /**
+   * Offer the refund control. False where the card may be showing a job the
+   * connected wallet does not own - the kernel would refuse that caller
+   * anyway, and a button whose only outcome is a revert is worse than no
+   * button.
+   */
+  canRefund?: boolean;
   /** Head-block timestamp in seconds, or null when the chain time is unknown. */
   chainTime: number | null;
   resolution: ProviderResolution | undefined;
@@ -144,7 +157,16 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-export function JobCard({ job, chainTime, resolution, explorer, kernel }: JobCardProps) {
+export function JobCard({
+  job,
+  chainId,
+  chainTime,
+  resolution,
+  explorer,
+  kernel,
+  onRefunded,
+  canRefund = true,
+}: JobCardProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
 
@@ -253,6 +275,9 @@ export function JobCard({ job, chainTime, resolution, explorer, kernel }: JobCar
                 The expiry has passed with the budget still escrowed. The kernel still reports{' '}
                 <span className="font-mono">{meta.label.toUpperCase()}</span> - it only moves to EXPIRED when the client
                 calls <span className="font-mono">claimRefund({job.id.toString()})</span>.
+                {canRefund && (
+                  <ClaimRefundButton jobId={job.id} chainId={chainId} onRefunded={onRefunded} />
+                )}
               </span>
             </p>
           )}
