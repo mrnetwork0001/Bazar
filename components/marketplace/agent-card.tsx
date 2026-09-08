@@ -146,6 +146,19 @@ export interface AgentCardProps {
  * declared endpoint protocols and reputation. There is no ROI, SLA or price
  * line because the registries publish none of those.
  */
+/**
+ * How much of a description the card renders.
+ *
+ * Exported because other surfaces need to know what the card already shows.
+ * The PancakeSwap lane quotes an agent's registration text as evidence, and a
+ * quote of text the card is printing two inches above it is not evidence, it
+ * is the same sentence twice.
+ *
+ * Sized to the two lines `line-clamp-2` allows at this card width - about 105
+ * characters - so the JS trim lands and the clamp never has to cut it again.
+ */
+export const CARD_DESCRIPTION_CHARS = 100;
+
 export function AgentCard({ agent, compact, index }: AgentCardProps) {
   const category = CATEGORY_MAP[agent.category];
   const CategoryIcon = CATEGORY_ICONS[category.icon];
@@ -278,7 +291,7 @@ export function AgentCard({ agent, compact, index }: AgentCardProps) {
              Two lines at this card width hold about 105 characters, so 100 lands
              inside them and the clamp stays a backstop it never has to be. */
           <p className="mt-3 line-clamp-2 min-h-[2.5rem] text-sm leading-relaxed text-slate-400">
-            {truncateWords(agent.description, 100)}
+            {truncateWords(agent.description, CARD_DESCRIPTION_CHARS)}
           </p>
         ) : (
           <p className="mt-3 min-h-[2.5rem] text-sm leading-relaxed text-slate-400">

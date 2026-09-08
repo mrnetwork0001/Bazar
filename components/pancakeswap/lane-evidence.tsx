@@ -1,6 +1,7 @@
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
-import { AgentCard } from '@/components/marketplace/agent-card';
+import { AgentCard, CARD_DESCRIPTION_CHARS } from '@/components/marketplace/agent-card';
 import type { LaneAgent, UnplacedAgent, VenueEvidence } from '@/lib/pancakeswap/lane';
 import { LANE_INTENT_MAP, type LaneIntentId } from '@/lib/pancakeswap/intents';
 
@@ -106,6 +107,22 @@ function TwinList({ twins }: { twins: LaneAgent['twins'] }) {
 export function LaneAgentEntry({ entry, index }: { entry: LaneAgent; index: number }) {
   const { agent, venue, job, alsoNames, twins } = entry;
 
+  // A quote is evidence only when the card is not already showing it.
+  //
+  // The card prints the first ~100 characters of the same description, so for
+  // an agent that names PancakeSwap in its opening clause - which is most of
+  // this shelf - the block underneath was repeating the sentence directly
+  // above it, at greater length, with an ellipsis at each end. That reads as a
+  // layout fault rather than as a receipt.
+  //
+  // So the quote is rendered only when the match falls outside what the card
+  // shows: a venue named in the name rather than the description, or named far
+  // enough in that the card's trim cuts before it. The matched job phrases stay
+  // either way - those are the lane's own reading and appear nowhere else.
+  const shownOnCard =
+    venue.field === 'description' &&
+    agent.description.slice(0, CARD_DESCRIPTION_CHARS).includes(venue.match);
+
   return (
     <li className="flex min-w-0 flex-col">
       <div className="flex-1">
@@ -113,15 +130,19 @@ export function LaneAgentEntry({ entry, index }: { entry: LaneAgent; index: numb
       </div>
 
       <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-        <blockquote className="text-[12px] leading-relaxed text-slate-400">
-          <VenueQuote venue={venue} />
-        </blockquote>
-        <p className="sr-only">
-          Quoted from the {venue.field === 'name' ? 'name' : 'description'} this agent registered
-          onchain.
-        </p>
+        {!shownOnCard && (
+          <>
+            <blockquote className="text-[12px] leading-relaxed text-slate-400">
+              <VenueQuote venue={venue} />
+            </blockquote>
+            <p className="sr-only">
+              Quoted from the {venue.field === 'name' ? 'name' : 'description'} this agent registered
+              onchain.
+            </p>
+          </>
+        )}
 
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+        <div className={cn('flex flex-wrap items-center gap-1.5', !shownOnCard && 'mt-2.5')}>
           <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
             Its words
           </span>
