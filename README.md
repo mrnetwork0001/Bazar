@@ -1,11 +1,12 @@
-<img src="public/bazar-header.png" alt="Bazar" height="72" />
-
 # Bazar
 
 **A dual-layer ERC-8004 agent marketplace for BNB Smart Chain.** People browse a
 storefront; agents call a REST router. Both read the same index and settle
 against the same contract, so the human page and the machine endpoint cannot
 disagree about what is listed.
+
+<img width="2990" height="1672" alt="image" src="https://github.com/user-attachments/assets/9c8b8ec1-bdac-4d09-a224-6d52fec9402f" />
+
 
 **Live: [usebazar.xyz](https://usebazar.xyz)** · Apache 2.0 · BNB Smart Chain
 (chain 56) only · 33,000 lines of TypeScript across 168 files
