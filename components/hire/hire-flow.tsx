@@ -26,6 +26,7 @@ import { AltanaHirePanel } from '@/components/hire/altana-hire-panel';
 import { EscrowStepper, type EscrowStepId } from '@/components/hire/escrow-stepper';
 import { BSC_MAINNET, getDeployment, type SupportedChainId } from '@/lib/chain/addresses';
 import { paymentTokenSwapUrl } from '@/lib/pancakeswap/intents';
+import { TokenMark } from '@/components/ui/token-mark';
 import { formatBudget, PAYMENT_TOKEN_SYMBOL } from '@/lib/jobs/read';
 import type { Address, IndexedAgent } from '@/lib/types';
 import { bscScanAddress, bscScanTx, cn, shortAddress } from '@/lib/utils';
@@ -448,8 +449,8 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
                   aria-describedby={`${baseId}-budget-hint`}
                   className="tabular ring-focus h-10 min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-white transition-colors placeholder:text-slate-600 hover:border-white/20"
                 />
-                <span className="shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-semibold text-slate-300">
-                  {symbol}
+                <span className="shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2.5 py-2 text-xs font-semibold text-slate-300">
+                  <TokenMark address={deployment.paymentToken} symbol={symbol} size={16} />
                 </span>
               </div>
               <p id={`${baseId}-budget-hint`} className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
