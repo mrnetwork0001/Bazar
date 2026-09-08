@@ -191,7 +191,22 @@ function buildUrl(q: ScanQuery): string {
  * signal into `fetch` changes how Next keys its data cache, and the cache is
  * what keeps the marketplace off the indexer for most renders.
  */
-const ATTEMPT_TIMEOUT_MS = 6_000;
+/**
+ * How long an attempt may block, in the two situations that differ.
+ *
+ * Measured 2026-09-08: a successful listing query answers in about 5.4s and a
+ * failing one 500s after about 10.6s. A single 6s budget sat right on top of
+ * that success latency, so a slow-but-fine response was being aborted at the
+ * moment it was about to arrive - the retry then paid the whole cost again.
+ *
+ * With a snapshot in hand there is something better to show than a spinner, so
+ * an attempt is cut short and the stale copy wins. With no snapshot - a page
+ * nobody has loaded yet, which is every page but the first - waiting is the
+ * only way the reader ever sees anything, so the budget covers the observed
+ * success latency with room to spare.
+ */
+const ATTEMPT_TIMEOUT_COLD_MS = 14_000;
+const ATTEMPT_TIMEOUT_WARM_MS = 4_000;
 const MAX_ATTEMPTS = 3;
 
 /**
@@ -233,12 +248,12 @@ function timeout(ms: number): Promise<never> {
  * turned that transient database hiccup into a blank marketplace, so the
  * envelope is recognised and retried.
  */
-async function attempt(url: string, revalidateSeconds: number): Promise<ScanPage> {
+async function attempt(url: string, revalidateSeconds: number, budgetMs: number): Promise<ScanPage> {
   let res: Response;
   try {
     res = await Promise.race([
       fetch(url, { headers: scanHeaders(), next: { revalidate: revalidateSeconds } }),
-      timeout(ATTEMPT_TIMEOUT_MS),
+      timeout(budgetMs),
     ]);
   } catch (cause) {
     if (cause instanceof ScanError) throw cause;
@@ -282,8 +297,9 @@ export async function fetchAgents(q: ScanQuery = {}, revalidateSeconds = 300): P
   let lastErr: unknown;
 
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    const budget = lastGood.has(url) ? ATTEMPT_TIMEOUT_WARM_MS : ATTEMPT_TIMEOUT_COLD_MS;
     try {
-      const page = await attempt(url, revalidateSeconds);
+      const page = await attempt(url, revalidateSeconds, budget);
       lastGood.set(url, { page, at: Date.now() });
       return page;
     } catch (err) {
