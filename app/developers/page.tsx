@@ -250,7 +250,20 @@ export default async function DevelopersPage() {
         </header>
 
         {/* Body + sticky mini TOC */}
-        <div className="mt-16 xl:grid xl:grid-cols-[minmax(0,1fr)_180px] xl:items-start xl:gap-12 [&>*]:min-w-0">
+        {/*
+          The rail leads in the DOM as well as on screen. It is a nav landmark,
+          so a screen reader meeting it first is the right order, and it means
+          the layout needs no `order` juggling.
+
+          It appears from lg rather than xl. The reference is nine screens of
+          API documentation; a 1280px cutoff left every ordinary laptop
+          scrolling it blind, which is the case the rail exists for.
+        */}
+        <div className="mt-16 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:items-start lg:gap-10 xl:gap-14 [&>*]:min-w-0">
+          <aside className="hidden lg:block">
+            <DocsToc items={TOC_ITEMS} />
+          </aside>
+
           <div className="min-w-0 space-y-20">
             {/* 1. Quickstart */}
             <section id="quickstart" className="scroll-mt-24">
@@ -531,9 +544,6 @@ export default async function DevelopersPage() {
             </p>
           </div>
 
-          <aside className="hidden xl:block">
-            <DocsToc items={TOC_ITEMS} />
-          </aside>
         </div>
       </div>
     </div>

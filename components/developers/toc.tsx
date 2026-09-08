@@ -40,10 +40,24 @@ export function DocsToc({ items, className }: { items: TocItem[]; className?: st
   }, [items]);
 
   return (
-    <nav aria-label="On this page" className={cn('sticky top-24', className)}>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">On this page</p>
-      <ul className="mt-3 space-y-0.5 border-l border-white/[0.08]">
-        {items.map((item) => {
+    <nav
+      aria-label="On this page"
+      // Sticky under the navbar rather than fixed to the viewport: Bazar has a
+      // top bar carrying the logo, so a full-height rail would sit under it and
+      // repeat the brand. This starts below it and travels with the scroll.
+      className={cn(
+        'sticky top-24 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-2 backdrop-blur-xl',
+        // Nine screens of reference will outgrow a short viewport before the
+        // list does; scroll the rail rather than clipping it.
+        'max-h-[calc(100vh-8rem)] overflow-y-auto',
+        className,
+      )}
+    >
+      <p className="px-2.5 pb-1 pt-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+        API reference
+      </p>
+      <ul className="space-y-0.5">
+        {items.map((item, i) => {
           const current = item.id === active;
           return (
             <li key={item.id}>
@@ -51,12 +65,21 @@ export function DocsToc({ items, className }: { items: TocItem[]; className?: st
                 href={`#${item.id}`}
                 aria-current={current ? 'true' : undefined}
                 className={cn(
-                  '-ml-px block border-l py-1.5 pl-3 text-[13px] transition-colors ring-focus',
+                  'ring-focus flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-colors',
                   current
-                    ? 'border-bnb font-medium text-bnb'
-                    : 'border-transparent text-slate-500 hover:border-white/20 hover:text-slate-200',
+                    ? 'bg-bnb/[0.12] font-medium text-bnb'
+                    : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-100',
                 )}
               >
+                <span
+                  className={cn(
+                    'tabular w-4 shrink-0 text-[11px]',
+                    current ? 'text-bnb/70' : 'text-slate-600',
+                  )}
+                  aria-hidden
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
                 {item.label}
               </a>
             </li>
