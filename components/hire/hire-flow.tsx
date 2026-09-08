@@ -25,6 +25,7 @@ import { CopyButton } from '@/components/agents/copy-button';
 import { AltanaHirePanel } from '@/components/hire/altana-hire-panel';
 import { EscrowStepper, type EscrowStepId } from '@/components/hire/escrow-stepper';
 import { BSC_MAINNET, getDeployment, type SupportedChainId } from '@/lib/chain/addresses';
+import { paymentTokenSwapUrl } from '@/lib/pancakeswap/intents';
 import { formatBudget, PAYMENT_TOKEN_SYMBOL } from '@/lib/jobs/read';
 import type { Address, IndexedAgent } from '@/lib/types';
 import { bscScanAddress, bscScanTx, cn, shortAddress } from '@/lib/utils';
@@ -474,8 +475,17 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
                 <div className="mt-2">
                   <Notice tone="rose" icon={<TriangleAlert className="h-3.5 w-3.5" />}>
                     This wallet holds no {symbol} on {chainMeta.name}. Funding a job moves {symbol} from your wallet
-                    into the kernel, so it cannot proceed until this wallet holds some. Bazar does not know where you
-                    get it and will not point you at a faucet it has not verified.
+                    into the kernel, so it cannot proceed until this wallet holds some.{' '}
+                    <a
+                      href={paymentTokenSwapUrl(deployment.paymentToken)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ring-focus rounded font-medium underline decoration-current/40 underline-offset-2 hover:text-white"
+                    >
+                      Swap BNB for {symbol} on PancakeSwap
+                    </a>{' '}
+                    - the link opens with the token address below already filled in, which is worth using rather than
+                    searching for &ldquo;{symbol}&rdquo; by hand. Bazar takes no fee on the swap and no part in it.
                   </Notice>
                 </div>
               )}

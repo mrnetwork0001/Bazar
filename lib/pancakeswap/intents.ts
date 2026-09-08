@@ -187,3 +187,33 @@ export const SWEEP_DATE = '7 September 2026';
 export const SWEEP_TERMS = 27;
 export const SWEEP_IDENTITIES = 1551;
 export const SWEEP_NAMED = 70;
+
+/**
+ * PancakeSwap swap link for the kernel's settlement token, BNB in.
+ *
+ * The hire flow used to tell a reader with no U that Bazar "does not know where
+ * you get it and will not point you at a faucet it has not verified". That was
+ * the right instinct and the wrong conclusion: the pools were never checked.
+ *
+ * Measured onchain 2026-09-08, U is deeply tradeable against BNB on PancakeSwap:
+ *
+ *   V3 U/WBNB, 0.05% fee   0x882e…1522   2,451,527 U   1,741.8 WBNB
+ *   V2 U/WBNB              0x1087…221a      84,290 U     113.3 WBNB
+ *
+ * That is over a thousand BNB of depth in the V3 pool alone, and the two agree
+ * on price to within a fraction of a percent (~0.001345 BNB per U). This is a
+ * real market, not a listing.
+ *
+ * The output currency is pinned to the token's own address rather than a
+ * symbol, which is the safety-relevant part: "U" is one character and a reader
+ * searching PancakeSwap for it by hand can very easily buy something else. A
+ * prefilled contract address is the difference between a link and a hazard.
+ */
+export function paymentTokenSwapUrl(paymentToken: string): string {
+  const params = new URLSearchParams({
+    inputCurrency: 'BNB',
+    outputCurrency: paymentToken,
+    chain: 'bsc',
+  });
+  return `https://pancakeswap.finance/swap?${params.toString()}`;
+}
