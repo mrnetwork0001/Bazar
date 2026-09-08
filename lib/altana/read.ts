@@ -287,17 +287,32 @@ export interface SpendInfo {
   limit: bigint;
   /** Spent in the current period. */
   currentSpent: bigint;
-  /** What the account says is still spendable in this period. */
+  /** `limit - currentSpent`, clamped at zero. */
   remaining: bigint;
+  /**
+   * Start of the current spend period, as a Unix second. This is the tuple's
+   * `current` field, which the name does not suggest - see above.
+   */
+  periodStart: bigint;
   lastUpdated: bigint;
 }
 
 /**
  * The spend caps attached to one key.
  *
- * `current` is the account's own "still available" figure, so the remaining
- * allowance on screen is the contract's arithmetic, not a subtraction done in
- * the browser.
+ * `remaining` is computed here, not read. The tuple's last field is named
+ * `current`, and it was taken for "currently available" - it is not. Measured
+ * against the first session key ever granted (account
+ * 0x087Cbf1d…7eEE, 2026-09-08), it returned 1788825600 for BOTH the native cap
+ * and the U cap, identically. That is not an amount: it divides exactly by
+ * 86400, and it is the start of the current daily period.
+ *
+ * Formatted as an 18-decimal balance it rendered as 0.0000000017888256, so a
+ * key with its full 0.5 U untouched displayed as "< 0.0001 U left" - a session
+ * that looks exhausted the instant it is created.
+ *
+ * The available figure is therefore `limit - currentSpent`, clamped, which is
+ * the subtraction the old comment was proud of avoiding.
  */
 export function readSpendInfos(
   network: AltanaNetwork,
@@ -325,7 +340,11 @@ export function readSpendInfos(
       period: spendPeriodName(Number(info.period)),
       limit: info.limit,
       currentSpent: info.currentSpent,
-      remaining: info.current,
+      // Clamped: a period rollover the account has not yet written back could
+      // otherwise leave currentSpent above limit for an instant, and a negative
+      // allowance is not a thing a reader should ever be shown.
+      remaining: info.limit > info.currentSpent ? info.limit - info.currentSpent : 0n,
+      periodStart: info.current,
       lastUpdated: info.lastUpdated,
     }));
   });
