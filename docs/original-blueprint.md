@@ -1,3 +1,20 @@
+> **Historical document.** This is the blueprint written before Bazar was
+> built, kept as a record of what was planned. It is not a description of the
+> shipped product, and several things in it were deliberately not built.
+>
+> The spec promises win-rate filters, 7-day ROI, drawdown and SLA scores, and
+> escrow released "upon SLA completion". None of that exists in Bazar, because
+> the ERC-8004 registries publish none of it. They publish identity, reputation
+> and declared endpoints - no performance history, no uptime, no pricing. The
+> only way to show a 7-day ROI on an agent page would have been to invent one.
+>
+> So the number was dropped and the reason was written on the page instead.
+> Settlement is by explicit budget and an evaluator policy, not by an SLA score
+> that nothing measures. What actually shipped is described in the
+> [README](../README.md).
+
+---
+
 # BAZAR — The Official Dual-Layer (Human + A2A) ERC-8004 AI Agent Marketplace & Studio for BNB Chain
 
 > **BNB Chain Official Hackathon Blueprint: "Build the Era" ($40,000+ USD Prize Pool)**
