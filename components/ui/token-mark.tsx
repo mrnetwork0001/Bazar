@@ -26,11 +26,30 @@ export interface TokenMarkProps {
   symbol: string;
   /** Rendered size of the coin, in px. */
   size?: number;
+  /**
+   * Draw the ticker beside the mark. Default true.
+   *
+   * Set false only where the coin alone is unambiguous - the budget field's
+   * suffix, where it sits against an amount the reader just typed. The ticker
+   * is not merely hidden in that case: it moves into the image's alt text, so
+   * the unit is still announced and still copied out of the page. A coin with
+   * an empty alt would leave a screen reader with an amount and no currency.
+   */
+  showSymbol?: boolean;
   className?: string;
 }
 
-export function TokenMark({ address, symbol, size = 16, className }: TokenMarkProps) {
+export function TokenMark({
+  address,
+  symbol,
+  size = 16,
+  showSymbol = true,
+  className,
+}: TokenMarkProps) {
   const src = KNOWN_MARKS[address.toLowerCase()];
+  // With no artwork for this address the ticker is all there is, whatever the
+  // caller asked for - the alternative is a chip with nothing in it.
+  const withSymbol = showSymbol || !src;
 
   return (
     <span className={cn('inline-flex items-center gap-1.5', className)}>
@@ -38,7 +57,8 @@ export function TokenMark({ address, symbol, size = 16, className }: TokenMarkPr
         // eslint-disable-next-line @next/next/no-img-element -- fixed local asset, already sized
         <img
           src={src}
-          alt=""
+          alt={withSymbol ? '' : symbol}
+          title={withSymbol ? undefined : symbol}
           width={size}
           height={size}
           style={{ width: size, height: size }}
@@ -46,7 +66,7 @@ export function TokenMark({ address, symbol, size = 16, className }: TokenMarkPr
           draggable={false}
         />
       )}
-      <span>{symbol}</span>
+      {withSymbol && <span>{symbol}</span>}
     </span>
   );
 }
