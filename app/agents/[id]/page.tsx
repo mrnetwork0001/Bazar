@@ -180,7 +180,7 @@ export default async function AgentPage({ params }: AgentPageProps) {
         <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_22rem]">
           {/* ------------------------------ main ------------------------------ */}
           <div className="min-w-0 space-y-10">
-            <AgentHeader agent={agent} />
+            <AgentHeader agent={agent} endpoints={extras.endpoints} />
 
             <AgentSection
               id="reputation"

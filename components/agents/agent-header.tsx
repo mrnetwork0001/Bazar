@@ -2,11 +2,13 @@ import {
   BadgeCheck,
   CalendarClock,
   CircleDashed,
+  ExternalLink,
   Fingerprint,
   History,
   User,
 } from '@/components/ui/icons';
 import type { IndexedAgent } from '@/lib/types';
+import type { AgentEndpoint } from '@/components/agents/agent-detail';
 import { CATEGORY_MAP } from '@/lib/data/categories';
 import { Badge } from '@/components/ui/badge';
 import { CATEGORY_ICONS, CATEGORY_TONE } from '@/components/marketplace/marketplace-config';
@@ -78,6 +80,12 @@ function MetaItem({
 
 export interface AgentHeaderProps {
   agent: IndexedAgent;
+  /**
+   * Endpoints the index resolved for this agent, when the per-agent record was
+   * read. A protocol badge with one becomes a link to it; a badge without one
+   * stays plain text.
+   */
+  endpoints?: AgentEndpoint[];
   className?: string;
 }
 
@@ -96,7 +104,13 @@ export interface AgentHeaderProps {
  * "Unclassified" instead of naming a shelf, and the reason sentence below is
  * always visible rather than hidden in a tooltip. See `lib/indexer/classify.ts`.
  */
-export function AgentHeader({ agent, className }: AgentHeaderProps) {
+export function AgentHeader({ agent, endpoints, className }: AgentHeaderProps) {
+  // `supported_protocols` says an agent speaks Web; `services.web.endpoint`
+  // says where. Both come from the same record, so a badge can carry the
+  // address instead of only announcing that one exists.
+  const endpointFor = new Map(
+    (endpoints ?? []).map((e) => [e.protocol.trim().toLowerCase(), e.url] as const),
+  );
   const category = CATEGORY_MAP[agent.category];
   const CategoryIcon = CATEGORY_ICONS[category.icon];
   const ownerDisplay = agent.ownerLabel ?? shortAddress(agent.owner, 4);
@@ -212,19 +226,44 @@ export function AgentHeader({ agent, className }: AgentHeaderProps) {
               {agent.protocols.map((protocol) => {
                 const meta = protocolMeta(protocol);
                 const Icon = meta.icon;
+                const href = endpointFor.get(protocol.trim().toLowerCase());
+                const chrome = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium';
+                const paint = {
+                  borderColor: `${meta.accentHex}40`,
+                  background: `${meta.accentHex}14`,
+                  color: meta.accentHex,
+                };
                 return (
-                  <li
-                    key={protocol}
-                    title={meta.blurb}
-                    className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
-                    style={{
-                      borderColor: `${meta.accentHex}40`,
-                      background: `${meta.accentHex}14`,
-                      color: meta.accentHex,
-                    }}
-                  >
-                    <Icon className="h-3.5 w-3.5" aria-hidden />
-                    {meta.label}
+                  <li key={protocol}>
+                    {href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        // The agent's own declared address, not somewhere Bazar
+                        // chose and not somewhere it has probed. The title says
+                        // where the click goes, because a globe that silently
+                        // leaves the site is worse than one that does nothing.
+                        title={`${meta.blurb} - ${href}`}
+                        className={cn(chrome, 'ring-focus transition-opacity hover:opacity-80')}
+                        style={paint}
+                      >
+                        <Icon className="h-3.5 w-3.5" aria-hidden />
+                        {meta.label}
+                        <ExternalLink className="h-3 w-3 opacity-70" aria-hidden />
+                      </a>
+                    ) : (
+                      <span
+                        // Declared with no address resolved: still true, still
+                        // worth showing, and deliberately not a link.
+                        title={`${meta.blurb} - declared, but the index resolved no address for it`}
+                        className={chrome}
+                        style={paint}
+                      >
+                        <Icon className="h-3.5 w-3.5" aria-hidden />
+                        {meta.label}
+                      </span>
+                    )}
                   </li>
                 );
               })}
