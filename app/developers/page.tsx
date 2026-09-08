@@ -259,7 +259,15 @@ export default async function DevelopersPage() {
           API documentation; a 1280px cutoff left every ordinary laptop
           scrolling it blind, which is the case the rail exists for.
         */}
-        <div className="mt-16 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:items-start lg:gap-10 xl:gap-14 [&>*]:min-w-0">
+        {/*
+          No `items-start` here, deliberately. It sizes each grid item to its
+          own content, which leaves the rail exactly as tall as the panel inside
+          it - and a sticky element can only travel inside its own parent, so
+          the rail would have nowhere to go and sticky would silently do
+          nothing. Stretched, the rail spans the full height of the reference
+          beside it, and the panel sticks its way down that column.
+        */}
+        <div className="mt-16 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-10 xl:gap-14 [&>*]:min-w-0">
           <aside className="hidden lg:block">
             <DocsToc items={TOC_ITEMS} />
           </aside>
