@@ -272,11 +272,13 @@ export function AgentCard({ agent, compact, index }: AgentCardProps) {
 
         {/* description */}
         {agent.description ? (
-          /* Trimmed in JS as well as clamped in CSS: `line-clamp` ends the
-             paragraph wherever the line box runs out, which for registry text
-             written by strangers is regularly the middle of a word. */
+          /* The budget has to fit inside the two lines `line-clamp` allows,
+             or the clamp cuts the JS-trimmed string again and puts the ellipsis
+             back in the middle of a word - which is what a 150 budget did here.
+             Two lines at this card width hold about 105 characters, so 100 lands
+             inside them and the clamp stays a backstop it never has to be. */
           <p className="mt-3 line-clamp-2 min-h-[2.5rem] text-sm leading-relaxed text-slate-400">
-            {truncateWords(agent.description, 150)}
+            {truncateWords(agent.description, 100)}
           </p>
         ) : (
           <p className="mt-3 min-h-[2.5rem] text-sm leading-relaxed text-slate-400">
