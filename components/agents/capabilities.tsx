@@ -2,7 +2,12 @@ import { Layers, Radio, ShieldCheck, Tag, Terminal } from '@/components/ui/icons
 import type { IndexedAgent } from '@/lib/types';
 import type { AgentEndpoint } from '@/components/agents/agent-detail';
 import { CATEGORY_MAP } from '@/lib/data/categories';
-import { protocolMeta, X402_META, type ProtocolMeta } from '@/components/agents/protocol-meta';
+import {
+  protocolMeta,
+  X402_META,
+  type ProtocolAudience,
+  type ProtocolMeta,
+} from '@/components/agents/protocol-meta';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------- endpoints ------------------------------ */
@@ -20,6 +25,18 @@ function displayUrl(url: string) {
   return url.replace(/^https?:\/\//i, '');
 }
 
+/**
+ * One declared endpoint.
+ *
+ * The protocol blurb used to be a paragraph inside every card. It is protocol
+ * documentation, identical on every agent page, so six endpoints meant six
+ * generic explanations set louder than the one line that actually varies - the
+ * address. It now lives in the card's title, and the group heading above says
+ * who the endpoint is for, which is the part a hirer needed it for.
+ *
+ * What is left is what this agent published: protocol, version, how many tools
+ * or skills, and where.
+ */
 function EndpointCard({ endpoint }: { endpoint: AgentEndpoint }) {
   const meta = protocolMeta(endpoint.protocol);
   const Icon = meta.icon;
@@ -32,54 +49,65 @@ function EndpointCard({ endpoint }: { endpoint: AgentEndpoint }) {
     facts.push(`${endpoint.skillCount} ${endpoint.skillCount === 1 ? 'skill' : 'skills'}`);
 
   return (
-    <li className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-colors duration-200 hover:border-white/[0.14] hover:bg-white/[0.04]">
+    <li
+      title={meta.blurb}
+      className="group flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 transition-colors duration-200 hover:border-white/[0.14] hover:bg-white/[0.04]"
+    >
       <span
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border"
         style={{ borderColor: `${meta.accentHex}40`, background: `${meta.accentHex}14`, color: meta.accentHex }}
       >
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-baseline gap-x-2">
           <span className="text-xs font-semibold text-white">{meta.label}</span>
           {facts.length > 0 && <span className="tabular text-[10px] text-slate-500">{facts.join(' · ')}</span>}
-        </div>
+        </span>
         {href ? (
           <a
             href={href}
             target="_blank"
             rel="noreferrer nofollow"
             title={endpoint.url}
-            className="mt-1 inline-flex max-w-full items-center gap-1 rounded font-mono text-[11px] text-slate-400 transition-colors hover:text-bnb ring-focus"
+            className="ring-focus mt-0.5 block truncate rounded font-mono text-[11px] text-slate-400 transition-colors hover:text-bnb"
           >
-            <span className="truncate">{displayUrl(endpoint.url)}</span>
+            {displayUrl(endpoint.url)}
           </a>
         ) : (
-          <p className="mt-1 truncate font-mono text-[11px] text-slate-400" title={endpoint.url}>
+          <span className="mt-0.5 block truncate font-mono text-[11px] text-slate-400" title={endpoint.url}>
             {displayUrl(endpoint.url)}
-          </p>
+          </span>
         )}
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{meta.blurb}</p>
-      </div>
+      </span>
     </li>
   );
 }
 
-/** Fallback row when the index knows the protocol but resolved no endpoint. */
+/**
+ * Fallback row when the index knows the protocol but resolved no endpoint.
+ *
+ * Kept visually identical to a resolved card so the grid does not break, with
+ * the address line saying what is missing instead of showing one. That absence
+ * is the whole content of this card and it should not need a paragraph.
+ */
 function DeclarationCard({ meta }: { meta: ProtocolMeta }) {
   const Icon = meta.icon;
   return (
-    <li className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+    <li
+      title={meta.blurb}
+      className="flex items-center gap-2.5 rounded-xl border border-dashed border-white/[0.08] bg-white/[0.01] px-3 py-2.5"
+    >
       <span
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border"
-        style={{ borderColor: `${meta.accentHex}40`, background: `${meta.accentHex}14`, color: meta.accentHex }}
+        style={{ borderColor: `${meta.accentHex}30`, background: `${meta.accentHex}0D`, color: meta.accentHex }}
       >
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
-      <div className="min-w-0">
-        <div className="text-xs font-semibold text-white">{meta.label}</div>
-        <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{meta.blurb}</p>
-      </div>
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-semibold text-white">{meta.label}</span>
+        <span className="mt-0.5 block text-[11px] text-slate-500">declared, no address published</span>
+      </span>
     </li>
   );
 }
@@ -118,6 +146,30 @@ export function Capabilities({ agent, a2aPath, endpoints, tags, trustModels, cla
   const unresolved = agent.protocols.filter((p) => !resolvedKeys.has(p.trim().toLowerCase()));
   const nothing = resolved.length === 0 && unresolved.length === 0 && !agent.x402;
 
+  // Grouped by who can call it, so the section says that once in a heading
+  // rather than once per card. Resolved endpoints lead each group; declarations
+  // with no address follow, because an address you can use outranks one that
+  // was only promised.
+  const groups: ReadonlyArray<{
+    audience: ProtocolAudience;
+    title: string;
+    hint: string;
+    resolved: AgentEndpoint[];
+    declared: ProtocolMeta[];
+  }> = (['machine', 'human'] as const).map((audience) => ({
+    audience,
+    title: audience === 'machine' ? 'Machine interfaces' : 'Human contact',
+    hint:
+      audience === 'machine'
+        ? 'Another agent or an LLM client can call these directly.'
+        : 'Aimed at a person rather than a runtime.',
+    resolved: resolved.filter((e) => protocolMeta(e.protocol).audience === audience),
+    declared: [
+      ...unresolved.map((p) => protocolMeta(p)),
+      ...(agent.x402 ? [X402_META] : []),
+    ].filter((m) => m.audience === audience),
+  }));
+
   return (
     <div className={cn('grid grid-cols-1 gap-3 lg:grid-cols-[1fr_20rem]', className)}>
       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-xl sm:p-5">
@@ -135,20 +187,31 @@ export function Capabilities({ agent, a2aPath, endpoints, tags, trustModels, cla
             </p>
           </div>
         ) : (
-          <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {resolved.map((endpoint) => (
-              <EndpointCard key={`${endpoint.protocol}-${endpoint.url}`} endpoint={endpoint} />
-            ))}
-            {unresolved.map((protocol) => (
-              <DeclarationCard key={`declared-${protocol}`} meta={protocolMeta(protocol)} />
-            ))}
-            {agent.x402 && <DeclarationCard meta={X402_META} />}
-          </ul>
+          <div className="mt-3 space-y-4">
+            {groups
+              .filter((g) => g.resolved.length > 0 || g.declared.length > 0)
+              .map((group) => (
+                <div key={group.audience}>
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <h4 className="text-[11px] font-medium text-slate-300">{group.title}</h4>
+                    <span className="text-[11px] text-slate-500">{group.hint}</span>
+                  </div>
+                  <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {group.resolved.map((endpoint) => (
+                      <EndpointCard key={`${endpoint.protocol}-${endpoint.url}`} endpoint={endpoint} />
+                    ))}
+                    {group.declared.map((meta) => (
+                      <DeclarationCard key={`declared-${meta.label}`} meta={meta} />
+                    ))}
+                  </ul>
+                </div>
+              ))}
+          </div>
         )}
 
         <p className="mt-4 text-[11px] leading-relaxed text-slate-500">
-          Published by the agent&apos;s owner at registration and resolved by the ERC-8004 index. Bazar reports them
-          verbatim and does not probe them, so read them as intent rather than as a liveness check.
+          Declared by the owner at registration, resolved by the ERC-8004 index, and reported verbatim - Bazar does not
+          probe them, so read them as intent rather than as a liveness check.
         </p>
 
         {((tags?.length ?? 0) > 0 || (trustModels?.length ?? 0) > 0) && (
@@ -199,7 +262,7 @@ export function Capabilities({ agent, a2aPath, endpoints, tags, trustModels, cla
           Machine layer
         </h3>
         <p className="mt-3 text-xs leading-relaxed text-slate-400">
-          Every listing Bazar shows a person is also readable by an agent. This one answers at:
+          Every listing a person can read, an agent can read too:
         </p>
         <code className="mt-2.5 block overflow-x-auto rounded-xl border border-white/[0.08] bg-ink/60 px-3 py-2 font-mono text-[11px] text-slate-300">
           GET {a2aPath}
@@ -207,14 +270,14 @@ export function Capabilities({ agent, a2aPath, endpoints, tags, trustModels, cla
         <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
           {unclassified ? (
             <>
-              Nothing in this agent&apos;s registration matched a category term, so Bazar shelves it under{' '}
-              {category.name.toLowerCase()} for coverage and says so in both places: that route returns the same shelf
-              with <span className="font-mono text-slate-400">categoryInferred: true</span>.
+              Nothing here matched a category term, so this agent sits under {category.name.toLowerCase()} for coverage
+              - and the route says so too, with{' '}
+              <span className="font-mono text-slate-400">categoryInferred: true</span>.
             </>
           ) : (
             <>
-              Categorised as {category.name.toLowerCase()} from this agent&apos;s own registration text, and that route
-              returns the same shelf - the human page and the machine record cannot disagree about what is listed.
+              Filed under {category.name.toLowerCase()} from the agent&apos;s own registration text. The route returns
+              the same shelf, so the page and the record cannot disagree.
             </>
           )}
         </p>
