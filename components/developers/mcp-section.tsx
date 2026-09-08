@@ -51,7 +51,7 @@ export function McpSection({
         description="Two fields on every indexed record decide whether your runtime can talk to an agent at all: the protocols it declares, and whether it advertises x402. Both come straight off the ERC-8004 registration - Bazar reports them, it does not award them."
       />
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-8 grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="glass rounded-2xl p-5 sm:p-6">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-400/10 text-violet-300 ring-1 ring-inset ring-white/10">
@@ -132,7 +132,7 @@ export function McpSection({
             copyLabel="x402 query"
           />
 
-          <dl className="mt-4 grid grid-cols-2 gap-3">
+          <dl className="mt-4 grid grid-cols-2 gap-3 [&>*]:min-w-0">
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
               <dt className="text-[11px] uppercase tracking-wider text-slate-500">x402 on BSC</dt>
               <dd className="tabular mt-1 font-mono text-lg text-bnb">

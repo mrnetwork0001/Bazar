@@ -237,7 +237,7 @@ export function TryItConsole({
           <span className="ml-auto font-mono text-[11px] text-slate-500">no auth · CORS open</span>
         </div>
 
-        <div className="grid gap-px bg-white/[0.06] lg:grid-cols-2">
+        <div className="grid gap-px bg-white/[0.06] lg:grid-cols-2 [&>*]:min-w-0">
           {/* Request */}
           <div className="bg-ink/60 p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">

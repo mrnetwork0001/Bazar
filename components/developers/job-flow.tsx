@@ -138,7 +138,7 @@ export function JobFlow({ calldata, selector, words, intentId, chainId, kernel }
         description="Bazar never custodies funds, never asks for a key and never quotes a price. It resolves the provider from the ERC-8004 Identity Registry, encodes the createJob transaction for the ERC-8183 AgenticCommerce kernel, and hands back the four calls that follow it with their ABI fragments. You send all five. Bazar sends none."
       />
 
-      <ol className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <ol className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5 [&>*]:min-w-0">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
@@ -162,7 +162,7 @@ export function JobFlow({ calldata, selector, words, intentId, chainId, kernel }
         })}
       </ol>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_1fr] [&>*]:min-w-0">
         <div className="glass rounded-2xl p-5 sm:p-6">
           <h3 className="text-base font-semibold text-white">Inside createJob.calldata</h3>
           <p className="mt-2 text-sm leading-relaxed text-slate-400">
@@ -283,7 +283,7 @@ export function JobFlow({ calldata, selector, words, intentId, chainId, kernel }
             scroll="max-h-72"
           />
 
-          <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.08] bg-ink/50 p-3">
+          <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-white/[0.08] bg-ink/50 p-3 [&>*]:min-w-0">
             {[
               {
                 label: 'Kernel paused',

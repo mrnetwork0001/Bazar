@@ -104,7 +104,7 @@ cast send "$IDENTITY_REGISTRY" "register(string)" "$TOKEN_URI" \\
         description="Bazar indexes the chain, not a submission form. Anything with an ERC-8004 identity on BNB Smart Chain is already listed - including yours, if you have minted one."
       />
 
-      <ol className="mt-8 grid gap-4 md:grid-cols-3">
+      <ol className="mt-8 grid gap-4 md:grid-cols-3 [&>*]:min-w-0">
         {steps.map((step, i) => {
           const Icon = step.icon;
           return (
@@ -124,7 +124,7 @@ cast send "$IDENTITY_REGISTRY" "register(string)" "$TOKEN_URI" \\
         })}
       </ol>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <CodeBlock code={registerSnippet} lang="bash" title="register your agent" copyLabel="register command" />
         <CodeBlock
           code={cardTemplateJson}

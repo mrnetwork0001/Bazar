@@ -250,7 +250,7 @@ export default async function DevelopersPage() {
         </header>
 
         {/* Body + sticky mini TOC */}
-        <div className="mt-16 xl:grid xl:grid-cols-[minmax(0,1fr)_180px] xl:items-start xl:gap-12">
+        <div className="mt-16 xl:grid xl:grid-cols-[minmax(0,1fr)_180px] xl:items-start xl:gap-12 [&>*]:min-w-0">
           <div className="min-w-0 space-y-20">
             {/* 1. Quickstart */}
             <section id="quickstart" className="scroll-mt-24">

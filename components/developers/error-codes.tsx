@@ -128,7 +128,7 @@ export function ErrorCodes({
         description="No HTML error pages, no bare strings, and no silently-empty success. Failures answer with the same JSON envelope on every route, so an agent can branch on error.code instead of parsing prose."
       />
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.4fr] [&>*]:min-w-0">
         <div>
           <CodeBlock code={ENVELOPE} lang="ts" title="A2AErrorResponse - lib/types.ts" copyLabel="error envelope" />
           <CodeBlock
@@ -214,7 +214,7 @@ export function ErrorCodes({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+      <div className="mt-6 grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
         <CodeBlock
           code={error400Json}
           lang="json"
