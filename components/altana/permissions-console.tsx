@@ -46,6 +46,8 @@ import { cn, shortAddress } from '@/lib/utils';
 import { formatAmount } from './format';
 import { GrantSessionForm } from './grant-session-form';
 import { PermissionCard } from './permission-card';
+import { WalletJobs } from './wallet-jobs';
+import { BSC_MAINNET } from '@/lib/chain/addresses';
 import { useAltanaConsole, type PermissionRow } from './use-altana-console';
 
 const WALLET_NAME = 'Bazar Altana wallet';
@@ -449,6 +451,19 @@ export function PermissionsConsole() {
           </p>
         )}
       </section>
+
+      {/*
+        What the keys above were actually used for. A session-key hire opens the
+        job under the wallet's address, so it appears on no page that reads the
+        browser's connected account - the reader pays for a job and then cannot
+        find it. `canHire` gates this to mainnet, where a Bazar listing's
+        identity and the kernel it settles against are the same chain.
+      */}
+      {wallet && network.canHire && (
+        <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-xl sm:p-6">
+          <WalletJobs wallet={wallet.address} chainId={BSC_MAINNET} />
+        </section>
+      )}
     </div>
   );
 }
