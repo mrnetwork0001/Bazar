@@ -620,7 +620,7 @@ export const Bazar: React.FC = () => {
     </>,
     'v10',
   );
-  add(s(18.6), <BuiltOn total={s(18.6)} />, 'v12');
+  add(s(21), <BuiltOn total={s(21)} />, 'v12');
   add(s(5.2), <Close total={s(5.2)} />, 'v11');
 
   return (
@@ -635,4 +635,4 @@ export const Bazar: React.FC = () => {
   );
 };
 
-export const BAZAR_DURATION = s(3.4 + 14.2 + 8 + 15.6 + 11 + 9.6 + 9.2 + 8 + 12.4 + 15 + 5.4 + 18.6 + 5.2);
+export const BAZAR_DURATION = s(3.4 + 14.2 + 8 + 15.6 + 11 + 9.6 + 9.2 + 8 + 12.4 + 15 + 5.4 + 21 + 5.2);

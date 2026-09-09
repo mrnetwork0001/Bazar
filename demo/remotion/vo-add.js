@@ -2,7 +2,7 @@ const fs = require('fs');
 const key = process.env.ELEVENLABS_API_KEY;
 const VOICE = process.env.ELEVENLABS_VOICE || 'CwhRBWXzGAHq8TQ4Fs17';
 const SECTIONS = [
-  ['12', "Bazar runs no indexer of its own. Every listing comes through 8004scan, built by AltLayer. The session keys are Altana's. The PancakeSwap lane reads a public registry, with no endorsement implied. And the advantage report answers TermiX's question with measurements."],
+  ['12', "Bazar runs no indexer of its own. Every listing comes through 8004scan, built by AltLayer. The session keys are Altana's. PancakeSwap is where a hirer swaps for the settlement token, and the venue agents name most often. And the advantage report answers TermiX's question with measurements."],
 ];
 (async () => {
   for (const [id, text] of SECTIONS) {

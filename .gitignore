@@ -26,3 +26,14 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Demo video: source is tracked, media is not.
+# The composition, the narration script and the package manifest are worth
+# reading. The renders, the extracted screen-capture clips and the generated
+# voiceover are 108MB of binary that every clone would otherwise pay for.
+demo/remotion/node_modules/
+demo/remotion/out/
+demo/remotion/clips/
+demo/remotion/vo/
+demo/remotion/public/clips/
+demo/remotion/public/vo/
