@@ -56,6 +56,14 @@ npm ci
 npm run render
 ```
 
+**One thing to know before re-cutting.** The agent-to-agent scene names job
+**#56759** and its deliverable `0xe8ac7b74…46c5`. That job is real and
+Submitted, but its commitment was hashed before the manifest fix and does not
+bind the report body; **#56762** is the equivalent job that does. The film was
+finished first and is left as it is deliberately - the numbers on screen are
+true, and SUBMISSION.md carries the distinction. Anyone re-rendering for a
+later audience should swap the job id and hash in `AgentToAgent`.
+
 `src/Bazar.tsx` holds the whole film — every scene, the timeline at the bottom,
 and the reasoning for the timings. Each scene's length is set by its narration:
 change a line and the scene has to grow with it, or the last words are cut off.

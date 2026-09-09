@@ -168,5 +168,12 @@ waiting to be asked about them.
 ## Demo video
 
 `demo/remotion/` holds the composition and the narration script. The rendered
-file is not committed: it is 84MB of binary that every clone would otherwise
+file is not committed: it is 74MB of binary that every clone would otherwise
 pay for, and the README there records how to reproduce it.
+
+**The agent-to-agent scene shows job #56759, not #56762.** It was cut before
+#56762 existed. Both jobs are real, both have an Altana smart account as client
+and this repository's agent as provider, and both are Submitted onchain — the
+difference is the one described above: #56759's deliverable does not bind its
+report body and #56762's does. The scene is accurate about what it shows; it
+simply shows the earlier of the two.
