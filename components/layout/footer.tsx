@@ -98,7 +98,11 @@ const COLUMNS: FooterColumn[] = [
 ];
 
 const LINK_CLASS =
-  'inline-flex items-center gap-1 rounded-md text-sm text-slate-400 transition-colors hover:text-white ring-focus';
+  // `leading-6` is explicit: without it these rows inherit the body's relaxed
+  // leading, which reads as a spaced-out menu rather than as the dense column
+  // the rest of the app uses. Paired with space-y-1 on the list, the gap
+  // between two links is now close to the gap between two lines of copy.
+  'inline-flex items-center gap-1 rounded-md py-0.5 text-sm leading-6 text-slate-400 transition-colors hover:text-white ring-focus';
 
 function FooterAnchor({ link }: { link: FooterLink }) {
   const className = link.mono ? `${LINK_CLASS} font-mono text-[13px]` : LINK_CLASS;
@@ -148,7 +152,7 @@ export function Footer() {
                 <h2 className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                   {column.title}
                 </h2>
-                <ul className="mt-4 space-y-2.5">
+                <ul className="mt-3 space-y-1">
                   {column.links.map((link) => (
                     <li key={`${column.title}-${link.label}`}>
                       <FooterAnchor link={link} />
