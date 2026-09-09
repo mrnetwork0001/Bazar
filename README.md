@@ -504,6 +504,17 @@ than reported by a user.
   highest-ranked: the top-scoring yield agent in the real category is currently
   unreachable from its own shelf. Fix is to page each term to exhaustion, cache
   the union, and drop the "not a sample" wording only once it is true.
+- **A deliverable that did not bind its report.** Job #56759's commitment was
+  computed with `JSON.stringify(manifest, Object.keys(manifest).sort())`. A
+  replacer *array* filters keys **recursively**, at every level, so the report
+  body collapsed to `{"chainId":56}` — the one nested key whose name happened to
+  appear in the top-level list. The hash bound the agent, the brief and the
+  chain id, and not one byte of the work. Fixed in
+  [`agent/src/manifest.js`](agent/src/manifest.js), which projects onto the
+  six-field schema and canonicalises by recursive key sort. #56759 predates the
+  fix; the file it committed reproduces `0xe8ac7b74…46c5` exactly, so it
+  verifies under the scheme that produced it — it is simply a weaker commitment
+  than the one every job after it gets, and is labelled as one.
 - **Refund through a session key.** `claimRefund` is inside the session grant
   and the account will accept it, but the only refund button writes from the
   browser's connected account - which the kernel refuses for a job whose client
