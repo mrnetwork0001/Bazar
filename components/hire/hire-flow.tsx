@@ -466,6 +466,52 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
                 , not in BNB. BNB is only spent on gas. No registry publishes a rate card, so this figure is yours.
               </p>
 
+              {/*
+                The swap route, shown whether or not this wallet holds any.
+
+                It used to render only when the balance was exactly zero, which
+                inverted who got to see it: anybody already holding the token -
+                every returning hirer, and anyone arriving with a funded wallet
+                - was the one visitor who never learned where it comes from, or
+                that Bazar takes nothing from the trade. A wallet holding too
+                little never saw it either, because that case has its own
+                message and that message offers no way out.
+
+                Where the settlement token comes from is a standing fact about
+                how the kernel works, not an error state, so it sits next to the
+                figure it constrains and stays there.
+              */}
+              <a
+                href={paymentTokenSwapUrl(deployment.paymentToken)}
+                target="_blank"
+                rel="noreferrer"
+                className="ring-focus group mt-2 flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-2.5 transition-colors hover:border-white/20"
+              >
+                <span className="h-7 w-7 shrink-0 overflow-hidden rounded-lg ring-1 ring-inset ring-white/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- fixed local asset */}
+                  <img
+                    src="/partners/pancake-logo.png"
+                    alt=""
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 object-cover"
+                  />
+                </span>
+                <span className="min-w-0 flex-1 text-[11px] leading-relaxed text-slate-500">
+                  Need {symbol}?{' '}
+                  <span className="font-medium text-slate-200 transition-colors group-hover:text-bnb">
+                    Swap BNB for {symbol} on PancakeSwap
+                  </span>{' '}
+                  - the link opens with{' '}
+                  <span className="whitespace-nowrap font-mono text-slate-400">
+                    {shortAddress(deployment.paymentToken)}
+                  </span>{' '}
+                  already filled in, which is worth using rather than searching for &ldquo;{symbol}&rdquo; by hand.
+                  Bazar takes no fee on the swap and no part in it.
+                </span>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-600 transition-colors group-hover:text-slate-400" />
+              </a>
+
               {budget.error && (
                 <p className="mt-2 text-[11px] text-rose-300">{budget.error}</p>
               )}
@@ -476,17 +522,8 @@ export function HireFlow({ agent, onClose, resetKey }: HireFlowProps) {
                 <div className="mt-2">
                   <Notice tone="rose" icon={<TriangleAlert className="h-3.5 w-3.5" />}>
                     This wallet holds no {symbol} on {chainMeta.name}. Funding a job moves {symbol} from your wallet
-                    into the kernel, so it cannot proceed until this wallet holds some.{' '}
-                    <a
-                      href={paymentTokenSwapUrl(deployment.paymentToken)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="ring-focus rounded font-medium underline decoration-current/40 underline-offset-2 hover:text-white"
-                    >
-                      Swap BNB for {symbol} on PancakeSwap
-                    </a>{' '}
-                    - the link opens with the token address below already filled in, which is worth using rather than
-                    searching for &ldquo;{symbol}&rdquo; by hand. Bazar takes no fee on the swap and no part in it.
+                    into the kernel, so it cannot proceed until this wallet holds some - the PancakeSwap route above is
+                    the shortest way there.
                   </Notice>
                 </div>
               )}
