@@ -17,11 +17,12 @@
  * the only thing that can answer its own jobs.
  */
 
-import { createPublicClient, createWalletClient, http, parseAbi, keccak256, toHex, formatEther } from 'viem';
+import { createPublicClient, createWalletClient, http, parseAbi, toHex, formatEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { bsc } from 'viem/chains';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { inspectToken, addressFromBrief } from './check.js';
+import { buildManifest, manifestHash } from './manifest.js';
 
 /* --------------------------------- config -------------------------------- */
 
@@ -95,16 +96,19 @@ async function answer(job, jobId) {
           'No contract address found in the brief. This agent reports on a BEP-20 contract; include its address and it will read ownership, upgradeability and administrative functions off the chain.',
       };
 
-  const manifest = {
-    jobId: jobId.toString(),
+  const manifest = buildManifest({
+    jobId,
     chainId: 56,
+    contracts: {
+      commerce: KERNEL,
+      router: job.evaluator,
+      policy: '0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5',
+    },
+    report,
     agent: account.address,
     brief: job.description,
-    report,
-  };
-  // Sorted keys so the same report always hashes to the same value.
-  const canonical = JSON.stringify(manifest, Object.keys(manifest).sort());
-  const deliverable = keccak256(toHex(canonical));
+  });
+  const deliverable = manifestHash(manifest);
 
   mkdirSync(REPORTS, { recursive: true });
   writeFileSync(new URL(`${jobId}.json`, REPORTS), JSON.stringify(manifest, null, 2));
