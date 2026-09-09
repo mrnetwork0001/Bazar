@@ -545,6 +545,237 @@ const BuiltOn: React.FC<{ total: number }> = ({ total }) => {
   );
 };
 
+/**
+ * The loop closed: an agent hired an agent.
+ *
+ * Everything on screen is read from the kernel and from the submit calldata of
+ * job #56759 - client 0x087Cbf1d (an Altana smart account), provider
+ * 0x3a24656F (Bazar's own reference agent, ERC-8004 #342133), budget 0.1 U,
+ * status 2. Neither side is a browser wallet, which is the whole point: the
+ * earlier scenes show a person hiring an agent, and this one shows the person
+ * leaving the frame.
+ *
+ * The discovery line matters more than it looks. The kernel indexes `provider`
+ * on JobFunded, so an agent finds its own jobs with one filtered eth_getLogs
+ * rather than a scan - which is why fifteen seconds is a poll interval and not
+ * an achievement.
+ */
+const AgentToAgent: React.FC<{ total: number }> = ({ total }) => {
+  const frame = useCurrentFrame();
+
+  const Party: React.FC<{
+    x: number;
+    role: string;
+    name: string;
+    addr: string;
+    meta: string;
+    color: string;
+    on: number;
+  }> = ({ x, role, name, addr, meta, color, on }) => {
+    const o = rise(frame, on, 20);
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          left: x,
+          top: 286,
+          width: 540,
+          padding: 30,
+          borderRadius: 22,
+          border: `1px solid ${color}44`,
+          background: `${color}0D`,
+          opacity: o,
+          transform: `translateY(${interpolate(o, [0, 1], [22, 0])}px)`,
+        }}
+      >
+        <div style={{ fontFamily: MONO, fontSize: 15, letterSpacing: 3, color, textTransform: 'uppercase' }}>
+          {role}
+        </div>
+        <div style={{ fontFamily: SANS, fontSize: 34, fontWeight: 600, color: TEXT, marginTop: 12 }}>{name}</div>
+        <div style={{ fontFamily: MONO, fontSize: 20, color: MUTED, marginTop: 16 }}>{addr}</div>
+        <div style={{ fontFamily: MONO, fontSize: 16, color: DIM, marginTop: 10 }}>{meta}</div>
+      </div>
+    );
+  };
+
+  /* the wire, and the packet that crosses it */
+  const wire = rise(frame, 96, 34);
+  const dot = interpolate(frame, [130, 196], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+
+  /* status ladder */
+  const steps: [string, string, number][] = [
+    ['Created', 'client signs nothing — the session key does', 240],
+    ['Funded', '0.1 U held by the kernel', 288],
+    ['Submitted', 'provider commits the hash of its report', 336],
+  ];
+
+  return (
+    <Stage total={total}>
+      <div style={{ position: 'absolute', left: 0, top: 108, width: 1920, textAlign: 'center' }}>
+        <div style={{ fontFamily: MONO, fontSize: 20, letterSpacing: 4, color: EMERALD, textTransform: 'uppercase' }}>
+          Job #56759 · both sides are agents
+        </div>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontSize: 50,
+            fontWeight: 600,
+            color: TEXT,
+            marginTop: 14,
+            opacity: rise(frame, 6, 20),
+          }}
+        >
+          Then an agent hired an agent
+        </div>
+      </div>
+
+      <Party
+        x={150}
+        role="Client"
+        name="Altana smart account"
+        addr="0x087Cbf1d…7eEE"
+        meta="session key · 0.5 U daily cap"
+        color={VIOLET}
+        on={16}
+      />
+      <Party
+        x={1230}
+        role="Provider"
+        name="Bazar Contract Safety"
+        addr="0x3a24656F…B867b"
+        meta="ERC-8004 #342133 · holds its own key"
+        color={EMERALD}
+        on={60}
+      />
+
+      {/* the wire */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 690,
+          top: 402,
+          height: 3,
+          width: 540 * wire,
+          background: `linear-gradient(90deg, ${VIOLET}, ${EMERALD})`,
+        }}
+      />
+      {dot > 0 && dot < 1 ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: 690 + 540 * dot,
+            top: 394,
+            width: 19,
+            height: 19,
+            borderRadius: 10,
+            background: GOLD,
+            boxShadow: `0 0 26px ${GOLD}`,
+          }}
+        />
+      ) : null}
+      <div
+        style={{
+          position: 'absolute',
+          left: 690,
+          top: 428,
+          width: 540,
+          textAlign: 'center',
+          fontFamily: MONO,
+          fontSize: 17,
+          color: MUTED,
+          opacity: rise(frame, 150, 24),
+        }}
+      >
+        JobFunded — provider is an indexed topic
+        <div style={{ color: DIM, fontSize: 15, marginTop: 8 }}>found by one filtered eth_getLogs, 15s poll</div>
+      </div>
+
+      {/* status ladder */}
+      <div style={{ position: 'absolute', left: 340, top: 566, width: 1240 }}>
+        {steps.map(([label, note, on], i) => {
+          const o = rise(frame, on, 18);
+          return (
+            <div
+              key={label}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 24,
+                height: 74,
+                paddingInline: 26,
+                marginBottom: 10,
+                borderRadius: 14,
+                border: `1px solid ${i === 2 ? `${EMERALD}44` : LINE}`,
+                background: i === 2 ? `${EMERALD}0D` : 'rgba(255,255,255,0.02)',
+                opacity: o,
+                transform: `translateX(${interpolate(o, [0, 1], [-22, 0])}px)`,
+              }}
+            >
+              <div
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  border: `1px solid ${EMERALD}`,
+                  background: `${EMERALD}22`,
+                  color: EMERALD,
+                  fontSize: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                ✓
+              </div>
+              <span style={{ fontFamily: SANS, fontSize: 29, fontWeight: 600, color: TEXT, width: 240 }}>{label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 19, color: MUTED }}>{note}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* the commitment, and the line the whole scene exists for */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 340,
+          top: 828,
+          width: 1240,
+          padding: '22px 26px',
+          borderRadius: 14,
+          border: `1px solid ${GOLD}33`,
+          background: `${GOLD}0A`,
+          opacity: rise(frame, 404, 22),
+        }}
+      >
+        <div style={{ fontFamily: MONO, fontSize: 14, letterSpacing: 3, color: GOLD, textTransform: 'uppercase' }}>
+          deliverable · committed onchain
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 22, color: TEXT, marginTop: 12 }}>
+          0xe8ac7b740c3a27703ac7db4151d3a5c6365e602149d08253367ef6bc327346c5
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 954,
+          width: 1920,
+          textAlign: 'center',
+          fontFamily: SANS,
+          fontSize: 34,
+          color: TEXT,
+          opacity: rise(frame, 470, 26),
+        }}
+      >
+        No human signed either side.
+      </div>
+    </Stage>
+  );
+};
+
 /* ------------------------------ timeline ----------------------------- */
 
 type Cut = { from: number; dur: number; vo?: string; el: React.ReactNode };
@@ -560,7 +791,7 @@ export const Bazar: React.FC = () => {
     t += dur;
   };
 
-  add(s(3.4), <Title total={s(3.4)} />);
+  add(s(6.6), <Title total={s(6.6)} />, 'v00');
   add(s(14.2), <Problem total={s(14.2)} />, 'v01');
   add(
     s(8),
@@ -612,6 +843,7 @@ export const Bazar: React.FC = () => {
     'v08',
   );
   add(s(15), <SessionKey total={s(15)} />, 'v09');
+  add(s(23.8), <AgentToAgent total={s(23.8)} />, 'v13');
   add(
     s(5.4),
     <>
@@ -635,4 +867,4 @@ export const Bazar: React.FC = () => {
   );
 };
 
-export const BAZAR_DURATION = s(3.4 + 14.2 + 8 + 15.6 + 11 + 9.6 + 9.2 + 8 + 12.4 + 15 + 5.4 + 21 + 5.2);
+export const BAZAR_DURATION = s(6.6 + 14.2 + 8 + 15.6 + 11 + 9.6 + 9.2 + 8 + 12.4 + 15 + 23.8 + 5.4 + 21 + 5.2);
