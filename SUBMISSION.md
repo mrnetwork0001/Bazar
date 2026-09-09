@@ -31,8 +31,9 @@ Verifiable without trusting this repository.
 | ERC-8183 job, funded **by the Altana session key** | job **#56747** |
 | Session-key grant (account deployed + two keys registered) | [`0xb11a714e…82a91a`](https://bscscan.com/tx/0xb11a714e06e9816c952c31be3f825ae1a80501e964929253b2676a30af82a91a) |
 | Session-key hire — five kernel calls as one intent | [`0xb782373b…9a0577`](https://bscscan.com/tx/0xb782373b544df89c1e84f4560a36a88c3bb9bf82c32513e865f76e92dd9a0577) |
-| **Agent-to-agent job** — client and provider are both agents | job **#56759** |
-| The provider's `submit`, deliverable committed | [`0x64681370…8dfbcc`](https://bscscan.com/tx/0x64681370f74a0bac3886e0e96fb98460994b1ff818523e88636decebb98dfbcc) |
+| **Agent-to-agent job**, deliverable binds its report | job **#56762** |
+| The provider's `submit` for #56762 | [`0x5d977c7f…92d79c`](https://bscscan.com/tx/0x5d977c7feb3dfe55cdf005a310f78118a4ab2b9c91decdd88be03edeba92d79c) |
+| First agent-to-agent job (weaker commitment, see below) | job **#56759** |
 
 Read either job straight off the kernel:
 
@@ -86,31 +87,55 @@ only show that its author picked the tasks.
 
 ## The loop closes: an agent hired an agent
 
-Job **#56759** has no human on either side.
+Job **#56762** has no human on either side.
 
 | | |
 | --- | --- |
 | **Client** | `0x087Cbf1d…7eEE` — the Altana smart account, spending through its session key |
 | **Provider** | `0x3a24656F…B867b` — Bazar's reference agent, holding its own ERC-8004 identity (#342133) |
 | **Budget** | 0.1 U, escrowed by the kernel |
-| **Status** | `2` (Submitted) |
-| **Deliverable** | `0xe8ac7b740c3a27703ac7db4151d3a5c6365e602149d08253367ef6bc327346c5` |
+| **Status** | `2` (Submitted), **4 seconds** after `JobFunded` |
+| **Deliverable** | `0x9079920d831afda69fdd2fd20f7a900d1ea5b902054b89234f2afe57637a8fe0` |
+| **The report** | [usebazar.xyz/agent/56762.json](https://usebazar.xyz/agent/56762.json) |
 
-The agent runs at [`agent/`](agent/) and is deployed as a systemd unit. It finds
-its own jobs with one filtered `eth_getLogs` — the kernel indexes `provider` on
-`JobFunded` — reads the target contract off the chain, and calls `submit`. It
-assigns no score, because any weighting of "can mint" against "is upgradeable"
-would be an opinion presented as a measurement.
+The agent runs at [`agent/`](agent/) as a systemd unit. It finds its own jobs
+with one filtered `eth_getLogs` — the kernel indexes `provider` on `JobFunded` —
+reads the target contract off the chain, and calls `submit`. It assigns no
+score, because any weighting of "can mint" against "is upgradeable" would be an
+opinion presented as a measurement. #56762 reports on CAKE: owner
+`0x73feaa1e…` (MasterChef, not renounced) with `mint(address,uint256)` live in
+the deployed bytecode.
 
-**One defect, reported rather than waited on.** #56759's deliverable was hashed
-with `JSON.stringify(manifest, Object.keys(manifest).sort())`. A replacer array
-filters keys recursively, so the report body collapsed to `{"chainId":56}`: the
-commitment binds the agent, the brief and the chain id, but none of the work. It
-still verifies — the served file reproduces the hash exactly — it just proves
-less than it looks like it proves. Fixed in
-[`agent/src/manifest.js`](agent/src/manifest.js), which reproduces an unrelated
-provider's live deliverable (job #56743) bit-for-bit from the manifest that
-provider still serves.
+### Verify it yourself
+
+```bash
+curl -s https://usebazar.xyz/agent/56762.json > m.json
+node -e "
+import('./agent/src/manifest.js').then(({manifestHash}) =>
+  console.log(manifestHash(JSON.parse(require('fs').readFileSync('m.json')))))"
+# 0x9079920d831afda69fdd2fd20f7a900d1ea5b902054b89234f2afe57637a8fe0
+```
+
+Change one field of the report — flip `ownership.renounced` to `true`, the most
+consequential lie the document could tell — and the hash moves to
+`0x5f8d12f2…d9eb`. The commitment binds the work.
+
+### The one before it did not, and that is worth saying
+
+Job **#56759** was the first agent-to-agent job and its deliverable was hashed
+with `JSON.stringify(manifest, Object.keys(manifest).sort())`. A replacer
+*array* filters keys **recursively**, so the report collapsed to
+`{"chainId":56}` — the one nested key whose name happened to appear in the
+top-level list. That commitment binds the agent, the brief and the chain id and
+**none of the report**. Run the same tamper against it and the hash does not
+move at all.
+
+It still verifies — [the served file](https://usebazar.xyz/agent/56759.json)
+reproduces `0xe8ac7b74…46c5` exactly — it simply proves far less than it looks
+like it proves. Fixed in [`agent/src/manifest.js`](agent/src/manifest.js),
+which also reproduces an unrelated provider's live deliverable (job #56743)
+bit-for-bit from the manifest that provider still serves.
+
 
 ---
 
