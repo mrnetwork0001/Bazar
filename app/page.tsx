@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { CategoryGrid } from '@/components/home/category-grid';
 import { DualLayer } from '@/components/home/dual-layer';
 import { FeaturedAgents } from '@/components/home/featured-agents';
+import { BuiltOn } from '@/components/home/built-on';
 import { FinalCta } from '@/components/home/final-cta';
 import { RANKED_SAMPLE_SIZE, hasSignal, pickShowcase } from '@/components/home/home-data';
 import { Hero } from '@/components/home/hero';
@@ -89,6 +90,7 @@ export default async function HomePage() {
       <DualLayer indexedAgents={stats.indexedAgents} x402Agents={stats.x402Agents} degraded={stats.degraded} />
       <HowItWorks />
       <TrustRegistries agent={heroAgent} />
+      <BuiltOn />
       <FinalCta indexedAgents={stats.indexedAgents} degraded={stats.degraded} />
     </>
   );
