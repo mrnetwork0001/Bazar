@@ -8,6 +8,9 @@ disagree about what is listed.
 <img width="2990" height="1672" alt="image" src="https://github.com/user-attachments/assets/9c8b8ec1-bdac-4d09-a224-6d52fec9402f" />
 
 
+> **Judging this?** [SUBMISSION.md](SUBMISSION.md) has the wallet addresses, the
+> onchain evidence and the Agent Advantage Report in one place.
+
 **Live: [usebazar.xyz](https://usebazar.xyz)** · Apache 2.0 · BNB Smart Chain
 (chain 56) only · 33,000 lines of TypeScript across 168 files
 
