@@ -39,15 +39,16 @@ const COLUMNS: FooterColumn[] = [
   {
     title: 'Product',
     links: [
+      // Marketplace and the four categories, and nothing else. The column ran
+      // to seven rows against four and five elsewhere, and the two that went
+      // were the two that were not this column's subject.
+      //
+      // Neither destination lost its way in. PancakeSwap is in the navbar.
+      // Session permissions is reached from the dashboard, where a reader
+      // auditing what a wallet spent is already asking what it may spend, and
+      // from the hire flow's review step at the moment a session key becomes
+      // relevant - both better contexts than a footer row.
       { label: 'Marketplace', href: '/marketplace' },
-      { label: 'PancakeSwap agents', href: '/pancakeswap' },
-      // Session permissions is an account control, not a browse destination, so
-      // it stays off the navbar. It is reached in context from the hire flow's
-      // review step, and from here for someone who wants to revoke a key
-      // without starting a hire they have no intention of finishing. It sits
-      // above the category rows rather than below them: trailing the four
-      // marketplace filters, it read as a fifth category.
-      { label: 'Session permissions', href: '/permissions' },
       ...CATEGORIES.map((c) => ({ label: c.name, href: `/marketplace?category=${c.id}` })),
     ],
   },
