@@ -61,8 +61,9 @@ interface SocialLink {
  * judged partly on provenance, a confident link to someone else's channel is
  * worse than no link at all.
  *
- * Checked 2026-09-09: https://x.com/useBazar returns 200 and is Bazar's, so it
- * is listed. The GitHub row points at the repository this file is in; it
+ * Checked 2026-09-09: https://x.com/BazarHQ returns 200 - the handle that did
+ * not resolve in August now exists and is Bazar's, so the August finding is
+ * stale rather than wrong. The GitHub row points at the repository this file is in; it
  * answers 404 while the repository is private and resolves the moment it is
  * public, which is a state of the repository rather than a wrong address.
  *
@@ -71,7 +72,7 @@ interface SocialLink {
  * the footer's Provenance column rather than in a social row.
  */
 const SOCIALS: SocialLink[] = [
-  { label: 'Bazar on X', href: 'https://x.com/useBazar', Icon: XIcon },
+  { label: 'Bazar on X', href: 'https://x.com/BazarHQ', Icon: XIcon },
   { label: 'Bazar on GitHub', href: 'https://github.com/mrnetwork0001/Bazar', Icon: GithubIcon },
 ];
 
