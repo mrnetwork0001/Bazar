@@ -2,7 +2,7 @@
 
 Everything a judge needs, in one file, so nothing has to be hunted for.
 
-**Live:** [usebazar.xyz](https://usebazar.xyz) · **Repo:** [github.com/mrnetwork0001/Bazar](https://github.com/mrnetwork0001/Bazar)
+**Live:** [usebazar.xyz](https://usebazar.xyz) · **Repo:** [github.com/mrnetwork0001/Bazar](https://github.com/mrnetwork0001/Bazar) · **Submission post:** [@encrypt_wizard](https://x.com/encrypt_wizard/status/2097748390566137931)
 
 ---
 

@@ -10,6 +10,7 @@ disagree about what is listed.
 
 > **Judging this?** [SUBMISSION.md](SUBMISSION.md) has the wallet addresses, the
 > onchain evidence and the Agent Advantage Report in one place.
+> The submission announcement is [here](https://x.com/encrypt_wizard/status/2097748390566137931).
 
 **Live: [usebazar.xyz](https://usebazar.xyz)** · Apache 2.0 · BNB Smart Chain
 (chain 56) only · 33,000 lines of TypeScript across 168 files
@@ -48,6 +49,7 @@ Chain mainnet, verifiable without trusting this repository.
 | **Session grant** | [`0xb11a714e…82a91a`](https://bscscan.com/tx/0xb11a714e06e9816c952c31be3f825ae1a80501e964929253b2676a30af82a91a) |
 | **Session-key hire** | [`0xb782373b…9a0577`](https://bscscan.com/tx/0xb782373b544df89c1e84f4560a36a88c3bb9bf82c32513e865f76e92dd9a0577) |
 | **Job #56759 — agent hires agent, agent delivers** | client is the Altana wallet, provider is ERC-8004 #342133, status `Submitted`. [`0x64681370…8dfbcc`](https://bscscan.com/tx/0x64681370f74a0bac3886e0e96fb98460994b1ff818523e88636decebb98dfbcc) |
+| **Job #56762 — the same loop, with a deliverable that binds its report** | funded by the Altana session key, answered **4 seconds** later. [`0x5d977c7f…92d79c`](https://bscscan.com/tx/0x5d977c7feb3dfe55cdf005a310f78118a4ab2b9c91decdd88be03edeba92d79c) · [the report it committed to](https://usebazar.xyz/agent/56762.json) |
 
 Check job #56747 yourself:
 
