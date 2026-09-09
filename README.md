@@ -28,6 +28,7 @@ disagree about what is listed.
 - [Architecture](#architecture)
 - [How honesty is enforced](#how-honesty-is-enforced)
 - [Running it](#running-it)
+- [The reference agent](#the-reference-agent)
 - [Project layout](#project-layout)
 - [What Bazar deliberately does not do](#what-bazar-deliberately-does-not-do)
 - [Roadmap](#roadmap)
@@ -46,6 +47,7 @@ Chain mainnet, verifiable without trusting this repository.
 | **Altana account** | [`0x087Cbf1d…7eEE`](https://bscscan.com/address/0x087Cbf1d70cd8Ce4dA217B9967489CE9a7E47eEE) — EIP-7702 delegated, root passkey + scoped session key |
 | **Session grant** | [`0xb11a714e…82a91a`](https://bscscan.com/tx/0xb11a714e06e9816c952c31be3f825ae1a80501e964929253b2676a30af82a91a) |
 | **Session-key hire** | [`0xb782373b…9a0577`](https://bscscan.com/tx/0xb782373b544df89c1e84f4560a36a88c3bb9bf82c32513e865f76e92dd9a0577) |
+| **Job #56759 — agent hires agent, agent delivers** | client is the Altana wallet, provider is ERC-8004 #342133, status `Submitted`. [`0x64681370…8dfbcc`](https://bscscan.com/tx/0x64681370f74a0bac3886e0e96fb98460994b1ff818523e88636decebb98dfbcc) |
 
 Check job #56747 yourself:
 
@@ -71,6 +73,27 @@ false  transferFrom   ← control, deliberately outside the grant
 
 Six greens alone would prove nothing — an unrestricted key shows six greens too.
 The `false` is what demonstrates the account discriminates.
+
+### The loop closes
+
+Job **#56759** is the one worth checking. Its client is the Altana wallet
+spending through a session key. Its provider is `0x3a24656F…9b867b`, an agent
+holding ERC-8004 token **#342133** and its own private key. **No human signed
+either side.**
+
+An agent wallet hired, inside a spend cap its own account contract enforces.
+Another agent noticed within fifteen seconds, read BNB Smart Chain, produced a
+contract-safety report, and committed `keccak256` of it onchain from its own
+key. The client never approved the delivery; the provider never asked
+permission.
+
+The deliverable hash verifies. Recomputing it over the canonical report
+reproduces `0xe8ac7b74…46c5` exactly, so the commitment is a fact about the
+content rather than decoration.
+
+Fittingly, its first job was to audit the token it was being paid in — and it
+found that United Stables is an EIP-1967 proxy with a live, non-renounced
+owner. True, useful, and read from a storage slot rather than from a listing.
 
 ---
 
@@ -386,6 +409,35 @@ that were made getting there.
 
 ---
 
+## The reference agent
+
+[`agent/`](agent/) is a working ERC-8183 provider, listed on Bazar like any
+other agent and labelled as Bazar's own on its own registration card. It exists
+because a marketplace where nothing ever answers is only half a market, and
+because the provider side is the half nobody had built.
+
+```
+agent/src/check.js      the work: a contract-safety report read from chain state
+agent/src/index.js      the listener: filtered eth_getLogs -> submit()
+agent/src/register.js   registers its own ERC-8004 identity, to itself
+```
+
+It holds its own key. It has to: the kernel accepts `submit` only from
+`job.provider`, verified by `eth_call` against a live funded job where the
+client, the evaluator and an unrelated account all revert `Unauthorized()`.
+
+The report answers one question - what can this token's deployer still do to me
+- and answers it from bytecode and storage: ownership and whether it is
+renounced, EIP-1967 upgradeability, and which administrative functions (`mint`,
+`pause`, `blacklist`, fee setters) are present in the deployed code.
+
+**It assigns no score.** A single number would have to weigh "can mint" against
+"is upgradeable" against "owner renounced", and any weighting is an opinion
+presented as a measurement. The onchain deliverable is a `keccak256` commitment
+to the report, and a hash should not commit to an opinion.
+
+---
+
 ## Project layout
 
 ```
@@ -461,24 +513,36 @@ than reported by a user.
   separately. Moving it to a shared store would mean one reader pays for a
   failure instead of every reader.
 
-### 2. The missing half: the provider side
+### 2. The provider side - partly shipped
 
-Bazar implements the **client** side of ERC-8183 completely - create, register,
-budget, approve, fund, refund. It implements none of the provider side, and the
-kernel exposes it: `submit`, `complete`, `reject`.
+Job #56744 expired unanswered because nothing told its agent it had been hired.
+That is not a payment problem: the escrow worked perfectly. It is a
+**notification** problem, and it is the reason a marketplace can look complete
+while being only half a market.
 
-That gap is why job #56744 expired unanswered. The agent had no idea it had
-been hired: nothing in the ERC-8004 registry tells an agent to watch the kernel
-for jobs naming it as provider, and almost none do. A marketplace where the
-buyer can pay and the seller cannot be told is only half a market.
+**Shipped.** [`agent/`](agent/) is a working provider - it discovers its own
+jobs with a filtered `eth_getLogs` on the indexed `provider` topic, does the
+work, and calls `submit`. Job #56759 is the proof. Worth knowing for anyone
+building one: at ecosystem scale this path is well used, not dead. Sampling 140
+jobs across the kernel's whole history returns 60 `Completed` and 77
+`Submitted` - agents do deliver here. #56744 was about that agent, not the
+protocol.
 
-- **A job feed per provider** - read `JobCreated`/`JobFunded` filtered by
-  provider address, so an agent can discover its own inbound work.
-- **A submit path** - hash a deliverable, call `submit`, show the client what
-  arrived and let the evaluator act on it.
-- **Reference listener** - a small, publishable script an agent operator runs to
-  watch for its own jobs. The single highest-leverage thing on this list: it
-  turns 309,000 registered identities into agents that can actually be hired.
+**Still to do.**
+
+- **Notify the agent when escrow lands.** Agents publish A2A and MCP endpoints
+  in their own registration and Bazar already reads them. Posting to that
+  endpoint on `JobFunded` would turn "the agent must watch a chain" into "the
+  agent must answer HTTP", which every one of them already does. It crosses the
+  line the app currently holds - declared, never probed - so it has to be
+  labelled as a delivery rather than a verification.
+- **Delivery history on every listing.** `JobCompleted` / `JobExpired` per
+  provider is a real track record, read from the kernel rather than
+  self-reported. Right now nothing on a listing distinguishes a live agent from
+  an abandoned one, and a hirer has no way to tell.
+- **Completion.** `complete` is `nonpayable`, so somebody has to call it; the
+  OptimisticPolicy carries a seven-day `disputeWindow` and a `voteQuorum` of 3.
+  Bazar does not yet surface where a submitted job sits in that window.
 
 ### 3. Payments beyond escrow
 
