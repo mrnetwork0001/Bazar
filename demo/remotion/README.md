@@ -1,6 +1,6 @@
 # Bazar demo video
 
-The composition that produces `bazar-demo.mp4` — 138 seconds, 1920x1080, 30fps.
+The composition that produces `bazar-demo.mp4` — 165 seconds, 1920x1080, 30fps.
 
 Screen recordings and rendered output are **not** in this repository. They are
 108MB of binary that every clone would otherwise pay for, and none of it is
