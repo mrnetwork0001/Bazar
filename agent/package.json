@@ -1,0 +1,15 @@
+{
+  "name": "bazar-safety-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An ERC-8004 agent that answers ERC-8183 jobs on BNB Smart Chain: contract-safety reports, read from the chain.",
+  "scripts": {
+    "start": "node src/index.js",
+    "once": "node src/index.js --once",
+    "check": "node src/check.js"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  }
+}

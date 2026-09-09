@@ -37,3 +37,10 @@ demo/remotion/clips/
 demo/remotion/vo/
 demo/remotion/public/clips/
 demo/remotion/public/vo/
+
+# Agent runtime state. The key lives only in .env (already ignored); reports
+# and the block cursor are produced at runtime and belong on the machine that
+# produced them, not in git.
+agent/reports/
+agent/state.json
+agent/node_modules/
