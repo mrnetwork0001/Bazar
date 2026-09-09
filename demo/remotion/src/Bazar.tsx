@@ -486,7 +486,7 @@ const BuiltOn: React.FC<{ total: number }> = ({ total }) => {
     ['logos/bnb-logo.png', 'BNB Smart Chain', 'the settlement chain · mainnet only', GOLD],
     ['logos/altlayer-logo.png', 'AltLayer', '8004scan — every listing Bazar shows', CYAN],
     ['logos/altana-logo.png', 'Altana', 'session keys, spend caps, revocation', VIOLET],
-    ['logos/pancake-logo.png', 'PancakeSwap', 'venue lane + swap route for U · no endorsement', '#22D3EE'],
+    ['logos/pancake-logo.png', 'PancakeSwap', 'swap BNB for U · independent integration', '#22D3EE'],
     ['logos/termix-logo.png', 'TermiX', 'the advantage report, measured', EMERALD],
   ];
   return (

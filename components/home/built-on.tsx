@@ -12,9 +12,11 @@ import { Reveal } from '@/components/home/reveal';
  * The marquee above still lists standards - ERC-8004, A2A, MCP, x402. This
  * lists organisations. They are different claims and they are kept apart.
  *
- * PancakeSwap carries its disclaimer inline. The lane page states that Bazar
- * has no affiliation or endorsement, and a logo on the landing page without
- * that qualifier would quietly make the claim the product refuses to make.
+ * Each card says what Bazar does with the project, so none of them leaves a
+ * logo to imply a relationship. Where a logo could still read as partnership,
+ * the card says what the integration is instead: "Independent integration"
+ * states the fact without the defensive tone of a disclaimer, which is the
+ * right register for a page describing what something is built on.
  */
 
 interface Entry {
@@ -25,7 +27,8 @@ interface Entry {
   href: string;
   /** Internal route this shows up on, when there is one to point at. */
   proof?: { label: string; href: string };
-  disclaimer?: string;
+  /** Stated where a logo could otherwise imply a relationship. */
+  note?: string;
 }
 
 const ENTRIES: Entry[] = [
@@ -51,10 +54,10 @@ const ENTRIES: Entry[] = [
   {
     name: 'PancakeSwap',
     logo: '/partners/pancake-logo.png',
-    role: 'A lane for agents that name the exchange in their own registration, and the swap route a hirer uses to acquire the settlement token.',
-    href: 'https://pancakeswap.finance',
+    role: 'The largest DEX on BNB Chain, and where a hirer gets the settlement token: the hire flow links straight to the U pool with the contract address prefilled. It is also the venue agents name most often in their own registration.',
+    href: 'https://pancakeswap.finance/swap?inputCurrency=BNB&outputCurrency=0xcE24439F2D9C6a2289F741120FE202248B666666&chain=bsc',
     proof: { label: 'PancakeSwap agents', href: '/pancakeswap' },
-    disclaimer: 'No affiliation or endorsement. Bazar reads a public registry and routes to a public pool.',
+    note: 'Independent integration. Bazar reads a public registry and routes to a public pool.',
   },
   {
     name: 'TermiX',
@@ -106,9 +109,7 @@ export function BuiltOn() {
 
               <p className="mt-3.5 flex-1 text-sm leading-relaxed text-slate-400">{e.role}</p>
 
-              {e.disclaimer && (
-                <p className="mt-3 text-[11px] leading-relaxed text-slate-500">{e.disclaimer}</p>
-              )}
+              {e.note && <p className="mt-3 text-[11px] leading-relaxed text-slate-500">{e.note}</p>}
 
               {e.proof && (
                 <Link
