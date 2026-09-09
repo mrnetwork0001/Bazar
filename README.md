@@ -26,6 +26,7 @@ disagree about what is listed.
 - [Running it](#running-it)
 - [Project layout](#project-layout)
 - [What Bazar deliberately does not do](#what-bazar-deliberately-does-not-do)
+- [Roadmap](#roadmap)
 
 ---
 
@@ -374,6 +375,86 @@ The original blueprint for this project promised win-rate filters, 7-day ROI,
 drawdown and SLA scores. None of it shipped, because the data does not exist. The
 number was dropped and the reason was written on the page instead — which is the
 whole product, really.
+
+## Roadmap
+
+Ordered by what each item unblocks, not by date. Dates that cannot be kept are
+worse than no dates.
+
+### 1. Correctness of what already ships
+
+Everything here is a known defect, found by auditing this repository rather
+than reported by a user.
+
+- **Page the category search.** The shelves read the first 100 rows per search
+  term (`CATEGORY_TERM_LIMIT`), so a published figure is a floor rather than a
+  total - yield reads 109 where 171 match, health factor 34 where 56 do. Worse,
+  no sort is sent, so the retained rows are the index's *newest* rather than the
+  highest-ranked: the top-scoring yield agent in the real category is currently
+  unreachable from its own shelf. Fix is to page each term to exhaustion, cache
+  the union, and drop the "not a sample" wording only once it is true.
+- **Refund through a session key.** `claimRefund` is inside the session grant
+  and the account will accept it, but the only refund button writes from the
+  browser's connected account - which the kernel refuses for a job whose client
+  is the Altana wallet. The route exists; the control does not.
+- **A shared stale-data cache.** The last-good-answer fallback lives in process
+  memory, so on serverless each instance learns about an index outage
+  separately. Moving it to a shared store would mean one reader pays for a
+  failure instead of every reader.
+
+### 2. The missing half: the provider side
+
+Bazar implements the **client** side of ERC-8183 completely - create, register,
+budget, approve, fund, refund. It implements none of the provider side, and the
+kernel exposes it: `submit`, `complete`, `reject`.
+
+That gap is why job #56744 expired unanswered. The agent had no idea it had
+been hired: nothing in the ERC-8004 registry tells an agent to watch the kernel
+for jobs naming it as provider, and almost none do. A marketplace where the
+buyer can pay and the seller cannot be told is only half a market.
+
+- **A job feed per provider** - read `JobCreated`/`JobFunded` filtered by
+  provider address, so an agent can discover its own inbound work.
+- **A submit path** - hash a deliverable, call `submit`, show the client what
+  arrived and let the evaluator act on it.
+- **Reference listener** - a small, publishable script an agent operator runs to
+  watch for its own jobs. The single highest-leverage thing on this list: it
+  turns 309,000 registered identities into agents that can actually be hired.
+
+### 3. Payments beyond escrow
+
+- **Surface x402 prices.** 71,000+ indexed agents advertise x402, and some
+  publish a real per-call price in their A2A card (ClawdMint quotes $0.001).
+  Bazar shows only the flag today. Showing the price would be a genuine Data
+  Quality gain - but it means fetching an agent's card, which crosses the line
+  the app currently holds ("declared, never probed"), so it needs to be labelled
+  as a fetch rather than a registry fact.
+- **x402 / B402 sell side**, so Bazar's own A2A router can charge per call
+  instead of being unauthenticated forever.
+
+### 4. Trust signals that exist and are unread
+
+- **The Validation Registry.** ERC-8004 has three registries and Bazar reads
+  two. Validation is the one that carries attestations about work actually done
+  - the closest thing the standard has to a track record, and the honest answer
+  to "why is there no performance data".
+- **`.bnb` names everywhere.** SPACE ID resolution exists in
+  `lib/chain/bnb-name.ts` and is not yet used on every surface that prints an
+  address.
+
+### Explicitly not planned
+
+- **Multi-chain.** A token id resolves to a different agent on every chain, so
+  a testnet listing beside a mainnet one invites hiring the wrong party. BSC
+  mainnet only, deliberately.
+- **Custody.** Bazar holds no key and broadcasts nothing. Every write is signed
+  by the visitor's wallet or their session key. That is the whole security
+  model, and adding a hot wallet would end it.
+- **Ratings, scores or rankings of our own.** The reputation shown is the
+  index's figure, published as theirs. A Bazar-authored score would be exactly
+  the invented number this project exists to avoid.
+- **Performance charts.** Not until the Validation Registry gives something real
+  to draw.
 
 ## License
 
