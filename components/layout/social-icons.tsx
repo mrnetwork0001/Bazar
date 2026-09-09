@@ -52,24 +52,28 @@ interface SocialLink {
 }
 
 /**
- * Only accounts Bazar actually owns - which today is none, so this row renders
- * nothing.
+ * Only accounts Bazar actually owns, and only after checking each one resolves.
  *
- * Checked 2026-08-28: `UNVERIFIED_LINKS.x` (https://x.com/BazarHQ) does not
- * resolve and `UNVERIFIED_LINKS.github` (https://github.com/mrnetwork0001/Bazar)
- * returns 404. `UNVERIFIED_LINKS.telegram` (https://t.me/Bazar) does resolve,
- * and that is the trap: the handle is an unrelated Persian-language news channel
- * with 181 subscribers, so the row labelled "Bazar on Telegram" sent every
- * visitor to a stranger. On a submission judged partly on provenance, a
- * confident link to someone else's channel is worse than no link at all.
+ * Checked 2026-08-28, when this list was empty: https://x.com/BazarHQ did not
+ * resolve, and https://t.me/Bazar did - which was the trap. That handle is an
+ * unrelated Persian-language news channel with 181 subscribers, so a row
+ * labelled "Bazar on Telegram" sent every visitor to a stranger. On a project
+ * judged partly on provenance, a confident link to someone else's channel is
+ * worse than no link at all.
  *
- * The icons and the constants stay: the day a destination exists, adding a row
- * to `SOCIALS` is the whole change. `IndexIcon` is exported but unrendered on
- * purpose - 8004scan is infrastructure Bazar reads from, not an account Bazar
- * owns, so it belongs in the footer's Provenance column rather than in a social
- * row.
+ * Checked 2026-09-09: https://x.com/useBazar returns 200 and is Bazar's, so it
+ * is listed. The GitHub row points at the repository this file is in; it
+ * answers 404 while the repository is private and resolves the moment it is
+ * public, which is a state of the repository rather than a wrong address.
+ *
+ * `IndexIcon` stays exported and unrendered on purpose: 8004scan is
+ * infrastructure Bazar reads from, not an account Bazar owns, so it belongs in
+ * the footer's Provenance column rather than in a social row.
  */
-const SOCIALS: SocialLink[] = [];
+const SOCIALS: SocialLink[] = [
+  { label: 'Bazar on X', href: 'https://x.com/useBazar', Icon: XIcon },
+  { label: 'Bazar on GitHub', href: 'https://github.com/mrnetwork0001/Bazar', Icon: GithubIcon },
+];
 
 export function SocialLinks({ className }: { className?: string }) {
   if (SOCIALS.length === 0) return null;

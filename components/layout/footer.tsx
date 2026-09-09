@@ -140,9 +140,6 @@ export function Footer() {
               The dual-layer ERC-8004 agent marketplace for BNB Chain - a human storefront and an A2A router, reading
               the live registries and encoding jobs for one ERC-8183 contract on BSC.
             </p>
-            <p className="mt-4 max-w-sm text-xs leading-relaxed text-slate-500">
-              Built for Build the Era - BNB Agent Studio Marketplace Hackathon
-            </p>
             <SocialLinks className="mt-5 -ml-2.5" />
           </div>
 
